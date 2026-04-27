@@ -23,6 +23,8 @@ class SettingsScreen extends StatelessWidget {
         appBar: AppBar(title: const Text('الإعدادات')),
         body: ListView(
           padding: const EdgeInsets.all(AppTokens.spacing8),
+          // Extra bottom padding to ensure logout button is visible above bottom nav on mobile
+          clipBehavior: Clip.none,
           children: [
             _buildSectionTitle(context, 'المظهر'),
             _buildThemeSelector(context),
@@ -41,8 +43,12 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: AppTokens.spacing16),
             _buildSectionTitle(context, 'حول'),
             _buildAboutSection(context),
+            // Extra bottom padding for mobile to ensure logout button is visible above nav bar
             const SizedBox(height: AppTokens.spacing24),
             _buildLogoutButton(context),
+            const SizedBox(
+              height: 80,
+            ), // Extra space for bottom nav bar on mobile
           ],
         ),
       ),
@@ -157,7 +163,7 @@ class SettingsScreen extends StatelessWidget {
                 value: potato.animationsEnabled,
                 onChanged: (value) {
                   if (value) {
-                    potato.setPotatoLevel(PotatoLevel.big);
+                    potato.setPotatoLevel(PotatoLevel.off);
                   } else {
                     potato.setPotatoLevel(PotatoLevel.tiny);
                   }
@@ -172,12 +178,10 @@ class SettingsScreen extends StatelessWidget {
 
   Color _getPotatoColor(PotatoLevel level) {
     switch (level) {
-      case PotatoLevel.big:
+      case PotatoLevel.off:
         return Colors.green;
-      case PotatoLevel.medium:
+      case PotatoLevel.sweet:
         return Colors.orange;
-      case PotatoLevel.small:
-        return Colors.deepOrange;
       case PotatoLevel.tiny:
         return Colors.red;
     }

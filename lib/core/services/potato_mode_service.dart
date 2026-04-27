@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:battery_plus/battery_plus.dart';
 
-enum PotatoLevel { big, medium, small, tiny }
+enum PotatoLevel { off, sweet, tiny }
 
 enum DeviceType { phone, desktop }
 
@@ -60,8 +60,8 @@ class PotatoModeConfig {
     this.debugLogs = false,
   });
 
-  static const potatoBig = PotatoModeConfig(
-    level: PotatoLevel.big,
+  static const potatoOff = PotatoModeConfig(
+    level: PotatoLevel.off,
     animationsEnabled: true,
     lazyLoadingEnabled: true,
     fancyUIAEnabled: true,
@@ -74,31 +74,17 @@ class PotatoModeConfig {
     debugLogs: false,
   );
 
-  static const potatoMedium = PotatoModeConfig(
-    level: PotatoLevel.medium,
-    animationsEnabled: true,
-    lazyLoadingEnabled: true,
-    fancyUIAEnabled: true,
-    maxListItems: 50,
-    imageQuality: 80,
-    cacheEnabled: true,
-    shadowsEnabled: true,
-    blurEffectsEnabled: true,
-    animationDurationMs: 250,
-    debugLogs: false,
-  );
-
-  static const potatoSmall = PotatoModeConfig(
-    level: PotatoLevel.small,
-    animationsEnabled: true,
+  static const potatoSweet = PotatoModeConfig(
+    level: PotatoLevel.sweet,
+    animationsEnabled: false,
     lazyLoadingEnabled: true,
     fancyUIAEnabled: false,
     maxListItems: 30,
     imageQuality: 60,
-    cacheEnabled: true,
+    cacheEnabled: false,
     shadowsEnabled: false,
     blurEffectsEnabled: false,
-    animationDurationMs: 200,
+    animationDurationMs: 100,
     debugLogs: false,
   );
 
@@ -112,20 +98,18 @@ class PotatoModeConfig {
     cacheEnabled: false,
     shadowsEnabled: false,
     blurEffectsEnabled: false,
-    animationDurationMs: 100,
+    animationDurationMs: 50,
     debugLogs: false,
   );
 
   String get levelName {
     switch (level) {
-      case PotatoLevel.big:
-        return '🥔 Potato Giant';
-      case PotatoLevel.medium:
-        return '🥔 Potato Meduim';
-      case PotatoLevel.small:
-        return '🥔 Potato Small';
+      case PotatoLevel.off:
+        return 'العادي';
+      case PotatoLevel.sweet:
+        return 'بطاطا حلوة';
       case PotatoLevel.tiny:
-        return '🥔 Potato Tiny';
+        return 'بطاطا صغيرة';
     }
   }
 }
@@ -166,7 +150,7 @@ class DeviceSpecDetector {
         cpuCores: 2,
         batteryPercent: 50,
         deviceType: DeviceType.desktop,
-        potatoLevel: PotatoLevel.medium,
+        potatoLevel: PotatoLevel.off,
       );
     }
   }
@@ -250,31 +234,25 @@ class DeviceSpecDetector {
       if (ramGB < 2 || cpuCores < 2 || batteryPercent < 20) {
         return PotatoLevel.tiny;
       } else if (ramGB < 3 || cpuCores < 4 || batteryPercent < 30) {
-        return PotatoLevel.small;
-      } else if (ramGB < 4 || cpuCores < 6 || batteryPercent < 50) {
-        return PotatoLevel.medium;
+        return PotatoLevel.sweet;
       }
-      return PotatoLevel.big;
+      return PotatoLevel.off;
     } else {
       if (ramGB < 4 || cpuCores < 4 || batteryPercent < 20) {
         return PotatoLevel.tiny;
       } else if (ramGB < 8 || cpuCores < 6 || batteryPercent < 30) {
-        return PotatoLevel.small;
-      } else if (ramGB < 12 || cpuCores < 8 || batteryPercent < 50) {
-        return PotatoLevel.medium;
+        return PotatoLevel.sweet;
       }
-      return PotatoLevel.big;
+      return PotatoLevel.off;
     }
   }
 
   static PotatoModeConfig getConfigForLevel(PotatoLevel level) {
     switch (level) {
-      case PotatoLevel.big:
-        return PotatoModeConfig.potatoBig;
-      case PotatoLevel.medium:
-        return PotatoModeConfig.potatoMedium;
-      case PotatoLevel.small:
-        return PotatoModeConfig.potatoSmall;
+      case PotatoLevel.off:
+        return PotatoModeConfig.potatoOff;
+      case PotatoLevel.sweet:
+        return PotatoModeConfig.potatoSweet;
       case PotatoLevel.tiny:
         return PotatoModeConfig.potatoTiny;
     }

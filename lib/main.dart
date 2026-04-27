@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:arabilogia/core/theme/app_theme.dart';
 import 'package:arabilogia/core/config/supabase_config.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
+import 'package:arabilogia/core/services/update_service.dart';
 import 'package:arabilogia/providers/theme_provider.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/providers/exam_provider.dart';
@@ -45,22 +46,34 @@ class ArabiLogiaApp extends StatelessWidget {
           create: (_) => PotatoModeProvider()..initialize(),
         ),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return MaterialApp.router(
-            title: 'عربيلوجيا',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            themeMode: themeProvider.themeMode,
-            routerConfig: AppRouter.router,
-            locale: const Locale('ar'),
-            supportedLocales: const [Locale('ar')],
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
+      child: Builder(
+        builder: (context) {
+          // Check for updates after app starts
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            // Only check on Android
+            if (Theme.of(context).platform == TargetPlatform.android) {
+              UpdateService.checkForUpdates(context);
+            }
+          });
+
+          return Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return MaterialApp.router(
+                title: 'عربيلوجيا',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.light,
+                darkTheme: AppTheme.dark,
+                themeMode: themeProvider.themeMode,
+                routerConfig: AppRouter.router,
+                locale: const Locale('ar'),
+                supportedLocales: const [Locale('ar')],
+                localizationsDelegates: const [
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+              );
+            },
           );
         },
       ),

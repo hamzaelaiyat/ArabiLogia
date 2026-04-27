@@ -45,7 +45,7 @@ class ExamFormFields extends StatelessWidget {
           onChanged: onTitleChanged,
         ),
         const SizedBox(height: AppTokens.spacing24),
-        _label('المادة'),
+        _label('الفرع'),
         _buildCategoryDropdown(context, isDark),
         const SizedBox(height: AppTokens.spacing24),
         _label('الصف الدراسي'),
@@ -112,7 +112,7 @@ class ExamFormFields extends StatelessWidget {
     };
     return DropdownButtonFormField<String>(
       initialValue: selectedCategoryId,
-      decoration: _decoration('اختر المادة', Icons.category_outlined, isDark),
+      decoration: _decoration('اختر الفرع', Icons.category_outlined, isDark),
       dropdownColor: isDark ? AppColors.bgDark : Colors.white,
       items: cats
           .map((c) => DropdownMenuItem(value: c, child: Text(names[c] ?? c)))

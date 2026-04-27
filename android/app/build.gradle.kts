@@ -37,6 +37,25 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            
+            // Enable R8 code shrinking and obfuscation
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+    
+    // Split APKs by ABI to reduce individual APK size
+    // Only arm64-v8a for Egypt (smallest ~30-40MB vs 170MB full)
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a") // Modern Android phones (Android 8+)
+            isUniversalApk = false
         }
     }
 }

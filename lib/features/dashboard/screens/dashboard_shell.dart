@@ -117,8 +117,16 @@ class DashboardShell extends StatelessWidget {
   }
 
   Widget _buildNavigationBar(BuildContext context, int selectedIndex) {
+    final potato = context.watch<PotatoModeProvider>();
+
+    // In potato mode: SOLID background (no transparency)
+    // Normal mode: Semi-transparent for glassmorphism effect
+    final backgroundColor = potato.blurEffectsEnabled
+        ? AppColors.background(context).withValues(alpha: 0.7)
+        : AppColors.background(context);
+
     return NavigationBar(
-      backgroundColor: AppColors.background(context).withValues(alpha: 0.7),
+      backgroundColor: backgroundColor,
       selectedIndex: selectedIndex,
       onDestinationSelected: (index) => _onItemTapped(context, index),
       destinations: const [

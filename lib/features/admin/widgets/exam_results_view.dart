@@ -56,30 +56,38 @@ class _ExamResultsViewState extends State<ExamResultsView> {
     _participantsSubscription?.cancel();
 
     // Subscribe to real-time updates for this exam's participants
-    _participantsSubscription = _scoreRepository.streamExamParticipants(examId).listen(
-      (participants) async {
-        if (!mounted) return;
+    _participantsSubscription = _scoreRepository
+        .streamExamParticipants(examId)
+        .listen(
+          (participants) async {
+            if (!mounted) return;
 
-        // Get all profiles in the grade for non-participants calculation
-        final allInGrade = await _scoreRepository.getGradeProfiles(_selectedGrade);
+            // Get all profiles in the grade for non-participants calculation
+            final allInGrade = await _scoreRepository.getGradeProfiles(
+              _selectedGrade,
+            );
 
-        // Filter non-participants: IDs in allInGrade that are NOT in participants
-        final participantIds = participants.map((p) => p['user_id']).toSet();
-        final nonParticipants = allInGrade.where((profile) => !participantIds.contains(profile['id'])).toList();
+            // Filter non-participants: IDs in allInGrade that are NOT in participants
+            final participantIds = participants
+                .map((p) => p['user_id'])
+                .toSet();
+            final nonParticipants = allInGrade
+                .where((profile) => !participantIds.contains(profile['id']))
+                .toList();
 
-        setState(() {
-          _participants = participants;
-          _nonParticipants = nonParticipants;
-          _isDetailLoading = false;
-        });
-      },
-      onError: (error) {
-        debugPrint('Error in participants stream subscription: $error');
-        if (mounted) {
-          setState(() => _isDetailLoading = false);
-        }
-      },
-    );
+            setState(() {
+              _participants = participants;
+              _nonParticipants = nonParticipants;
+              _isDetailLoading = false;
+            });
+          },
+          onError: (error) {
+            debugPrint('Error in participants stream subscription: $error');
+            if (mounted) {
+              setState(() => _isDetailLoading = false);
+            }
+          },
+        );
   }
 
   @override
@@ -112,7 +120,9 @@ class _ExamResultsViewState extends State<ExamResultsView> {
 
     // Filter non-participants: IDs in allInGrade that are NOT in participants
     final participantIds = participants.map((p) => p['user_id']).toSet();
-    final nonParticipants = allInGrade.where((profile) => !participantIds.contains(profile['id'])).toList();
+    final nonParticipants = allInGrade
+        .where((profile) => !participantIds.contains(profile['id']))
+        .toList();
 
     if (mounted) {
       setState(() {
@@ -133,7 +143,9 @@ class _ExamResultsViewState extends State<ExamResultsView> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           title: const Text('تأكيد إلغاء النشر'),
-          content: Text('هل أنت متأكد من رغبتك في إلغاء نشر امتحان "$title"؟ لن يتمكن الطلاب من رؤيته، ولكن سيتم الاحتفاظ بالنتائج السابقة.'),
+          content: Text(
+            'هل أنت متأكد من رغبتك في إلغاء نشر امتحان "$title"؟ لن يتمكن الطلاب من رؤيته، ولكن سيتم الاحتفاظ بالنتائج السابقة.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -161,7 +173,10 @@ class _ExamResultsViewState extends State<ExamResultsView> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('فشل إلغاء النشر: $e'), backgroundColor: Colors.red),
+            SnackBar(
+              content: Text('فشل إلغاء النشر: $e'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
@@ -178,7 +193,9 @@ class _ExamResultsViewState extends State<ExamResultsView> {
       children: [
         _buildGradeFilter(),
         Expanded(
-          child: _selectedExamId == null ? _buildExamsList() : _buildExamDetails(),
+          child: _selectedExamId == null
+              ? _buildExamsList()
+              : _buildExamDetails(),
         ),
       ],
     );
@@ -186,32 +203,84 @@ class _ExamResultsViewState extends State<ExamResultsView> {
 
   Widget _buildGradeFilter() {
     return Container(
-      padding: const EdgeInsets.all(AppTokens.spacing16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTokens.spacing12,
+        vertical: AppTokens.spacing8,
+      ),
       color: AppColors.surface(context),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('تصفية حسب الصف:', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(value: 0, label: Text('الكل')),
-                ButtonSegment(value: 1, label: Text('1ث')),
-                ButtonSegment(value: 2, label: Text('2ث')),
-                ButtonSegment(value: 3, label: Text('3ث')),
+          Row(
+            children: [
+              Icon(
+                Icons.filter_list,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'تصفية حسب الصف:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Horizontal scrollable filter chips for mobile
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterChip(0, 'الكل'),
+                const SizedBox(width: 8),
+                _buildFilterChip(1, 'أول ثانوي'),
+                const SizedBox(width: 8),
+                _buildFilterChip(2, 'ثاني ثانوي'),
+                const SizedBox(width: 8),
+                _buildFilterChip(3, 'ثالث ثانوي'),
               ],
-              selected: {_selectedGrade},
-              onSelectionChanged: (Set<int> newSelection) {
-                setState(() {
-                  _selectedGrade = newSelection.first;
-                  if (_selectedExamId != null) {
-                    _loadExamDetails(_selectedExamId!);
-                  }
-                });
-              },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(int grade, String label) {
+    final isSelected = _selectedGrade == grade;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedGrade = grade;
+          if (_selectedExamId != null) {
+            _loadExamDetails(_selectedExamId!);
+          }
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey.shade300,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : null,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 13,
+          ),
+        ),
       ),
     );
   }
@@ -231,7 +300,7 @@ class _ExamResultsViewState extends State<ExamResultsView> {
         final subjectName = category?.name ?? exam['subject_id'] ?? 'غير محدد';
         final grade = exam['grade'] as int? ?? 0;
         final gradeText = grade == 0 ? 'جميع الصفوف' : '$gradeث';
-        
+
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
@@ -246,7 +315,10 @@ class _ExamResultsViewState extends State<ExamResultsView> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.delete_outline, color: Colors.grey),
-                  onPressed: () => _handleUnpublish(exam['id'], exam['title'] ?? 'هذا الامتحان'),
+                  onPressed: () => _handleUnpublish(
+                    exam['id'],
+                    exam['title'] ?? 'هذا الامتحان',
+                  ),
                   tooltip: 'إلغاء النشر',
                 ),
                 const Icon(Icons.chevron_right),
@@ -279,7 +351,9 @@ class _ExamResultsViewState extends State<ExamResultsView> {
               Expanded(
                 child: Text(
                   _exams.firstWhere((e) => e['id'] == _selectedExamId)['title'],
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -315,7 +389,9 @@ class _ExamResultsViewState extends State<ExamResultsView> {
 
   Widget _buildParticipantsList() {
     if (_participants.isEmpty) {
-      return const Center(child: Text('لم يقم أي طالب بأداء هذا الامتحان بعد.'));
+      return const Center(
+        child: Text('لم يقم أي طالب بأداء هذا الامتحان بعد.'),
+      );
     }
 
     return ListView.builder(
@@ -327,15 +403,24 @@ class _ExamResultsViewState extends State<ExamResultsView> {
         // Convert DB grade (10, 11, 12) to UI grade (1, 2, 3)
         final dbGrade = profile?['grade'] as int? ?? 0;
         final uiGrade = dbGrade > 9 ? dbGrade - 9 : dbGrade;
-        
+
         return ListTile(
           leading: CircleAvatar(
             backgroundColor: score >= 50 ? Colors.green : Colors.red,
-            child: Text('${score.toInt()}', style: const TextStyle(color: Colors.white, fontSize: 12)),
+            child: Text(
+              '${score.toInt()}',
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+            ),
           ),
-          title: Text(profile?['full_name'] ?? profile?['username'] ?? 'مستخدم مجهول'),
+          title: Text(
+            profile?['full_name'] ?? profile?['username'] ?? 'مستخدم مجهول',
+          ),
           subtitle: Text('الصف: $uiGradeث'),
-          trailing: Text(intl.DateFormat('MM/dd HH:mm').format(DateTime.parse(p['created_at']))),
+          trailing: Text(
+            intl.DateFormat(
+              'MM/dd HH:mm',
+            ).format(DateTime.parse(p['created_at'])),
+          ),
           onTap: () => _showWrongAnswers(p['wrong_answers']),
         );
       },
@@ -344,7 +429,9 @@ class _ExamResultsViewState extends State<ExamResultsView> {
 
   Widget _buildNonParticipantsList() {
     if (_nonParticipants.isEmpty) {
-      return const Center(child: Text('جميع الطلاب في هذا الصف أتموا الامتحان!'));
+      return const Center(
+        child: Text('جميع الطلاب في هذا الصف أتموا الامتحان!'),
+      );
     }
 
     return ListView.builder(
@@ -356,7 +443,9 @@ class _ExamResultsViewState extends State<ExamResultsView> {
         final uiGrade = dbGrade > 9 ? dbGrade - 9 : dbGrade;
         return ListTile(
           leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-          title: Text(profile['full_name'] ?? profile['username'] ?? 'مستخدم مجهول'),
+          title: Text(
+            profile['full_name'] ?? profile['username'] ?? 'مستخدم مجهول',
+          ),
           subtitle: Text('الصف: $uiGradeث - @${profile['username']}'),
         );
       },
@@ -379,7 +468,12 @@ class _ExamResultsViewState extends State<ExamResultsView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('الأسئلة التي أخطأ فيها الطالب:', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                'الأسئلة التي أخطأ فيها الطالب:',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 16),
               if (questions.isEmpty)
                 const Text('أجاب الطالب على جميع الأسئلة بشكل صحيح! 🎉')
@@ -388,7 +482,10 @@ class _ExamResultsViewState extends State<ExamResultsView> {
                   child: ListView.builder(
                     itemCount: questions.length,
                     itemBuilder: (context, index) => ListTile(
-                      leading: const Icon(Icons.error_outline, color: Colors.red),
+                      leading: const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                      ),
                       title: Text('سؤال ID: ${questions[index]}'),
                     ),
                   ),

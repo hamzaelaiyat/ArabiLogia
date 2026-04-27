@@ -1,7 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
-import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
+import 'package:provider/provider.dart';
 
 class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? title;
@@ -31,28 +32,40 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
     final effectiveColor = backgroundColor ?? AppColors.background(context);
     final topPadding = MediaQuery.paddingOf(context).top;
-    
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        child: Container(
-          color: effectiveColor.withValues(alpha: opacity),
-          child: AppBar(
-            title: title,
-            actions: actions,
-            leading: leading,
-            automaticallyImplyLeading: automaticallyImplyLeading,
-            centerTitle: centerTitle,
-            elevation: elevation,
-            backgroundColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            bottom: bottom,
-          ),
-        ),
+
+    // In potato mode: SOLID background (no glassmorphism)
+    // Normal mode: Apply glassmorphism effect
+    final effectiveOpacity = potato.blurEffectsEnabled ? opacity : 1.0;
+    final hasBlur = potato.blurEffectsEnabled;
+
+    final appBarContent = Container(
+      color: effectiveColor.withValues(alpha: effectiveOpacity),
+      child: AppBar(
+        title: title,
+        actions: actions,
+        leading: leading,
+        automaticallyImplyLeading: automaticallyImplyLeading,
+        centerTitle: centerTitle,
+        elevation: elevation,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        bottom: bottom,
       ),
     );
+
+    if (hasBlur) {
+      return ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+          child: appBarContent,
+        ),
+      );
+    }
+
+    return appBarContent;
   }
 
   @override

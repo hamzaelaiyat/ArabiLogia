@@ -55,20 +55,31 @@ class _TeacherPanelScreenState extends State<TeacherPanelScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () => context.go(AppRoutes.login),
-            ),
-          ],
         ),
         body: const ExamResultsView(),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => context.push(AppRoutes.examEditor),
-          backgroundColor: const Color(0xFFEB8A00),
-          foregroundColor: Colors.white,
-          icon: const Icon(Icons.add),
-          label: const Text('إضافة امتحان'),
+        floatingActionButton: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Settings button (gear icon)
+            FloatingActionButton(
+              heroTag: 'settings',
+              onPressed: () => context.push(AppRoutes.teacherSettings),
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              foregroundColor: AppColors.primary,
+              mini: true,
+              child: const Icon(Icons.settings),
+            ),
+            const SizedBox(height: 12),
+            // Add Exam button
+            FloatingActionButton.extended(
+              heroTag: 'addExam',
+              onPressed: () => context.push(AppRoutes.examEditor),
+              backgroundColor: const Color(0xFFEB8A00),
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add),
+              label: const Text('إضافة امتحان'),
+            ),
+          ],
         ),
       ),
     );

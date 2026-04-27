@@ -21,6 +21,7 @@ abstract class AppRoutes {
 
   // Admin Routes
   static const String teacherPanel = '/admin/teacher-panel';
+  static const String teacherSettings = '/admin/teacher-settings';
   static const String examPreview = '/admin/exam-preview';
   static const String examEditor = '/admin/exam-editor';
 }

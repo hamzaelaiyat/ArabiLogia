@@ -18,6 +18,7 @@ import 'package:arabilogia/features/dashboard/settings/screens/settings_screen.d
 import 'package:arabilogia/features/dashboard/history/screens/activity_history_screen.dart';
 import 'package:arabilogia/features/dashboard/profile/screens/profile_edit_page.dart';
 import 'package:arabilogia/features/admin/screens/teacher_panel_screen.dart';
+import 'package:arabilogia/features/admin/screens/teacher_settings_screen.dart';
 import 'package:arabilogia/features/admin/screens/exam_editor_screen.dart';
 import 'package:arabilogia/features/admin/screens/exam_preview_screen.dart';
 
@@ -83,6 +84,11 @@ class AppRouter {
         path: AppRoutes.teacherPanel,
         name: 'teacher-panel',
         builder: (context, state) => const TeacherPanelScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.teacherSettings,
+        name: 'teacher-settings',
+        builder: (context, state) => const TeacherSettingsScreen(),
       ),
       GoRoute(
         path: AppRoutes.examPreview,

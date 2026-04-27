@@ -155,6 +155,15 @@ class ScoreRepository {
     debugPrint('Starting score synchronization for user ${user.id}');
 
     try {
+      // Fetch existing exams to filter out deleted ones
+      final existingExams = await _supabase
+          .from('exams')
+          .select('id')
+          .then(
+            (res) =>
+                (res as List<dynamic>).map((e) => e['id'] as String).toSet(),
+          );
+
       final remoteData = await _supabase
           .from('exam_results')
           .select('exam_id, score, subject')
@@ -178,6 +187,12 @@ class ScoreRepository {
       for (final entry in localScores.entries) {
         final examId = entry.key;
         final score = entry.value;
+
+        // Only push if: exam still exists AND not in remote
+        if (!existingExams.contains(examId)) {
+          debugPrint('Skipping score for deleted exam: $examId');
+          continue;
+        }
 
         if (!remoteExamIds.contains(examId)) {
           debugPrint('Pushing local-only score to server: $examId ($score)');

@@ -5,7 +5,7 @@ import 'package:arabilogia/core/theme/app_colors.dart';
 
 class PotatoModeProvider extends ChangeNotifier {
   DeviceSpec? _deviceSpec;
-  PotatoModeConfig _config = PotatoModeConfig.potatoBig;
+  PotatoModeConfig _config = PotatoModeConfig.potatoOff;
   bool _isLoaded = false;
 
   DeviceSpec? get deviceSpec => _deviceSpec;
@@ -35,7 +35,7 @@ class PotatoModeProvider extends ChangeNotifier {
       _deviceSpec = await DeviceSpecDetector.detectDevice();
       _config = DeviceSpecDetector.getConfigForDevice(_deviceSpec!);
     } catch (e) {
-      _config = PotatoModeConfig.potatoBig;
+      _config = PotatoModeConfig.potatoOff;
     }
 
     _isLoaded = true;
@@ -228,12 +228,10 @@ class PerformanceIndicator extends StatelessWidget {
 
   Color _getColor(PotatoLevel level) {
     switch (level) {
-      case PotatoLevel.big:
+      case PotatoLevel.off:
         return Colors.green;
-      case PotatoLevel.medium:
+      case PotatoLevel.sweet:
         return Colors.orange;
-      case PotatoLevel.small:
-        return Colors.deepOrange;
       case PotatoLevel.tiny:
         return Colors.red;
     }

@@ -10,8 +10,8 @@ class ExamRepository {
 
   Future<void> publishExam(Exam exam) async {
     final minifiedData = exam.toMinifiedJson();
-    
-    await _supabase.from('exams').insert({
+
+    await _supabase.from('exams').upsert({
       'id': exam.id,
       'title': exam.title,
       'subject_id': exam.subjectId,
@@ -21,11 +21,24 @@ class ExamRepository {
     });
   }
 
+  Future<void> upsertExam(Exam exam) async {
+    final minifiedData = exam.toMinifiedJson();
+
+    await _supabase.from('exams').upsert({
+      'id': exam.id,
+      'title': exam.title,
+      'subject_id': exam.subjectId,
+      'duration_minutes': exam.durationMinutes,
+      'grade': exam.grade,
+      'data': minifiedData,
+    }, onConflict: 'id');
+  }
+
   Future<void> unpublishExam(String examId) async {
     await _supabase.from('exams').delete().eq('id', examId);
   }
 
-// Static registry of exam files by subject ID
+  // Static registry of exam files by subject ID
   // NOTE: Default local exams have been removed - all exams must be published to Supabase
   static const Map<String, List<String>> _registry = {};
 
@@ -35,7 +48,7 @@ class ExamRepository {
     final localScores = await scoreRepo.getLocalScores();
     final prefs = await SharedPreferences.getInstance();
     final autoDownload = prefs.getBool('auto_download_exams') ?? true;
-    
+
     final user = _supabase.auth.currentUser;
     final userGrade = user?.userMetadata?['grade'] as int? ?? 0;
 
@@ -46,18 +59,23 @@ class ExamRepository {
           .from('exams')
           .select()
           .eq('subject_id', subjectId)
-          .or('grade.eq.0,grade.eq.$userGrade'); // Show "All" or match student grade
+          .or(
+            'grade.eq.0,grade.eq.$userGrade',
+          ); // Show "All" or match student grade
 
       for (final data in remoteData) {
         final examData = data['data'] as Map<String, dynamic>;
         final exam = Exam.fromMinifiedJson(examData);
         remoteExamIds.add(exam.id);
-        
+
         // Cache if auto-download is enabled
         if (autoDownload) {
-          await prefs.setString('offline_exam_${exam.id}', json.encode(examData));
+          await prefs.setString(
+            'offline_exam_${exam.id}',
+            json.encode(examData),
+          );
         }
-        
+
         exams.add(_processExam(exam, localScores, isRemote: true));
       }
     } catch (e) {
@@ -69,7 +87,8 @@ class ExamRepository {
         if (cachedJson != null) {
           final data = json.decode(cachedJson);
           final exam = Exam.fromMinifiedJson(data);
-          if (exam.subjectId == subjectId && (exam.grade == 0 || exam.grade == userGrade)) {
+          if (exam.subjectId == subjectId &&
+              (exam.grade == 0 || exam.grade == userGrade)) {
             remoteExamIds.add(exam.id);
             exams.add(_processExam(exam, localScores, isRemote: true));
           }
@@ -91,16 +110,21 @@ class ExamRepository {
     // 3. Handle locking logic.
     bool previousExamPassed = true;
     for (int i = 0; i < exams.length; i++) {
-       final exam = exams[i];
-       exams[i]['locked'] = !previousExamPassed;
-       final score = exam['score'] as int;
-       previousExamPassed = (score >= 60);
+      final exam = exams[i];
+      exams[i]['locked'] = !previousExamPassed;
+      final score = exam['score'] as int;
+      previousExamPassed = (score >= 60);
     }
 
     return exams;
   }
 
-  Map<String, dynamic> _processExam(Exam exam, Map<String, double> localScores, {String? path, bool isRemote = false}) {
+  Map<String, dynamic> _processExam(
+    Exam exam,
+    Map<String, double> localScores, {
+    String? path,
+    bool isRemote = false,
+  }) {
     final userScore = localScores[exam.id];
     return {
       'id': exam.id,
@@ -117,7 +141,7 @@ class ExamRepository {
 
   Future<Exam?> loadExamById(String subjectId, String examId) async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // 1. Check Offline Cache
     final cached = prefs.getString('offline_exam_$examId');
     if (cached != null) {
@@ -129,7 +153,11 @@ class ExamRepository {
 
     // 3. Try Remote
     try {
-      final data = await _supabase.from('exams').select('data').eq('id', examId).maybeSingle();
+      final data = await _supabase
+          .from('exams')
+          .select('data')
+          .eq('id', examId)
+          .maybeSingle();
       if (data != null) {
         final examData = data['data'] as Map<String, dynamic>;
         return Exam.fromMinifiedJson(examData);

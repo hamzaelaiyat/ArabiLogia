@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
+import 'package:provider/provider.dart';
 
 class GlassContainer extends StatelessWidget {
   final Widget child;
@@ -25,28 +27,39 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
     final effectiveRadius = isMobile
         ? (borderRadius ?? BorderRadius.zero)
         : (borderRadius ?? BorderRadius.circular(32.0));
 
-    return ClipRRect(
-      borderRadius: effectiveRadius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: Container(
-          padding: padding ?? const EdgeInsets.all(AppTokens.spacing12),
-          decoration: BoxDecoration(
-            color: color?.withValues(alpha: opacity) ??
-                AppColors.glassBackgroundColor(context),
-            borderRadius: effectiveRadius,
-            border: Border.all(
-              color: AppColors.glassBorderColor(context),
-              width: 1.5,
-            ),
-          ),
-          child: child,
+    final effectiveOpacity = potato.blurEffectsEnabled ? opacity : opacity / 2;
+    final hasBlur = potato.blurEffectsEnabled;
+
+    final container = Container(
+      padding: padding ?? const EdgeInsets.all(AppTokens.spacing12),
+      decoration: BoxDecoration(
+        color:
+            color?.withValues(alpha: effectiveOpacity) ??
+            AppColors.glassBackgroundColor(context),
+        borderRadius: effectiveRadius,
+        border: Border.all(
+          color: AppColors.glassBorderColor(context),
+          width: 1.5,
         ),
       ),
+      child: child,
     );
+
+    if (hasBlur) {
+      return ClipRRect(
+        borderRadius: effectiveRadius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          child: container,
+        ),
+      );
+    }
+
+    return container;
   }
 }

@@ -1,7 +1,7 @@
 name: arabilogia
-description: "Arabic Language Exam Preparation Platform for Egyptian high school students"
+description: "منصة عربيلوجيا - منصة لغة عربية للثانوية العامة"
 publish_to: 'none'
-version: 1.0.0+1
+version: 0.0.2
 
 environment:
   sdk: ^3.11.4
@@ -30,6 +30,9 @@ dependencies:
   image: ^4.8.0
   device_info_plus: ^10.1.0
   battery_plus: ^6.0.3
+  app_installer_plus: ^1.1.0
+  http: ^1.2.0
+  package_info_plus: ^8.0.3
 
 dev_dependencies:
   flutter_test:

@@ -154,11 +154,11 @@ class ExamSettingsPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildFieldLabel('المادة'),
+        _buildFieldLabel('الفرع'),
         DropdownButtonFormField<String>(
           value: selectedCategoryId,
           decoration: _inputDecoration(
-            'اختر المادة',
+            'اختر الفرع',
             Icons.category_outlined,
             isDark,
           ),

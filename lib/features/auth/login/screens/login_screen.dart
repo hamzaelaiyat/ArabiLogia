@@ -37,10 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text;
 
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.signIn(
-      email,
-      password,
-    );
+    final success = await authProvider.signIn(email, password);
 
     if (success && mounted) {
       // After login, get the user role to determine redirect target
@@ -82,9 +79,15 @@ class _LoginScreenState extends State<LoginScreen> {
             // Background Image/Solid Color
             Positioned.fill(
               child: isMobile
-                  ? Container(color: isDark ? AppTokens.mobileDarkBackground : AppTokens.mobileBackground)
+                  ? Container(
+                      color: isDark
+                          ? AppTokens.mobileDarkBackground
+                          : AppTokens.mobileBackground,
+                    )
                   : Image.asset(
-                      isDark ? 'assets/images/clouds-darkmode.png' : 'assets/images/clouds-image.png',
+                      isDark
+                          ? 'assets/images/clouds-darkmode.png'
+                          : 'assets/images/clouds-image.png',
                       fit: BoxFit.cover,
                     ),
             ),
@@ -103,9 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
             const Positioned(
               top: 0,
               left: 0,
-              child: SafeArea(
-                child: ThemeToggleButton(),
-              ),
+              child: SafeArea(child: ThemeToggleButton()),
             ),
           ],
         ),
@@ -122,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildMobileLayout(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 500),
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       child: _buildForm(context),
     );
   }
@@ -167,9 +168,9 @@ class _LoginScreenState extends State<LoginScreen> {
           Text(
             AppStrings.login,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFEB8A00),
-                ),
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFFEB8A00),
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppTokens.spacing24),
@@ -248,12 +249,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       gradient: const LinearGradient(
                         colors: [Color(0xFFEB8A00), Color(0xFFFFA726)],
                       ),
-                      borderRadius:
-                          BorderRadius.circular(AppTokens.radiusFull),
+                      borderRadius: BorderRadius.circular(AppTokens.radiusFull),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFEB8A00)
-                              .withValues(alpha: 0.3),
+                          color: const Color(0xFFEB8A00).withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -265,8 +264,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppTokens.radiusFull),
+                          borderRadius: BorderRadius.circular(
+                            AppTokens.radiusFull,
+                          ),
                         ),
                       ),
                       child: auth.state.isLoading
@@ -289,8 +289,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   if (auth.state.error != null)
                     Padding(
-                      padding:
-                          const EdgeInsets.only(top: AppTokens.spacing8),
+                      padding: const EdgeInsets.only(top: AppTokens.spacing8),
                       child: Column(
                         children: [
                           Text(
@@ -302,7 +301,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          if (auth.state.error == 'يرجى تأكيد البريد الإلكتروني')
+                          if (auth.state.error ==
+                              'يرجى تأكيد البريد الإلكتروني')
                             TextButton(
                               onPressed: () => _handleResendVerification(auth),
                               child: const Text(

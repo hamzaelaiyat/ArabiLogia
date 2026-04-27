@@ -105,7 +105,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final otp = _normalizeOtp(_otpController.text);
     if (otp.length < 6 || otp.length > 8) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى إدخال رمز تفعيل صحيح (6 إلى 8 أرقام)')),
+        const SnackBar(
+          content: Text('يرجى إدخال رمز تفعيل صحيح (6 إلى 8 أرقام)'),
+        ),
       );
       return;
     }
@@ -170,9 +172,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             // Background Image/Solid Color
             Positioned.fill(
               child: isMobile
-                  ? Container(color: isDark ? AppTokens.mobileDarkBackground : AppTokens.mobileBackground)
+                  ? Container(
+                      color: isDark
+                          ? AppTokens.mobileDarkBackground
+                          : AppTokens.mobileBackground,
+                    )
                   : Image.asset(
-                      isDark ? 'assets/images/clouds-darkmode.png' : 'assets/images/clouds-image.png',
+                      isDark
+                          ? 'assets/images/clouds-darkmode.png'
+                          : 'assets/images/clouds-image.png',
                       fit: BoxFit.cover,
                     ),
             ),
@@ -181,9 +189,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 padding: isMobile
                     ? EdgeInsets.zero
                     : EdgeInsets.all(
-                        isDesktop ? AppTokens.spacing16 : AppTokens.spacing8),
+                        isDesktop ? AppTokens.spacing16 : AppTokens.spacing8,
+                      ),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 500),
+                  constraints: BoxConstraints(
+                    maxWidth: isMobile ? double.infinity : 500,
+                  ),
                   child: _isSuccess
                       ? _buildSuccessCard(context)
                       : _buildFormCard(context, authProvider),
@@ -193,9 +204,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const Positioned(
               top: 0,
               left: 0,
-              child: SafeArea(
-                child: ThemeToggleButton(),
-              ),
+              child: SafeArea(child: ThemeToggleButton()),
             ),
           ],
         ),
@@ -282,7 +291,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             width: double.infinity,
             height: AppTokens.buttonHeightMd,
             child: ElevatedButton(
-              onPressed: authProvider.state.isLoading ? null : _handleVerifyEmail,
+              onPressed: authProvider.state.isLoading
+                  ? null
+                  : _handleVerifyEmail,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFEB8A00),
                 shape: RoundedRectangleBorder(
@@ -294,7 +305,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Text(
                       'تأكيد الحساب',
@@ -317,7 +330,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               TextButton(
-                onPressed: authProvider.state.isLoading ? null : _handleResendCode,
+                onPressed: authProvider.state.isLoading
+                    ? null
+                    : _handleResendCode,
                 child: const Text(
                   'إعادة الإرسال',
                   style: TextStyle(
@@ -361,9 +376,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Text(
             AppStrings.register,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: const Color(0xFFEB8A00),
-                  fontWeight: FontWeight.bold,
-                ),
+              color: const Color(0xFFEB8A00),
+              fontWeight: FontWeight.bold,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppTokens.spacing24),
@@ -473,7 +488,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Column(
       children: [
         const StepHeader(
-            title: 'بيانات الحساب', icon: Icons.lock_person_outlined),
+          title: 'بيانات الحساب',
+          icon: Icons.lock_person_outlined,
+        ),
         const SizedBox(height: AppTokens.spacing12),
         _buildTextField(
           controller: _emailController,
@@ -501,7 +518,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               setState(() => _obscurePassword = !_obscurePassword),
           validator: (value) {
             if (value == null || value.isEmpty) return 'يرجى إدخال كلمة المرور';
-            if (value.length < 6) return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+            if (value.length < 6)
+              return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
             return null;
           },
         ),
@@ -512,8 +530,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           icon: Icons.lock_outline,
           isPassword: true,
           obscureText: _obscureConfirmPassword,
-          onToggleVisibility: () =>
-              setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+          onToggleVisibility: () => setState(
+            () => _obscureConfirmPassword = !_obscureConfirmPassword,
+          ),
           validator: (value) {
             if (value == null || value.isEmpty) return 'يرجى تأكيد كلمة المرور';
             if (value != _passwordController.text) {
@@ -536,9 +555,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
           label: AppStrings.fullName,
           icon: Icons.person_outline,
           validator: (value) {
-            if (value == null || value.isEmpty) return 'يرجى إدخال الاسم الكامل';
-            if (value.trim().split(' ').length < 2) {
-              return 'يرجى إدخال الاسم الثنائي على الأقل';
+            if (value == null || value.isEmpty) {
+              return 'يرجى إدخال الاسم الكامل';
+            }
+
+            // Normalize أمة variations: امه, أمه, امة → أمة
+            String normalized = value
+                .replaceAll(
+                  RegExp(r'[إأآا]ة$'),
+                  'ة',
+                ) // normalize taa marbuta ending
+                .replaceAll(RegExp(r'امة$'), 'أمة') // امة → أمة
+                .replaceAll(RegExp(r'امه$'), 'أمة') // امه → أمة
+                .replaceAll(RegExp(r'أمه$'), 'أمة'); // أمه → أمة
+
+            // Count words (split by spaces)
+            final words = normalized.trim().split(RegExp(r'\s+'));
+
+            if (words.length < 3) {
+              return 'يرجى إدخال الاسم الثلاثي على الأقل';
             }
             if (!RegExp(r'^[\u0600-\u06FF\s]+$').hasMatch(value)) {
               return 'يجب أن يكون الاسم الكامل باللغة العربية فقط';
@@ -552,7 +587,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           label: AppStrings.username,
           icon: Icons.alternate_email,
           validator: (value) {
-            if (value == null || value.isEmpty) return 'يرجى إدخال اسم المستخدم';
+            if (value == null || value.isEmpty)
+              return 'يرجى إدخال اسم المستخدم';
             if (value.length < 3) {
               return 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
             }
@@ -569,7 +605,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildGradeStep() {
     return Column(
       children: [
-        const StepHeader(title: 'المرحلة الدراسية', icon: Icons.school_outlined),
+        const StepHeader(
+          title: 'المرحلة الدراسية',
+          icon: Icons.school_outlined,
+        ),
         const SizedBox(height: AppTokens.spacing12),
         GradeSelector(
           selectedGrade: _selectedGrade,
