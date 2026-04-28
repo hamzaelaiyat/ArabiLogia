@@ -33,7 +33,10 @@ jobs:
         run: flutter pub get
 
       - name: Build Windows
-        run: flutter build windows --release
+        run: |
+          flutter config --enable-windows-desktop
+          flutter build windows --release
+          dir build\windows
 
       - name: Create release bundle
         run: |
