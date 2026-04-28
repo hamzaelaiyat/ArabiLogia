@@ -1,5 +1,8 @@
 name: Build Windows App
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   workflow_dispatch:
     inputs:
@@ -23,7 +26,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.28.0'
+          flutter-version: '3.29.3'
           channel: 'stable'
 
       - name: Get dependencies
@@ -33,26 +36,21 @@ jobs:
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/src \
-            -w /src \
-            tauu/flutter-windows-builder:latest \
-            flutter build windows --release
+            tauu/flutter-windows-builder:3.29.3
 
       - name: Create release bundle
         run: |
-          cd build/windows/runner/Release
-          # Include all required files
+          cd build_container
           mkdir -p release-files
-          cp *.exe release-files/
-          cp *.dll release-files/
-          cp -r data release-files/
+          cp -r Release/* release-files/ 2>/dev/null || cp -r . release-files/ 2>/dev/null || true
           cd release-files
-          zip -r ../../../arabilogia-${{ inputs.version }}-windows-x64.zip .
+          zip -r ../../arabilogia-${{ inputs.version }}-windows-x64.zip .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-release
-          path: build/arabilogia-${{ inputs.version }}-windows-x64.zip
+          path: arabilogia-${{ inputs.version }}-windows-x64.zip
 
   build-all:
     runs-on: ubuntu-latest
@@ -64,7 +62,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.28.0'
+          flutter-version: '3.29.3'
           channel: 'stable'
 
       - name: Get dependencies
