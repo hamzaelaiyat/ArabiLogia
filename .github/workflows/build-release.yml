@@ -36,12 +36,15 @@ jobs:
         run: |
           flutter config --enable-windows-desktop
           flutter build windows --release
-          dir build\windows
+        continue-on-error: true
+
+      - name: Debug build output
+        run: Get-ChildItem -Path build -Recurse -Directory | Select-Object FullName
 
       - name: Create release bundle
         run: |
-          cd build/windows/runner/Release
-          Compress-Archive -Path * -DestinationPath arabilogia-${{ inputs.version }}-windows-x64.zip
+          Get-ChildItem -Path build/windows -Recurse -Directory | Select-Object FullName
+          Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath arabilogia-${{ inputs.version }}-windows-x64.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
