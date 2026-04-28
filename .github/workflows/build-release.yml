@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version number'
+        description: 'Version number (e.g., 0.0.3)'
         required: true
         type: string
       notes:
@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-windows:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,19 +32,13 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Build Windows using Docker
-        run: |
-          docker run --rm \
-            -v ${{ github.workspace }}:/src \
-            tauu/flutter-windows-builder:3.41.8
+      - name: Build Windows
+        run: flutter build windows --release
 
       - name: Create release bundle
         run: |
-          cd build_container
-          mkdir -p release-files
-          cp -r Release/* release-files/ 2>/dev/null || cp -r . release-files/ 2>/dev/null || true
-          cd release-files
-          zip -r ../../arabilogia-${{ inputs.version }}-windows-x64.zip .
+          cd build/windows/runner/Release
+          Compress-Archive -Path * -DestinationPath arabilogia-${{ inputs.version }}-windows-x64.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
