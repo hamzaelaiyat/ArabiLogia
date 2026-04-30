@@ -1,8 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for Google Mobile Ads -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    
     <application
         android:label="منصة عربيلوجيا"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        
+        <!-- AdMob App ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-8677686078416176~8033124601"/>
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
