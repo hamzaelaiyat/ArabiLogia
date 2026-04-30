@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:arabilogia/core/theme/app_theme.dart';
 import 'package:arabilogia/core/config/supabase_config.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
@@ -28,6 +29,9 @@ void main() async {
       anonKey: SupabaseConfig.supabaseAnonKey,
     );
   }
+
+  // Initialize Google Mobile Ads
+  await MobileAds.instance.initialize();
 
   runApp(const ArabiLogiaApp());
 }
