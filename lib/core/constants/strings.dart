@@ -50,7 +50,7 @@ class AppStrings {
 
   static const String save = 'حفظ';
   static const String cancel = 'إلغاء';
-  static const String delete = 'حفظ';
+  static const String delete = 'حذف';
   static const String edit = 'تعديل';
   static const String confirm = 'تأكيد';
   static const String close = 'إغلاق';

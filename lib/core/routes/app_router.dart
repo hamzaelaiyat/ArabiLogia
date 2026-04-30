@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/auth/login/screens/login_screen.dart';
 import 'package:arabilogia/features/auth/register/screens/register_screen.dart';
 import 'package:arabilogia/features/dashboard/screens/dashboard_shell.dart';
@@ -32,6 +33,51 @@ class AppRouter {
       RouteObserver<ModalRoute<void>>();
 
   static GoRouter get router => _router;
+
+  static Page<dynamic> _buildPageWithNoTransition({
+    required BuildContext context,
+    required GoRouterState state,
+    required Widget child,
+  }) {
+    return CustomTransitionPage(
+      key: state.pageKey,
+      child: child,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+          child,
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
+    );
+  }
+
+  static Page<dynamic> _buildPageWithFade({
+    required BuildContext context,
+    required GoRouterState state,
+    required Widget child,
+  }) {
+    return CustomTransitionPage(
+      key: state.pageKey,
+      child: child,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+    );
+  }
+
+  static Page<dynamic> _buildPage({
+    required BuildContext context,
+    required GoRouterState state,
+    required Widget child,
+  }) {
+    final potato = context.read<PotatoModeProvider>();
+    if (potato.transitionsEnabled) {
+      return _buildPageWithFade(context: context, state: state, child: child);
+    }
+    return _buildPageWithNoTransition(
+      context: context,
+      state: state,
+      child: child,
+    );
+  }
 
   static final GoRouter _router = GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -73,52 +119,80 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) => AppRouter._buildPage(
+          context: context,
+          state: state,
+          child: const LoginScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.register,
         name: 'register',
-        builder: (context, state) => const RegisterScreen(),
+        pageBuilder: (context, state) => AppRouter._buildPage(
+          context: context,
+          state: state,
+          child: const RegisterScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.teacherPanel,
         name: 'teacher-panel',
-        builder: (context, state) => const TeacherPanelScreen(),
+        pageBuilder: (context, state) => AppRouter._buildPage(
+          context: context,
+          state: state,
+          child: const TeacherPanelScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.teacherSettings,
         name: 'teacher-settings',
-        builder: (context, state) => const TeacherSettingsScreen(),
+        pageBuilder: (context, state) => AppRouter._buildPage(
+          context: context,
+          state: state,
+          child: const TeacherSettingsScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.examPreview,
         name: 'exam-preview',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final exam = state.extra as Exam;
-          return ExamPreviewScreen(exam: exam);
+          return AppRouter._buildPage(
+            context: context,
+            state: state,
+            child: ExamPreviewScreen(exam: exam),
+          );
         },
       ),
       GoRoute(
         path: AppRoutes.examEditor,
         name: 'exam-editor',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final exam = state.extra as Exam?;
-          return ExamEditorScreen(existingExam: exam);
+          return AppRouter._buildPage(
+            context: context,
+            state: state,
+            child: ExamEditorScreen(existingExam: exam),
+          );
         },
       ),
       GoRoute(
         path: AppRoutes.examInteraction,
         name: 'exam-interaction',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
           final extra = state.extra as Map<String, dynamic>?;
           final subjectId = extra?['subjectId'] as String? ?? 'nahw';
           final subjectName = extra?['subjectName'] as String? ?? 'النحو';
-          return ExamInteractionScreen(
-            examId: id,
-            subjectId: subjectId,
-            subjectName: subjectName,
+          return AppRouter._buildPage(
+            context: context,
+            state: state,
+            child: ExamInteractionScreen(
+              examId: id,
+              subjectId: subjectId,
+              subjectName: subjectName,
+            ),
           );
         },
       ),
@@ -126,15 +200,19 @@ class AppRouter {
         path: AppRoutes.examResult,
         name: 'exam-result',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final extra = state.extra as Map<String, dynamic>;
-          return ExamResultScreen(
-            exam: extra['exam'] as Exam,
-            userAnswers: extra['userAnswers'] as Map<int, String?>,
-            score: extra['score'] as int,
-            accuracy: extra['accuracy'] as int? ?? 0,
-            speedBonus: extra['speedBonus'] as int? ?? 0,
-            correctCount: extra['correctCount'] as int,
+          return AppRouter._buildPage(
+            context: context,
+            state: state,
+            child: ExamResultScreen(
+              exam: extra['exam'] as Exam,
+              userAnswers: extra['userAnswers'] as Map<int, String?>,
+              score: extra['score'] as int,
+              accuracy: extra['accuracy'] as int? ?? 0,
+              speedBonus: extra['speedBonus'] as int? ?? 0,
+              correctCount: extra['correctCount'] as int,
+            ),
           );
         },
       ),
@@ -150,56 +228,88 @@ class AppRouter {
           GoRoute(
             path: AppRoutes.home,
             name: 'home',
-            builder: (context, state) => const HomeScreen(),
+            pageBuilder: (context, state) => AppRouter._buildPage(
+              context: context,
+              state: state,
+              child: const HomeScreen(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.exams,
             name: 'exams',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final extra = state.extra as Map<String, dynamic>?;
               final initialTabIndex = extra?['initialTabIndex'] as int? ?? 0;
-              return ExamsScreen(initialTabIndex: initialTabIndex);
+              return AppRouter._buildPage(
+                context: context,
+                state: state,
+                child: ExamsScreen(initialTabIndex: initialTabIndex),
+              );
             },
           ),
           GoRoute(
             path: AppRoutes.examDetail,
             name: 'exam-detail',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final id = state.pathParameters['id'] ?? '';
               final extra = state.extra as Map<String, dynamic>?;
               final subjectId = extra?['subjectId'] as String? ?? 'nahw';
               final subjectName = extra?['subjectName'] as String? ?? 'النحو';
-              return ExamDetailsScreen(
-                examId: id,
-                subjectId: subjectId,
-                subjectName: subjectName,
+              return AppRouter._buildPage(
+                context: context,
+                state: state,
+                child: ExamDetailsScreen(
+                  examId: id,
+                  subjectId: subjectId,
+                  subjectName: subjectName,
+                ),
               );
             },
           ),
           GoRoute(
             path: AppRoutes.leaderboard,
             name: 'leaderboard',
-            builder: (context, state) => const LeaderboardScreen(),
+            pageBuilder: (context, state) => AppRouter._buildPage(
+              context: context,
+              state: state,
+              child: const LeaderboardScreen(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.profile,
             name: 'profile',
-            builder: (context, state) => const ProfileScreen(),
+            pageBuilder: (context, state) => AppRouter._buildPage(
+              context: context,
+              state: state,
+              child: const ProfileScreen(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.settings,
             name: 'settings',
-            builder: (context, state) => const SettingsScreen(),
+            pageBuilder: (context, state) => AppRouter._buildPage(
+              context: context,
+              state: state,
+              child: const SettingsScreen(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.activityHistory,
             name: 'activity-history',
-            builder: (context, state) => const ActivityHistoryScreen(),
+            pageBuilder: (context, state) => AppRouter._buildPage(
+              context: context,
+              state: state,
+              child: const ActivityHistoryScreen(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.profileEdit,
             name: 'profile-edit',
-            builder: (context, state) => const ProfileEditPage(),
+            pageBuilder: (context, state) => AppRouter._buildPage(
+              context: context,
+              state: state,
+              child: const ProfileEditPage(),
+            ),
           ),
         ],
       ),

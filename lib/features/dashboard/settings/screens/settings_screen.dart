@@ -8,9 +8,11 @@ import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/legal/widgets/legal_bottom_sheet.dart';
 import 'package:arabilogia/core/widgets/glass_bottom_sheet.dart';
+import 'package:arabilogia/widgets/potato_switch.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -157,15 +159,17 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               const Divider(height: 1),
-              SwitchListTile(
+              PotatoSwitchListTile(
                 secondary: const Icon(Icons.animation_outlined),
                 title: const Text('تفعيل الحركة'),
                 value: potato.animationsEnabled,
                 onChanged: (value) {
+                  // value=true means "animations ON" -> potato off (all animations)
+                  // value=false means "animations OFF" -> potato mode on (reduced animations)
                   if (value) {
                     potato.setPotatoLevel(PotatoLevel.off);
                   } else {
-                    potato.setPotatoLevel(PotatoLevel.tiny);
+                    potato.setPotatoLevel(PotatoLevel.sweet);
                   }
                 },
               ),
@@ -211,7 +215,7 @@ class SettingsScreen extends StatelessWidget {
                   Card(
                     child: Column(
                       children: [
-                        SwitchListTile(
+                        PotatoSwitchListTile(
                           secondary: const Icon(Icons.visibility_outlined),
                           title: const Text('إظهار ملفي للآخرين'),
                           value: isPublic,
@@ -220,7 +224,7 @@ class SettingsScreen extends StatelessWidget {
                           },
                         ),
                         const Divider(height: 1),
-                        SwitchListTile(
+                        PotatoSwitchListTile(
                           secondary: const Icon(Icons.no_photography_outlined),
                           title: const Text('إخفاء صورتي في لوحة الصدارة'),
                           value: hideAvatar,
@@ -263,7 +267,7 @@ class SettingsScreen extends StatelessWidget {
 
           return Column(
             children: [
-              SwitchListTile(
+              PotatoSwitchListTile(
                 secondary: const Icon(Icons.notifications_outlined),
                 title: const Text('إشعارات الامتحانات الجديدة'),
                 value: examNotify,
@@ -272,10 +276,22 @@ class SettingsScreen extends StatelessWidget {
                   await authProvider.updateProfile(
                     notifications: Map<String, bool>.from(notifications),
                   );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          value
+                              ? 'تم تفعيل إشعارات الامتحانات'
+                              : 'تم إيقاف إشعارات الامتحانات',
+                        ),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
                 },
               ),
               const Divider(height: 1),
-              SwitchListTile(
+              PotatoSwitchListTile(
                 secondary: const Icon(Icons.timer_outlined),
                 title: const Text('تذكير بالامتحانات'),
                 value: remindersNotify,
@@ -284,13 +300,129 @@ class SettingsScreen extends StatelessWidget {
                   await authProvider.updateProfile(
                     notifications: Map<String, bool>.from(notifications),
                   );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          value
+                              ? 'تم تفعيل تذكير الامتحانات'
+                              : 'تم إيقاف تذكير الامتحانات',
+                        ),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
                 },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(
+                  Icons.send_to_mobile,
+                  color: AppColors.primary,
+                ),
+                title: const Text('فحص الإشعارات'),
+                subtitle: const Text('إرسال إشعار تجريبي للأجهزة'),
+                trailing: const Icon(Icons.chevron_left),
+                onTap: () => _sendTestNotification(context),
               ),
             ],
           );
         },
       ),
     );
+  }
+
+  Future<void> _sendTestNotification(BuildContext context) async {
+    // Show confirmation dialog first
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('فحص الإشعارات'),
+        content: const Text(
+          'سيتم إرسال إشعار تجريبي إلى جهازك. تأكد من السماح بالإشعارات في المتصفح.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('إرسال'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final supabase = Supabase.instance;
+      final user = supabase.client.auth.currentUser;
+
+      if (user == null) {
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('يرجى تسجيل الدخول أولاً'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final response = await supabase.client.functions.invoke(
+        'send-test-notification',
+        body: {'user_id': user.id},
+      );
+
+      if (context.mounted) {
+        Navigator.pop(context); // Dismiss loading
+
+        if (response.data['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                response.data['message'] ?? 'تم إرسال الإشعار التجريبي',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else if (response.data['message'] ==
+            'User has no active push subscription') {
+          // Guide user to subscribe
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('يرجى السماح بالإشعارات أولاً من المتصفح'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.data['message'] ?? 'فشل إرسال الإشعار'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Dismiss loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Widget _buildAboutSection(BuildContext context) {
@@ -377,7 +509,7 @@ class SettingsScreen extends StatelessWidget {
             builder: (context, setState) {
               return Column(
                 children: [
-                  SwitchListTile(
+                  PotatoSwitchListTile(
                     secondary: const Icon(Icons.download_for_offline_outlined),
                     title: const Text('تنزيل الامتحانات تلقائياً'),
                     subtitle: const Text('للحصول على تجربة سلسة بدون إنترنت'),

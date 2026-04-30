@@ -5,6 +5,7 @@ import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/services/potato_mode_service.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/widgets/potato_switch.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -103,7 +104,7 @@ class TeacherSettingsScreen extends StatelessWidget {
             ),
           ),
           const Divider(height: 1),
-          SwitchListTile(
+          PotatoSwitchListTile(
             secondary: const Icon(Icons.animation_outlined),
             title: const Text('تفعيل الحركة'),
             value: potato.animationsEnabled,

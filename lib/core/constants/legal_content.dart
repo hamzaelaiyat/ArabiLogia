@@ -1,6 +1,7 @@
 class LegalContent {
   LegalContent._();
 
+  static const String lastUpdated = 'أبريل 2026';
   static const String termsTitle = 'شروط وأحكام الاستخدام';
   static const String privacyTitle = 'سياسة الخصوصية وحماية البيانات';
 
@@ -76,6 +77,10 @@ class LegalContent {
 
   static const String aboutTitle = 'عن منصة عربيلوجيا';
   static const List<Map<String, String>> aboutSections = [
+    {
+      'title': 'الإصدار',
+      'content': 'الإصدار الحالي: v0.0.1b | تاريخ الإصدار: أبريل 2026'
+    },
     {
       'title': 'رؤيتنا',
       'content': 'تهدف منصة عربيلوجيا إلى تبسيط مادة اللغة العربية لطلاب المرحلة الثانوية وتحويلها من مادة صعبة المنال إلى رحلة ممتعة من التعلم والمنافسة، تحت إشراف الأستاذ وليد قطب.'

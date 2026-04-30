@@ -4,8 +4,10 @@ import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
+import 'package:arabilogia/features/dashboard/exams/models/exam_session.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
+import 'package:arabilogia/features/dashboard/exams/services/exam_session_service.dart';
 import 'package:arabilogia/providers/exam_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -25,9 +27,11 @@ class ExamInteractionScreen extends StatefulWidget {
   State<ExamInteractionScreen> createState() => _ExamInteractionScreenState();
 }
 
-class _ExamInteractionScreenState extends State<ExamInteractionScreen> {
+class _ExamInteractionScreenState extends State<ExamInteractionScreen>
+    with WidgetsBindingObserver {
   final ExamRepository _repository = ExamRepository();
   final ScoreRepository _scoreRepository = ScoreRepository();
+  final ExamSessionService _sessionService = ExamSessionService();
   Exam? _exam;
   bool _isLoading = true;
   int _currentQuestionIndex = 0;
@@ -35,15 +39,57 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen> {
   late ValueNotifier<int> _timerNotifier;
   bool _isSubmitting = false;
   bool _isFirstAttempt = true;
+  bool _isRestoredSession = false;
+  bool _wasInBackground = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _timerNotifier = ValueNotifier<int>(0);
     _loadExam();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused) {
+      _wasInBackground = true;
+      _saveSession();
+    } else if (state == AppLifecycleState.resumed) {
+      if (_wasInBackground && _exam != null) {
+        _checkTimeExpiredWhileAway();
+      }
+    }
+  }
+
+  Future<void> _saveSession() async {
+    if (_exam == null) return;
+    final session = ExamSession(
+      examId: widget.examId,
+      examTitle: _exam!.title,
+      durationMinutes: _exam!.durationMinutes ?? 30,
+      startTimestamp:
+          DateTime.now().millisecondsSinceEpoch -
+          ((_exam!.durationMinutes ?? 30) * 60 * 1000 -
+              _timerNotifier.value * 1000),
+      selectedAnswers: Map.from(_selectedAnswers),
+    );
+    await _sessionService.saveSession(session);
+  }
+
+  void _checkTimeExpiredWhileAway() {
+    final remaining = _timerNotifier.value;
+    if (remaining <= 0) {
+      _submitExam();
+    }
+    _wasInBackground = false;
+  }
+
   Future<void> _loadExam() async {
+    // First check for saved session
+    final savedSession = await _sessionService.getSession();
+
     // Load exam based on subject ID and exam ID
     final exam = await _repository.loadExamById(
       widget.subjectId,
@@ -56,18 +102,44 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen> {
       if (mounted) {
         context.read<ExamProvider>().startExam();
         final localScores = await _scoreRepository.getLocalScores();
-        setState(() {
-          _isFirstAttempt = !localScores.containsKey(widget.examId);
-          // Shuffle questions and their options
-          _exam = exam.copyWith(
-            questions: (List<Question>.from(
-              exam.questions,
-            )..shuffle()).map((q) => q.shuffled()).toList(),
-          );
-          _timerNotifier.value = (exam.durationMinutes ?? 30) * 60;
-          _isLoading = false;
-        });
-      }
+
+        // Shuffle questions (but preserve order if restoring session)
+        if (savedSession != null && savedSession.examId == widget.examId) {
+          // This is a restored session - keep original order and original question objects
+          _isRestoredSession = true;
+          setState(() {
+            _isFirstAttempt = !localScores.containsKey(widget.examId);
+            _exam =
+                exam; // Use original exam directly to preserve question/option object references
+
+            // Restore session if available
+            _selectedAnswers.addAll(savedSession.selectedAnswers);
+            _timerNotifier.value = savedSession.getRemainingSeconds();
+            _isLoading = false;
+          });
+
+          // Clear saved session since we've restored it
+          await _sessionService.clearSession();
+        } else {
+          final shuffledQuestions = (List<Question>.from(
+            exam.questions,
+          )..shuffle()).map((q) => q.shuffled()).toList();
+
+          setState(() {
+            _isFirstAttempt = !localScores.containsKey(widget.examId);
+            _exam = exam.copyWith(questions: shuffledQuestions);
+
+            // Restore session if available
+            if (savedSession != null && savedSession.examId == widget.examId) {
+              _selectedAnswers.addAll(savedSession.selectedAnswers);
+              _timerNotifier.value = savedSession.getRemainingSeconds();
+            } else {
+              _timerNotifier.value = (exam.durationMinutes ?? 30) * 60;
+            }
+            _isLoading = false;
+          });
+        }
+      } // end if (mounted)
     } else {
       // Fallback or error state
       context.pop();
@@ -125,6 +197,9 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen> {
     }
 
     if (!mounted) return;
+
+    // Clear saved session since exam completed
+    await _sessionService.clearSession();
 
     // End exam state before navigating
     context.read<ExamProvider>().endExam();
@@ -192,6 +267,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timerNotifier.dispose();
     super.dispose();
   }
@@ -338,6 +414,8 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen> {
                                 _selectedAnswers[_currentQuestionIndex] =
                                     option.id;
                               });
+                              // Save session on each answer change
+                              _saveSession();
                             },
                             borderRadius: AppTokens.radiusLgAll,
                             child: Container(
@@ -498,13 +576,24 @@ class ExamTimer extends StatefulWidget {
   State<ExamTimer> createState() => _ExamTimerState();
 }
 
-class _ExamTimerState extends State<ExamTimer> {
+class _ExamTimerState extends State<ExamTimer> with WidgetsBindingObserver {
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _startTimer();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused) {
+      _timer?.cancel(); // PAUSE timer when app goes to background
+    } else if (state == AppLifecycleState.resumed) {
+      _startTimer(); // RESTART timer when app resumes
+    }
   }
 
   void _startTimer() {

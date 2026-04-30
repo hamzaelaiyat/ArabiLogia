@@ -41,6 +41,7 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
   final _passwordController = TextEditingController();
   bool _isSubmitted = false;
   bool _obscurePassword = true;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -53,6 +54,8 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
   Future<void> _handleReset() async {
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _errorMessage = null);
+
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.resetPassword(
       _emailController.text.trim(),
@@ -60,32 +63,56 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
 
     if (success && mounted) {
       setState(() => _isSubmitted = true);
+    } else if (mounted) {
+      setState(() => _errorMessage = 'فشل في إرسال رابط إعادة التعيين. يرجى التحقق من البريد الإلكتروني.');
     }
   }
 
   Future<void> _handleVerifyAndReset() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final authProvider = context.read<AuthProvider>();
-    
-    // Step 1: Verify OTP
-    final verified = await authProvider.verifyResetCode(
-      _emailController.text.trim(),
-      _otpController.text.trim(),
-    );
+    setState(() => _errorMessage = null);
 
-    if (verified && mounted) {
-      // Step 2: Update Password
-      final reset = await authProvider.updatePassword(
-        _passwordController.text,
+    final authProvider = context.read<AuthProvider>();
+
+    try {
+      // Step 1: Verify OTP
+      final verified = await authProvider.verifyResetCode(
+        _emailController.text.trim(),
+        _otpController.text.trim(),
       );
 
-      if (reset && mounted) {
+      if (!verified) {
+        setState(
+          () => _errorMessage = 'رمز التفعيل غير صحيح. يرجى المحاولة مرة أخرى.',
+        );
+        return;
+      }
+
+      if (!mounted) return;
+
+      // Step 2: Update Password
+      final reset = await authProvider.updatePassword(_passwordController.text);
+
+      if (!reset) {
+        setState(
+          () => _errorMessage =
+              'فشل في تغيير كلمة المرور. يرجى المحاولة مرة أخرى.',
+        );
+        return;
+      }
+
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تم تغيير كلمة المرور بنجاح')),
         );
         Navigator.of(context).pop();
       }
+    } catch (e) {
+      setState(
+        () => _errorMessage =
+            'حدث خطأ في الاتصال. يرجى التحقق من الاتصال بالانترنت والمحاولة مرة أخرى.',
+      );
     }
   }
 
@@ -179,8 +206,10 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
-                  icon: Icon(Icons.close,
-                      color: AppColors.authHeaderColor(context)),
+                  icon: Icon(
+                    Icons.close,
+                    color: AppColors.authHeaderColor(context),
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
@@ -194,9 +223,9 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
             Text(
               AppStrings.forgotPassword,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.authHeaderColor(context),
-                  ),
+                fontWeight: FontWeight.bold,
+                color: AppColors.authHeaderColor(context),
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppTokens.spacing8),
@@ -248,6 +277,24 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                 },
               ),
               const SizedBox(height: AppTokens.spacing16),
+              if (_errorMessage != null)
+                Container(
+                  padding: const EdgeInsets.all(AppTokens.spacing12),
+                  margin: const EdgeInsets.only(bottom: AppTokens.spacing12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD32F2F).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+                    border: Border.all(color: const Color(0xFFD32F2F)),
+                  ),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(
+                      color: Color(0xFFD32F2F),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               TextFormField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -267,7 +314,8 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                   ),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'يرجى إدخال كلمة المرور';
+                  if (value == null || value.isEmpty)
+                    return 'يرجى إدخال كلمة المرور';
                   if (value.length < 6) return 'يجب أن تكون 6 أحرف على الأقل';
                   return null;
                 },
@@ -296,7 +344,9 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
           children: [
             Container(
               width: double.infinity,
-              height: AppTokens.buttonHeightMd,
+              height: AppTokens.isMobile(context)
+                  ? AppTokens.buttonHeightLg
+                  : AppTokens.buttonHeightMd,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFFEB8A00), Color(0xFFFFA726)],

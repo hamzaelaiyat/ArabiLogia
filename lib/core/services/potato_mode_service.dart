@@ -36,6 +36,7 @@ class DeviceSpec {
 class PotatoModeConfig {
   final PotatoLevel level;
   final bool animationsEnabled;
+  final bool transitionsEnabled;
   final bool lazyLoadingEnabled;
   final bool fancyUIAEnabled;
   final int maxListItems;
@@ -49,6 +50,7 @@ class PotatoModeConfig {
   const PotatoModeConfig({
     required this.level,
     this.animationsEnabled = true,
+    this.transitionsEnabled = true,
     this.lazyLoadingEnabled = true,
     this.fancyUIAEnabled = true,
     this.maxListItems = 50,
@@ -62,7 +64,8 @@ class PotatoModeConfig {
 
   static const potatoOff = PotatoModeConfig(
     level: PotatoLevel.off,
-    animationsEnabled: true,
+    animationsEnabled: false,
+    transitionsEnabled: true,
     lazyLoadingEnabled: true,
     fancyUIAEnabled: true,
     maxListItems: 100,
@@ -77,6 +80,7 @@ class PotatoModeConfig {
   static const potatoSweet = PotatoModeConfig(
     level: PotatoLevel.sweet,
     animationsEnabled: false,
+    transitionsEnabled: false,
     lazyLoadingEnabled: true,
     fancyUIAEnabled: false,
     maxListItems: 30,
@@ -91,6 +95,7 @@ class PotatoModeConfig {
   static const potatoTiny = PotatoModeConfig(
     level: PotatoLevel.tiny,
     animationsEnabled: false,
+    transitionsEnabled: false,
     lazyLoadingEnabled: true,
     fancyUIAEnabled: false,
     maxListItems: 20,

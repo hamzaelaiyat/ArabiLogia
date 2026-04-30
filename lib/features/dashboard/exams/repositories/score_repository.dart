@@ -5,6 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class ScoreRepository {
+  static final ScoreRepository _instance = ScoreRepository._internal();
+  factory ScoreRepository() => _instance;
+  ScoreRepository._internal();
+
   final _supabase = Supabase.instance.client;
 
   static const String _scoresCacheKey = 'exam_scores_cache';
@@ -80,7 +84,7 @@ class ScoreRepository {
     return controller.stream;
   }
 
-  Future<void> submitScore({
+  Future<bool> submitScore({
     required String examId,
     required String subject,
     required double score,
@@ -90,7 +94,7 @@ class ScoreRepository {
     final user = _supabase.auth.currentUser;
     if (user == null) {
       debugPrint('submitScore: No user logged in, cannot submit');
-      return;
+      return false;
     }
 
     debugPrint(
@@ -112,6 +116,7 @@ class ScoreRepository {
 
       final result = await _supabase.from('exam_results').insert(data).select();
       debugPrint('submitScore: Success, result: $result');
+      return true;
     } catch (e) {
       debugPrint('Error submitting score to server: $e');
       try {
@@ -123,8 +128,10 @@ class ScoreRepository {
         debugPrint('submitScore: Trying minimal insert: $minimalData');
         await _supabase.from('exam_results').insert(minimalData);
         debugPrint('submitScore: Minimal insert success');
+        return true;
       } catch (e2) {
         debugPrint('Error: $e2');
+        return false;
       }
     }
   }

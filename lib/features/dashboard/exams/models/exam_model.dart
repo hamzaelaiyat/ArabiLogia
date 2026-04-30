@@ -296,6 +296,14 @@ class Option {
     );
   }
 
+  Option copyWith({String? id, String? text, bool? isCorrect}) {
+    return Option(
+      id: id ?? this.id,
+      text: text ?? this.text,
+      isCorrect: isCorrect ?? this.isCorrect,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {'id': id, 'text': text, 'isCorrect': isCorrect};
   }

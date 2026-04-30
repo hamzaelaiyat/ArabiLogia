@@ -31,6 +31,21 @@
 
   <title>منصة عربيلوجيا</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- OneSignal Push Notifications -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js" async></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(function(OneSignal) {
+      OneSignal.init({
+        appId: "6a04365b-1612-42a7-9fd1-d8e430aea400",
+        serviceWorkerPath: "OneSignalSDKWorker.js",
+        notifyButton: {
+          enable: false // Hide the subscription bell for cleaner UX
+        }
+      });
+    });
+  </script>
 </head>
 <body>
   <!--

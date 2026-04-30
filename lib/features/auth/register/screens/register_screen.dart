@@ -289,7 +289,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SizedBox(height: AppTokens.spacing24),
           SizedBox(
             width: double.infinity,
-            height: AppTokens.buttonHeightMd,
+            height: AppTokens.isMobile(context)
+                ? AppTokens.buttonHeightLg
+                : AppTokens.buttonHeightMd,
             child: ElevatedButton(
               onPressed: authProvider.state.isLoading
                   ? null

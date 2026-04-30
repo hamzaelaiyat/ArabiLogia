@@ -47,22 +47,32 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
     setState(() => _isSharing = true);
 
     try {
-      RenderRepaintBoundary? boundary = 
-          _shareKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      
+      RenderRepaintBoundary? boundary =
+          _shareKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+
       if (boundary == null) return;
 
       ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      Uint8List pngBytes = byteData!.buffer.asUint8List();
+      ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      if (byteData == null) {
+        debugPrint('Failed to convert image to byte data');
+        return;
+      }
+      Uint8List pngBytes = byteData.buffer.asUint8List();
 
       final directory = await getTemporaryDirectory();
-      final imagePath = await File('${directory.path}/score_share.png').create();
+      final imagePath = await File(
+        '${directory.path}/score_share.png',
+      ).create();
       await imagePath.writeAsBytes(pngBytes);
 
       await Share.shareXFiles(
         [XFile(imagePath.path)],
-        text: 'لقد حصلت على ${widget.score}% في اختبار ${widget.exam.title} على تطبيق عربيلوجيا! 🎉',
+        text:
+            'لقد حصلت على ${widget.score}% في اختبار ${widget.exam.title} على تطبيق عربيلوجيا! 🎉',
       );
     } catch (e) {
       debugPrint('Error sharing: $e');
@@ -76,15 +86,22 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
     final isPassed = widget.score >= 50;
     final authProvider = context.read<AuthProvider>();
     final userMetadata = authProvider.state.user?.userMetadata;
-    final studentName = userMetadata?['full_name'] ?? userMetadata?['username'] ?? 'طالب عربيلوجيا';
+    final studentName =
+        userMetadata?['full_name'] ??
+        userMetadata?['username'] ??
+        'طالب عربيلوجيا';
     final gradeRaw = userMetadata?['grade'];
     final gradeText = _getGradeText(gradeRaw);
-    
+
     final wrongAnswerIndices = [];
     for (int i = 0; i < widget.exam.questions.length; i++) {
       final question = widget.exam.questions[i];
       final selectedId = widget.userAnswers[i];
-      final correctId = question.options.firstWhere((o) => o.isCorrect).id;
+      final correctOption = question.options.cast<Option?>().firstWhere(
+        (o) => o?.isCorrect == true,
+        orElse: () => null,
+      );
+      final correctId = correctOption?.id;
       if (selectedId != correctId) {
         wrongAnswerIndices.add(i);
       }
@@ -103,19 +120,32 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: AppTokens.radiusMdAll,
                     ),
-                    child: const Text('وضع التدريب', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'وضع التدريب',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ),
             IconButton(
-              icon: _isSharing 
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
-                : const Icon(Icons.share_outlined),
+              icon: _isSharing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.share_outlined),
               onPressed: _shareResult,
               tooltip: 'تحميل ومشاركة النتيجة',
             ),
@@ -123,7 +153,10 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
         ),
         body: SingleChildScrollView(
           padding: EdgeInsets.only(
-            top: MediaQuery.paddingOf(context).top + kToolbarHeight + AppTokens.spacing16,
+            top:
+                MediaQuery.paddingOf(context).top +
+                kToolbarHeight +
+                AppTokens.spacing16,
             left: AppTokens.spacing16,
             right: AppTokens.spacing16,
             bottom: AppTokens.spacing16,
@@ -132,23 +165,28 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             children: [
               _buildScoreSummary(context, isPassed),
               const SizedBox(height: AppTokens.spacing24),
-              
+
               _buildStatsRow(context),
               const SizedBox(height: AppTokens.spacing32),
-              
+
               if (wrongAnswerIndices.isNotEmpty) ...[
                 _buildReviewHeader(context),
                 const SizedBox(height: AppTokens.spacing16),
-                ...wrongAnswerIndices.map((index) => _buildQuestionReview(context, index)),
+                ...wrongAnswerIndices.map(
+                  (index) => _buildQuestionReview(context, index),
+                ),
               ] else if (widget.score == 100) ...[
                 const Icon(Icons.stars, color: AppColors.primary, size: 48),
                 const SizedBox(height: 16),
-                const Text('أحسنت! جميع إجاباتك كانت صحيحة.', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'أحسنت! جميع إجاباتك كانت صحيحة.',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ],
-              
+
               const SizedBox(height: AppTokens.spacing32),
               _buildActionButtons(context),
-              
+
               // Share Card (Hidden for capture)
               Offstage(
                 offstage: true,
@@ -176,10 +214,14 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
     if (grade == null) return 'طالب عربيلوجيا';
     final g = grade is int ? grade : int.tryParse(grade.toString()) ?? 0;
     switch (g) {
-      case 10: return 'الأولى باكالوريا';
-      case 11: return 'الثانية ثانوي';
-      case 12: return 'الثالثة ثانوي';
-      default: return 'طالب عربيلوجيا';
+      case 10:
+        return 'الأولى باكالوريا';
+      case 11:
+        return 'الثانية ثانوي';
+      case 12:
+        return 'الثالثة ثانوي';
+      default:
+        return 'طالب عربيلوجيا';
     }
   }
 
@@ -204,7 +246,9 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                   value: widget.score / 100,
                   strokeWidth: 10,
                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppColors.primary,
+                  ),
                 ),
               ),
               Column(
@@ -212,16 +256,24 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                 children: [
                   Text(
                     '${widget.score}%',
-                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const Text('الدرجة النهائية', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                  const Text(
+                    'الدرجة النهائية',
+                    style: TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 24),
           Text(
-            isPassed ? 'تهانينا! لقد اجتزت الاختبار' : 'حاول مرة أخرى لتحسين مستواك',
+            isPassed
+                ? 'تهانينا! لقد اجتزت الاختبار'
+                : 'حاول مرة أخرى لتحسين مستواك',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ],
@@ -232,32 +284,59 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
   Widget _buildStatsRow(BuildContext context) {
     return Row(
       children: [
-        _buildStatCard(context, 'الأسئلة', '${widget.exam.questions.length}', Icons.quiz_outlined),
+        _buildStatCard(
+          context,
+          'الأسئلة',
+          '${widget.exam.questions.length}',
+          Icons.quiz_outlined,
+        ),
         const SizedBox(width: 8),
-        _buildStatCard(context, 'الصحيحة', '${widget.correctCount}', Icons.check_circle_outline),
+        _buildStatCard(
+          context,
+          'الصحيحة',
+          '${widget.correctCount}',
+          Icons.check_circle_outline,
+        ),
         const SizedBox(width: 8),
         _buildStatCard(context, 'الدقة', '${widget.accuracy}%', Icons.percent),
         const SizedBox(width: 8),
-        _buildStatCard(context, 'المكافأة', '+${widget.speedBonus}', Icons.bolt, color: Colors.orange),
+        _buildStatCard(
+          context,
+          'المكافأة',
+          '+${widget.speedBonus}',
+          Icons.bolt,
+          color: Colors.orange,
+        ),
       ],
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, {Color? color}) {
+  Widget _buildStatCard(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon, {
+    Color? color,
+  }) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: AppColors.surface(context),
           borderRadius: AppTokens.radiusMdAll,
-          border: Border.all(color: (color ?? AppColors.primary).withValues(alpha: 0.1)),
+          border: Border.all(
+            color: (color ?? AppColors.primary).withValues(alpha: 0.1),
+          ),
         ),
         child: Column(
           children: [
             Icon(icon, size: 20, color: color ?? AppColors.primary),
             const SizedBox(height: 4),
             Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
+            ),
           ],
         ),
       ),
@@ -267,9 +346,16 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
   Widget _buildReviewHeader(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.analytics_outlined, color: AppColors.primary, size: 20),
+        const Icon(
+          Icons.analytics_outlined,
+          color: AppColors.primary,
+          size: 20,
+        ),
         const SizedBox(width: 8),
-        const Text('مراجعة الأخطاء', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text(
+          'مراجعة الأخطاء',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         const Spacer(),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -277,7 +363,10 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             color: AppColors.error.withValues(alpha: 0.1),
             borderRadius: AppTokens.radiusFullAll,
           ),
-          child: const Text('أخطاء فقط', style: TextStyle(color: AppColors.error, fontSize: 12)),
+          child: const Text(
+            'أخطاء فقط',
+            style: TextStyle(color: AppColors.error, fontSize: 12),
+          ),
         ),
       ],
     );
@@ -286,8 +375,14 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
   Widget _buildQuestionReview(BuildContext context, int index) {
     final question = widget.exam.questions[index];
     final selectedId = widget.userAnswers[index];
-    final correctOption = question.options.firstWhere((o) => o.isCorrect);
-    
+    final correctOption = question.options.cast<Option?>().firstWhere(
+      (o) => o?.isCorrect == true,
+      orElse: () => null,
+    );
+    if (correctOption == null) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -303,35 +398,64 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             children: [
               const Icon(Icons.error_outline, size: 16, color: AppColors.error),
               const SizedBox(width: 8),
-              Text('سؤال رقم ${index + 1}', style: const TextStyle(fontSize: 12, color: AppColors.error)),
+              Text(
+                'سؤال رقم ${index + 1}',
+                style: const TextStyle(fontSize: 12, color: AppColors.error),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(question.text, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            question.text,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
-          _buildAnswerBox(context, 'إجابتك:', 
-              selectedId == null ? 'لم تجب' : question.options.firstWhere((o) => o.id == selectedId).text, 
-              false),
+          _buildAnswerBox(
+            context,
+            'إجابتك:',
+            selectedId == null
+                ? 'لم تجب'
+                : question.options.firstWhere((o) => o.id == selectedId).text,
+            false,
+          ),
           const SizedBox(height: 8),
-          _buildAnswerBox(context, 'الإجابة الصحيحة:', correctOption.text, true),
+          _buildAnswerBox(
+            context,
+            'الإجابة الصحيحة:',
+            correctOption.text,
+            true,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAnswerBox(BuildContext context, String label, String text, bool isCorrect) {
+  Widget _buildAnswerBox(
+    BuildContext context,
+    String label,
+    String text,
+    bool isCorrect,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: 0.05),
+        color: (isCorrect ? AppColors.success : AppColors.error).withValues(
+          alpha: 0.05,
+        ),
         borderRadius: AppTokens.radiusMdAll,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-          Text(text, style: TextStyle(fontWeight: FontWeight.w500, color: isCorrect ? AppColors.success : AppColors.error)),
+          Text(
+            text,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: isCorrect ? AppColors.success : AppColors.error,
+            ),
+          ),
         ],
       ),
     );
@@ -350,9 +474,9 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
         Expanded(
           child: ElevatedButton(
             onPressed: () => context.pushReplacementNamed(
-              'exam-session',
+              'exam-interaction',
               pathParameters: {
-                'examId': widget.exam.id,
+                'id': widget.exam.id,
                 'subjectId': widget.exam.subjectId,
                 'subjectName': widget.exam.subject,
               },

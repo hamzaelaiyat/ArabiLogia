@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
+import 'package:arabilogia/features/dashboard/exams/services/exam_session_service.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
@@ -27,6 +28,7 @@ class ExamDetailsScreen extends StatefulWidget {
 
 class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
   final ExamRepository _repository = ExamRepository();
+  final ExamSessionService _sessionService = ExamSessionService();
   Exam? _exam;
   bool _isLoading = true;
 
@@ -293,15 +295,75 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
     final potato = context.watch<PotatoModeProvider>();
     final hasBlur = potato.blurEffectsEnabled;
 
-    final button = ElevatedButton(
-      onPressed: () => context.pushNamed(
+    Future<void> startExam() async {
+      // Check for in-progress exam
+      final savedSession = await _sessionService.getSession();
+
+      if (savedSession != null && savedSession.examId == widget.examId) {
+        if (!context.mounted) return;
+
+        final remainingSeconds = savedSession.getRemainingSeconds();
+        final remainingTime = _sessionService.formatRemainingTime(
+          remainingSeconds,
+        );
+
+        final shouldResume = await showDialog<bool>(
+          context: context,
+          builder: (context) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              title: const Text('امتحان غير مكتمل'),
+              content: Text(
+                'لديك امتحان لم تكمله. هل تريد المتابعة؟\nالوقت المتبقي: $remainingTime',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('بدء جديد'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: TextButton.styleFrom(
+                    backgroundColor: category.color,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('متابعة'),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        if (shouldResume == true) {
+          if (!context.mounted) return;
+          context.pushNamed(
+            'exam-interaction',
+            pathParameters: {'id': widget.examId},
+            extra: {
+              'subjectId': widget.subjectId,
+              'subjectName': widget.subjectName,
+            },
+          );
+          return;
+        } else {
+          // Clear old session and start fresh
+          await _sessionService.clearSession();
+        }
+      }
+
+      if (!context.mounted) return;
+      context.pushNamed(
         'exam-interaction',
         pathParameters: {'id': widget.examId},
         extra: {
           'subjectId': widget.subjectId,
           'subjectName': widget.subjectName,
         },
-      ),
+      );
+    }
+
+    final button = ElevatedButton(
+      onPressed: startExam,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size(double.infinity, 56),
         backgroundColor: category.color,

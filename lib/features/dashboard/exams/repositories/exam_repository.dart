@@ -49,8 +49,10 @@ class ExamRepository {
     final prefs = await SharedPreferences.getInstance();
     final autoDownload = prefs.getBool('auto_download_exams') ?? true;
 
+    // Get student grade from metadata (10, 11, 12) and map to exam grade (1, 2, 3)
     final user = _supabase.auth.currentUser;
-    final userGrade = user?.userMetadata?['grade'] as int? ?? 0;
+    final studentGradeRaw = user?.userMetadata?['grade'] as int? ?? 10;
+    final examGrade = studentGradeRaw - 9; // 10→1, 11→2, 12→3
 
     // 1. Load Remote Exams from Supabase (filtered by grade)
     final Set<String> remoteExamIds = {};
@@ -59,13 +61,15 @@ class ExamRepository {
           .from('exams')
           .select()
           .eq('subject_id', subjectId)
-          .or(
-            'grade.eq.0,grade.eq.$userGrade',
-          ); // Show "All" or match student grade
+          .eq('grade', examGrade);
 
       for (final data in remoteData) {
         final examData = data['data'] as Map<String, dynamic>;
         final exam = Exam.fromMinifiedJson(examData);
+
+        // Only show published exams to students
+        if (!exam.isPublished) continue;
+
         remoteExamIds.add(exam.id);
 
         // Cache if auto-download is enabled
@@ -87,8 +91,9 @@ class ExamRepository {
         if (cachedJson != null) {
           final data = json.decode(cachedJson);
           final exam = Exam.fromMinifiedJson(data);
-          if (exam.subjectId == subjectId &&
-              (exam.grade == 0 || exam.grade == userGrade)) {
+          // Only show published exams matching student's grade
+          if (!exam.isPublished) continue;
+          if (exam.subjectId == subjectId && exam.grade == examGrade) {
             remoteExamIds.add(exam.id);
             exams.add(_processExam(exam, localScores, isRemote: true));
           }

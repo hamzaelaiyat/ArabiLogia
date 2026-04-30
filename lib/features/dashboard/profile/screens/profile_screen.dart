@@ -25,8 +25,11 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
   final ScoreRepository _scoreRepository = ScoreRepository();
   Map<String, dynamic> _stats = {
     'exams_count': 0,
+    'exams_completed': 0, // fallback
     'avg_score': 0,
+    'average_score': 0, // fallback
     'total_points': 0,
+    'total_score': 0, // fallback
     'rank': 0,
     'last_exam': null,
   };
@@ -415,6 +418,23 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
   }
 
   Widget _buildStatsGrid(BuildContext context, bool shadowsEnabled) {
+    // Use fallback keys for compatibility with different backend responses
+    final examsCompleted =
+        _stats['exams_completed'] ??
+        _stats['exams_count'] ??
+        _stats['total_exams'] ??
+        0;
+    final avgScore =
+        _stats['avg_score'] ??
+        _stats['average_score'] ??
+        _stats['average'] ??
+        0;
+    final totalScore =
+        _stats['total_score'] ??
+        _stats['total_points'] ??
+        _stats['points'] ??
+        0;
+
     return Container(
       padding: const EdgeInsets.all(AppTokens.spacing24),
       decoration: BoxDecoration(
@@ -435,21 +455,21 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
         children: [
           _buildStatItem(
             context,
-            '${_stats['exams_completed'] ?? 0}',
+            '$examsCompleted',
             'امتحانات',
             Icons.assignment_outlined,
           ),
           _buildStatDivider(),
           _buildStatItem(
             context,
-            '${((_stats['avg_score'] ?? 0) as num).toInt()}%',
+            '${((avgScore as num).toInt())}%',
             'المتوسط',
             Icons.analytics_outlined,
           ),
           _buildStatDivider(),
           _buildStatItem(
             context,
-            '${((_stats['total_score'] ?? 0) as num).toInt()}',
+            '${((totalScore as num).toInt())}',
             'نقاط',
             Icons.emoji_events_outlined,
           ),
