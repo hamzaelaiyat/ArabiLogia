@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
+import 'package:arabilogia/features/dashboard/exams/models/question_style.dart';
 import 'package:arabilogia/features/auth/widgets/glass_container.dart';
 import 'package:arabilogia/features/admin/widgets/question_card.dart';
 
 class QuestionListPanel extends StatelessWidget {
   final List<Question> questions;
+  final List<QuestionSettings> questionSettings;
   final List<Map<String, String>> passages;
   final String? Function(String?) getPassageValue;
   final String? Function(String?) getPassageContent;
@@ -15,10 +17,12 @@ class QuestionListPanel extends StatelessWidget {
   final VoidCallback onAddQuestion;
   final Function(int) onDeleteQuestion;
   final Function(int, Question) onUpdateQuestion;
+  final Function(int, QuestionSettings?) onUpdateSettings;
 
   const QuestionListPanel({
     super.key,
     required this.questions,
+    required this.questionSettings,
     required this.passages,
     required this.getPassageValue,
     required this.getPassageContent,
@@ -27,6 +31,7 @@ class QuestionListPanel extends StatelessWidget {
     required this.onAddQuestion,
     required this.onDeleteQuestion,
     required this.onUpdateQuestion,
+    required this.onUpdateSettings,
   });
 
   @override
@@ -102,6 +107,9 @@ class QuestionListPanel extends StatelessWidget {
                         ),
                         child: QuestionCard(
                           question: questions[index],
+                          settings: index < questionSettings.length
+                              ? questionSettings[index]
+                              : null,
                           index: index,
                           passages: passages,
                           getPassageValue: getPassageValue,
@@ -110,6 +118,7 @@ class QuestionListPanel extends StatelessWidget {
                           isMobile: isMobile,
                           onDelete: () => onDeleteQuestion(index),
                           onUpdate: (q) => onUpdateQuestion(index, q),
+                          onSettingsUpdate: (s) => onUpdateSettings(index, s),
                         ),
                       );
                     },

@@ -42,8 +42,13 @@ class AuthProvider extends ChangeNotifier {
   AuthState get state => _state;
 
   AuthProvider() {
-    if (SupabaseConfig.isConfigured) {
+    try {
       _auth = Supabase.instance.client.auth;
+    } catch (e) {
+      // Fallback for when Supabase is not initialized yet
+      debugPrint('Supabase not initialized: $e');
+    }
+    if (SupabaseConfig.isConfigured) {
       _init();
     }
   }
@@ -83,7 +88,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       // Sync scores immediately after successful authentication
-      ScoreRepository().syncScoresWithSupabase();
+      await ScoreRepository().syncScoresWithSupabase();
 
       notifyListeners();
       return true;
@@ -126,7 +131,7 @@ class AuthProvider extends ChangeNotifier {
       _state = _state.copyWith(isLoading: false, user: response.user);
 
       // Sync scores after signup (especially if they had local scores as anonymous)
-      ScoreRepository().syncScoresWithSupabase();
+      await ScoreRepository().syncScoresWithSupabase();
 
       notifyListeners();
       return true;
@@ -246,7 +251,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       // Sync scores immediately after successful authentication
-      ScoreRepository().syncScoresWithSupabase();
+      await ScoreRepository().syncScoresWithSupabase();
 
       notifyListeners();
       return true;

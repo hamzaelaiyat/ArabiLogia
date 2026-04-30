@@ -102,38 +102,45 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
           ),
         ),
-        body: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            top:
-                MediaQuery.paddingOf(context).top +
-                kToolbarHeight +
-                AppTokens.spacing16,
-            left: AppTokens.isMobile(context)
-                ? AppTokens.dashboardPaddingMobile
-                : AppTokens.dashboardPadding,
-            right: AppTokens.isMobile(context)
-                ? AppTokens.dashboardPaddingMobile
-                : AppTokens.dashboardPadding,
-            bottom: AppTokens.isMobile(context)
-                ? AppTokens.dashboardPaddingMobile
-                : AppTokens.dashboardPadding,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildWelcomeCard(context, displayName, gradeText, rank),
-              const SizedBox(height: AppTokens.spacing16),
-              _buildQuickStats(
-                context,
-                rank: rank,
-                exams: _userStats?['exams_completed'] ?? 0,
-                avg: _userStats?['avg_score'] ?? 0,
-              ),
-              const SizedBox(height: AppTokens.spacing16),
-              _buildRecentActivity(context),
-              const SizedBox(height: AppTokens.spacing16),
-              _buildExamCategories(context),
-            ],
+        body: RefreshIndicator(
+          onRefresh: () async {
+            await _fetchRank();
+            await _fetchRecentActivity();
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.only(
+              top:
+                  MediaQuery.paddingOf(context).top +
+                  kToolbarHeight +
+                  AppTokens.spacing16,
+              left: AppTokens.isMobile(context)
+                  ? AppTokens.dashboardPaddingMobile
+                  : AppTokens.dashboardPadding,
+              right: AppTokens.isMobile(context)
+                  ? AppTokens.dashboardPaddingMobile
+                  : AppTokens.dashboardPadding,
+              bottom: AppTokens.isMobile(context)
+                  ? AppTokens.dashboardPaddingMobile
+                  : AppTokens.dashboardPadding,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildWelcomeCard(context, displayName, gradeText, rank),
+                const SizedBox(height: AppTokens.spacing16),
+                _buildQuickStats(
+                  context,
+                  rank: rank,
+                  exams: _userStats?['exams_completed'] ?? 0,
+                  avg: _userStats?['avg_score'] ?? 0,
+                ),
+                const SizedBox(height: AppTokens.spacing16),
+                _buildRecentActivity(context),
+                const SizedBox(height: AppTokens.spacing16),
+                _buildExamCategories(context),
+              ],
+            ),
           ),
         ),
       ),

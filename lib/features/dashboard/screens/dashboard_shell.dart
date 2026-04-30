@@ -58,30 +58,33 @@ class DashboardShell extends StatelessWidget {
   }
 
   void _showExitConfirmation(BuildContext context, int index) {
-    showDialog(
-      context: context,
-      builder: (context) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('هل أنت متأكد من الخروج؟'),
-          content: const Text(
-            'أنت حالياً في منتصف اختبار. إذا خرجت الآن، ستفقد جميع إجاباتك ولن يتم احتساب درجتك.',
+    final navigator = Navigator.of(context, rootNavigator: true);
+    navigator.push(
+      DialogRoute(
+        context: context,
+        builder: (dialogContext) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Text('هل أنت متأكد من الخروج؟'),
+            content: const Text(
+              'أنت حالياً في منتصف اختبار. إذا خرجت الآن، ستفقد جميع إجاباتك ولن يتم احتساب درجتك.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('إلغاء'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  context.read<ExamProvider>().endExam();
+                  _navigate(context, index);
+                },
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                child: const Text('خروج وإلغاء الاختبار'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('إلغاء'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                context.read<ExamProvider>().endExam();
-                _navigate(context, index);
-              },
-              style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              child: const Text('خروج وإلغاء الاختبار'),
-            ),
-          ],
         ),
       ),
     );
@@ -306,7 +309,7 @@ class DashboardShell extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.all(AppTokens.spacing8),
                     child: Text(
-                      'v1.0.0',
+                      'v0.0.1b',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.mutedColor(context),
                       ),

@@ -12,6 +12,24 @@
 .swiftpm/
 migrate_working_dir/
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# AI/Assistant artifacts
+AGENT.md
+CLAUDE.md
+.claude/
+.impeccable.md
+*.ai.md
+memory/
+.memory/
+.context/
+.tmp/
+.kilocode/
+.opencode/
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -32,6 +50,20 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+
+# Build outputs (APK, EXE, Linux binaries, installers)
+*.apk
+*.aab
+*.exe
+*.dll
+*.so
+*.tar.xz
+*.zip
+*.AppImage
+*.deb
+*.rpm
+/release/
+/dist/
 
 # Symbolication related
 app.*.symbols

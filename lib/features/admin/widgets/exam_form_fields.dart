@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/widgets/potato_switch.dart';
+import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
+import 'package:arabilogia/features/dashboard/exams/models/grade_metadata.dart';
 
-class ExamFormFields extends StatelessWidget {
+class ExamFormFields extends StatefulWidget {
   final String title;
   final String selectedCategoryId;
   final int selectedGrade;
@@ -29,6 +32,18 @@ class ExamFormFields extends StatelessWidget {
   });
 
   @override
+  State<ExamFormFields> createState() => _ExamFormFieldsState();
+}
+
+class _ExamFormFieldsState extends State<ExamFormFields> {
+  @override
+  void initState() {
+    super.initState();
+    CategoryMetadata.loadCategories();
+    GradeMetadata.loadGrades();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
@@ -42,7 +57,7 @@ class ExamFormFields extends StatelessWidget {
             Icons.title,
             isDark,
           ),
-          onChanged: onTitleChanged,
+          onChanged: widget.onTitleChanged,
         ),
         const SizedBox(height: AppTokens.spacing24),
         _label('الفرع'),
@@ -84,57 +99,31 @@ class ExamFormFields extends StatelessWidget {
   );
 
   Widget _buildCategoryDropdown(BuildContext context, bool isDark) {
-    final cats = [
-      'arabic',
-      'english',
-      'french',
-      'math',
-      'science',
-      'history',
-      'geography',
-      'art',
-      'music',
-      'religion',
-      'computer',
-    ];
-    final names = {
-      'arabic': 'اللغة العربية',
-      'english': 'الإنجليزية',
-      'french': 'الفرنسية',
-      'math': 'الرياضيات',
-      'science': 'العلوم',
-      'history': 'التاريخ',
-      'geography': 'الجغرافيا',
-      'art': 'الفنون',
-      'music': 'الموسيقى',
-      'religion': 'التربية الدينية',
-      'computer': 'الحاسب الآلي',
-    };
+    final categories = CategoryMetadata.categories;
     return DropdownButtonFormField<String>(
-      initialValue: selectedCategoryId,
+      value: selectedCategoryId,
       decoration: _decoration('اختر الفرع', Icons.category_outlined, isDark),
       dropdownColor: isDark ? AppColors.bgDark : Colors.white,
-      items: cats
-          .map((c) => DropdownMenuItem(value: c, child: Text(names[c] ?? c)))
+      items: categories
+          .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
           .toList(),
       onChanged: (v) {
-        if (v != null) onCategoryChanged(v);
+        if (v != null) widget.onCategoryChanged(v);
       },
     );
   }
 
   Widget _buildGradeDropdown(BuildContext context, bool isDark) {
+    final grades = GradeMetadata.grades;
     return DropdownButtonFormField<int>(
-      initialValue: selectedGrade,
+      value: selectedGrade,
       decoration: _decoration('اختر الصف', Icons.school_outlined, isDark),
       dropdownColor: isDark ? AppColors.bgDark : Colors.white,
-      items: const [
-        DropdownMenuItem(value: 1, child: Text('الأول الثانوي')),
-        DropdownMenuItem(value: 2, child: Text('الثاني الثانوي')),
-        DropdownMenuItem(value: 3, child: Text('الثالث الثانوي')),
-      ],
+      items: grades
+          .map((g) => DropdownMenuItem(value: g.id, child: Text(g.name)))
+          .toList(),
       onChanged: (v) {
-        if (v != null) onGradeChanged(v);
+        if (v != null) widget.onGradeChanged(v);
       },
     );
   }
@@ -146,10 +135,10 @@ class ExamFormFields extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _label('تفعيل المؤقت'),
-            Switch.adaptive(
+            PotatoSwitch(
               value: durationEnabled,
               activeTrackColor: AppColors.primary,
-              onChanged: onDurationToggle,
+              onChanged: widget.onDurationToggle,
             ),
           ],
         ),
@@ -165,7 +154,7 @@ class ExamFormFields extends StatelessWidget {
             ),
             onChanged: (v) {
               final p = int.tryParse(v);
-              if (p != null) onDurationChanged(p);
+              if (p != null) widget.onDurationChanged(p);
             },
           ),
         ],

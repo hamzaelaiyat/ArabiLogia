@@ -1,0 +1,28 @@
+# ============================================
+# ArabiLogia App Properties
+# ============================================
+
+# App Info
+FULLNAME: منصة عربيلوجيا
+NAME: عربيلوجيا
+
+# Admin
+ADMINNAME: وليد قطب
+
+# Grades
+FIRSTGRADE: 10
+SECONDGRADE: 11
+THIRDGRADE: 12
+FIRSTGRADENAME: الأول بكالوريا
+SECONDGRADENAME: الثاني ثانوي
+THIRDGRADENAME: الثالث ثانوي
+
+# Subjects
+SUBJECT_1: nahw|النحو
+SUBJECT_2: balagha|البلاغة
+SUBJECT_3: nusus|النصوص
+SUBJECT_4: qiraa|القراءة
+SUBJECT_5: qissa|القصة
+SUBJECT_6: adab|الأدب
+SUBJECT_7: shamil|شامل
+SUBJECT_8: nisf_shamil|نصف شامل

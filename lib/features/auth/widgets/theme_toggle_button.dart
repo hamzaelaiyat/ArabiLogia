@@ -47,19 +47,7 @@ class ThemeToggleButton extends StatelessWidget {
             themeProvider.setThemeMode(ThemeModeOption.system);
           }
 
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                _getThemeName(themeProvider.themeModeOption),
-                textAlign: TextAlign.center,
-              ),
-              duration: const Duration(seconds: 1),
-              behavior: SnackBarBehavior.floating,
-              width: 150,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            ),
-          );
+          // Snackbar removed - icon change provides sufficient visual feedback
         },
       ),
     );

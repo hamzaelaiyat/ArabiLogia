@@ -31,22 +31,25 @@ class RegistrationFooter extends StatelessWidget {
             TextButton(
               onPressed: isLoading ? null : onBack,
               style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppTokens.spacing8),
-              ),
-                child: Text(
-                  AppStrings.previous,
-                  style: TextStyle(
-                    color: AppColors.authSecondaryColor(context),
-                    fontWeight: FontWeight.w600,
-                  ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTokens.spacing8,
                 ),
+              ),
+              child: Text(
+                AppStrings.previous,
+                style: TextStyle(
+                  color: AppColors.authSecondaryColor(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             const SizedBox(width: AppTokens.spacing4),
           ],
           Expanded(
             child: Container(
-              height: AppTokens.buttonHeightMd,
+              height: AppTokens.isMobile(context)
+                  ? AppTokens.buttonHeightLg
+                  : AppTokens.buttonHeightMd,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFFEB8A00), Color(0xFFFFA726)],

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:uuid/uuid.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
+import 'package:arabilogia/features/dashboard/exams/models/question_style.dart';
 
 class QuestionCard extends StatelessWidget {
   final Question question;
+  final QuestionSettings? settings;
   final int index;
   final List<Map<String, String>> passages;
   final String? Function(String?) getPassageValue;
@@ -13,10 +17,12 @@ class QuestionCard extends StatelessWidget {
   final bool isMobile;
   final VoidCallback onDelete;
   final Function(Question) onUpdate;
+  final Function(QuestionSettings)? onSettingsUpdate;
 
   const QuestionCard({
     super.key,
     required this.question,
+    this.settings,
     required this.index,
     required this.passages,
     required this.getPassageValue,
@@ -25,6 +31,7 @@ class QuestionCard extends StatelessWidget {
     this.isMobile = false,
     required this.onDelete,
     required this.onUpdate,
+    this.onSettingsUpdate,
   });
 
   @override
@@ -107,7 +114,10 @@ class QuestionCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          ...List.generate(4, (optIndex) => _buildOptionRow(optIndex, isDark)),
+          ...List.generate(
+            4,
+            (optIndex) => _buildOptionRow(optIndex, isDark, context),
+          ),
         ],
       ),
     );
@@ -120,31 +130,12 @@ class QuestionCard extends StatelessWidget {
     required bool isDark,
     required Function(String) onChanged,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextFormField(
-          initialValue: value,
-          maxLines: 2,
-          style: const TextStyle(fontSize: 16),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-            filled: false,
-            border: UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 8),
-          ),
-          onChanged: onChanged,
-        ),
-      ],
+    // Use a key to force rebuild when value changes externally
+    return _QuestionInputWithToolbar(
+      key: ValueKey('question_input_${question.text.hashCode}'),
+      value: value,
+      hint: hint,
+      onChanged: onChanged,
     );
   }
 
@@ -211,7 +202,7 @@ class QuestionCard extends StatelessWidget {
     );
   }
 
-  Widget _buildOptionRow(int optIndex, bool isDark) {
+  Widget _buildOptionRow(int optIndex, bool isDark, BuildContext context) {
     final option = optIndex < question.options.length
         ? question.options[optIndex]
         : Option(id: 'o${optIndex + 1}', text: '', isCorrect: false);
@@ -264,20 +255,28 @@ class QuestionCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          // Underline input
+          // Underline input - RTL support
           Expanded(
             child: TextFormField(
               initialValue: option.text,
-              style: const TextStyle(fontSize: 14),
+              textDirection: TextDirection.rtl,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.foreground(context),
+              ),
               decoration: InputDecoration(
                 hintText: 'إجابة...',
-                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
+                hintStyle: TextStyle(
+                  color: AppColors.mutedColor(context),
+                  fontSize: 13,
+                ),
                 filled: false,
                 border: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+                  borderSide: BorderSide(color: AppColors.mutedColor(context)),
                 ),
                 enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+                  borderSide: BorderSide(color: AppColors.mutedColor(context)),
                 ),
                 focusedBorder: UnderlineInputBorder(
                   borderSide: BorderSide(
@@ -316,10 +315,244 @@ class QuestionCard extends StatelessWidget {
     List<Option>? options,
   }) {
     return Question(
-      id: id ?? q.text,
+      id: id ?? const Uuid().v4(),
       text: text ?? q.text,
       passage: passage ?? q.passage,
       options: options ?? q.options,
+    );
+  }
+}
+
+/// Stateful widget for question input with formatting toolbar
+/// Properly manages TextEditingController for RTL text handling
+class _QuestionInputWithToolbar extends StatefulWidget {
+  final String value;
+  final String hint;
+  final Function(String) onChanged;
+
+  const _QuestionInputWithToolbar({
+    super.key,
+    required this.value,
+    required this.hint,
+    required this.onChanged,
+  });
+
+  @override
+  State<_QuestionInputWithToolbar> createState() =>
+      _QuestionInputWithToolbarState();
+}
+
+class _QuestionInputWithToolbarState extends State<_QuestionInputWithToolbar> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value);
+  }
+
+  @override
+  void didUpdateWidget(covariant _QuestionInputWithToolbar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only update if value changed externally (not from our own edits)
+    if (widget.value != _controller.text && widget.value != oldWidget.value) {
+      final selection = _controller.selection;
+      _controller.text = widget.value;
+      // Try to restore cursor position if valid
+      if (selection.isValid && selection.end <= widget.value.length) {
+        _controller.selection = selection;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _wrapSelection(String prefix, String suffix) {
+    final selection = _controller.selection;
+    if (!selection.isValid || selection.start == selection.end) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('حدد النص المطلوب أولاً'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final text = _controller.text;
+    final selectedText = text.substring(selection.start, selection.end);
+    final newText =
+        text.substring(0, selection.start) +
+        prefix +
+        selectedText +
+        suffix +
+        text.substring(selection.end);
+
+    _controller.text = newText;
+    widget.onChanged(newText);
+
+    // Position cursor after the inserted text
+    _controller.selection = TextSelection.collapsed(
+      offset: selection.end + prefix.length + suffix.length,
+    );
+  }
+
+  void _applyColor(int colorIndex) {
+    _wrapSelection('{$colorIndex}', '{$colorIndex}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Formatting toolbar
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildToolbarButton(
+                icon: Icons.format_bold,
+                label: 'عريض',
+                onTap: () => _wrapSelection('**', '**'),
+              ),
+              const SizedBox(width: 8),
+              _buildToolbarButton(
+                icon: Icons.format_italic,
+                label: 'مائل',
+                onTap: () => _wrapSelection('*', '*'),
+              ),
+              const SizedBox(width: 8),
+              _buildColorPicker(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // RTL TextField
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: TextFormField(
+            controller: _controller,
+            maxLines: 3,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: AppTokens.fontSizeLg,
+              color: AppColors.foreground(context),
+              height: 1.4,
+            ),
+            decoration: InputDecoration(
+              hintText: widget.hint,
+              hintStyle: TextStyle(
+                color: AppColors.mutedColor(context),
+                fontSize: AppTokens.fontSizeLg,
+              ),
+              filled: false,
+              border: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.mutedColor(context)),
+              ),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.mutedColor(context)),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.primary, width: 2),
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+            ),
+            onChanged: widget.onChanged,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToolbarButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.mutedColor(context)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: AppColors.foreground(context)),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.foreground(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorPicker() {
+    return PopupMenuButton<int>(
+      offset: const Offset(0, 40),
+      tooltip: 'لون النص',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.mutedColor(context)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.palette, size: 16, color: AppColors.foreground(context)),
+            const SizedBox(width: 4),
+            Text(
+              'لون',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.foreground(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+      itemBuilder: (context) => List.generate(10, (index) {
+        return PopupMenuItem<int>(
+          value: index,
+          child: Row(
+            children: [
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: QuestionTextStyle.textColors[index],
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey.shade300, width: 1),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                QuestionTextStyle.colorNames[index],
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        );
+      }),
+      onSelected: _applyColor,
     );
   }
 }

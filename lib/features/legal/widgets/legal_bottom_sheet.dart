@@ -86,7 +86,7 @@ class LegalBottomSheet extends StatelessWidget {
                         const SizedBox(height: AppTokens.spacing16),
                         Center(
                           child: Text(
-                            'آخر تحديث: أبريل 2026',
+                            'آخر تحديث: ${LegalContent.lastUpdated}',
                             style: TextStyle(
                               color: AppColors.authLabelColor(context),
                               fontSize: AppTokens.fontSizeSm,

@@ -299,7 +299,24 @@ class _ExamResultsViewState extends State<ExamResultsView> {
         final category = CategoryMetadata.getById(subjectId);
         final subjectName = category?.name ?? exam['subject_id'] ?? 'غير محدد';
         final grade = exam['grade'] as int? ?? 0;
-        final gradeText = grade == 0 ? 'جميع الصفوف' : '$gradeث';
+        final gradeNames = [
+          '',
+          'الأول',
+          'الثاني',
+          'الثالث',
+          'الرابع',
+          'الخامس',
+          'السادس',
+          'السابع',
+          'الثامن',
+          'التاسع',
+          'العاشر',
+          'الحادي عشر',
+          'الثاني عشر',
+        ];
+        final gradeText = grade == 0
+            ? 'جميع الصفوف'
+            : 'صف ${gradeNames[grade.clamp(0, 12)]}';
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
@@ -415,7 +432,7 @@ class _ExamResultsViewState extends State<ExamResultsView> {
           title: Text(
             profile?['full_name'] ?? profile?['username'] ?? 'مستخدم مجهول',
           ),
-          subtitle: Text('الصف: $uiGradeث'),
+          subtitle: Text('الصف: ${uiGrade}ثانوي'),
           trailing: Text(
             intl.DateFormat(
               'MM/dd HH:mm',
@@ -446,7 +463,7 @@ class _ExamResultsViewState extends State<ExamResultsView> {
           title: Text(
             profile['full_name'] ?? profile['username'] ?? 'مستخدم مجهول',
           ),
-          subtitle: Text('الصف: $uiGradeث - @${profile['username']}'),
+          subtitle: Text('الصف: ${uiGrade}ثانوي - @${profile['username']}'),
         );
       },
     );

@@ -13,8 +13,8 @@ class AppColors {
   static const Color fgLight = Color(0xFF1A222B);
   static const Color fgDark = Color(0xFFEAEFF5);
   static const Color muted = Color(0xFF4D5660);
-  static const Color mutedLight = Color(0xFF4D5660);
   static const Color mutedDark = Color(0xFF91A0B1);
+  static const Color mutedLight = Color(0xFF6B7280);
 
   static const Color secondaryLight = Color(0xFFEDF2F8);
   static const Color secondaryDark = Color(0xFF212325);
@@ -48,7 +48,7 @@ class AppColors {
 
   static Color mutedColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.light
-        ? mutedLight
+        ? muted
         : mutedDark;
   }
 

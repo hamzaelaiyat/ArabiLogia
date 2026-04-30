@@ -5,7 +5,7 @@ import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/features/legal/widgets/legal_bottom_sheet.dart';
 
-class TermsAgreement extends StatelessWidget {
+class TermsAgreement extends StatefulWidget {
   final bool value;
   final ValueChanged<bool?> onChanged;
 
@@ -16,6 +16,30 @@ class TermsAgreement extends StatelessWidget {
   });
 
   @override
+  State<TermsAgreement> createState() => _TermsAgreementState();
+}
+
+class _TermsAgreementState extends State<TermsAgreement> {
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsRecognizer = TapGestureRecognizer()
+      ..onTap = () => LegalBottomSheet.showTerms(context);
+    _privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () => LegalBottomSheet.showPrivacy(context);
+  }
+
+  @override
+  void dispose() {
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Row(
       children: [
@@ -23,8 +47,8 @@ class TermsAgreement extends StatelessWidget {
           height: 24,
           width: 24,
           child: Checkbox(
-            value: value,
-            onChanged: onChanged,
+            value: widget.value,
+            onChanged: widget.onChanged,
             activeColor: const Color(0xFFEB8A00),
             side: BorderSide(color: AppColors.authLabelColor(context)),
             shape: RoundedRectangleBorder(
@@ -49,8 +73,7 @@ class TermsAgreement extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     decoration: TextDecoration.underline,
                   ),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = () => LegalBottomSheet.showTerms(context),
+                  recognizer: _termsRecognizer,
                 ),
                 const TextSpan(text: ' و '),
                 TextSpan(
@@ -60,8 +83,7 @@ class TermsAgreement extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     decoration: TextDecoration.underline,
                   ),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = () => LegalBottomSheet.showPrivacy(context),
+                  recognizer: _privacyRecognizer,
                 ),
               ],
             ),

@@ -45,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (role == 'admin' || role == 'teacher') {
         context.go(AppRoutes.teacherPanel);
       } else {
-        context.go('/home');
+        context.go(AppRoutes.home);
       }
     }
   }
@@ -244,7 +244,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Container(
                     width: double.infinity,
-                    height: AppTokens.buttonHeightMd,
+                    height: AppTokens.isMobile(context)
+                        ? AppTokens.buttonHeightLg
+                        : AppTokens.buttonHeightMd,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFFEB8A00), Color(0xFFFFA726)],

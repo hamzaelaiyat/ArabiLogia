@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
+import 'package:arabilogia/widgets/potato_switch.dart';
 
 class ExamSettingsPanel extends StatelessWidget {
   final String title;
@@ -22,6 +23,7 @@ class ExamSettingsPanel extends StatelessWidget {
   final VoidCallback onCancel;
   final VoidCallback onSaveDraft;
   final VoidCallback onPublish;
+  final VoidCallback onPreview;
 
   const ExamSettingsPanel({
     super.key,
@@ -43,6 +45,7 @@ class ExamSettingsPanel extends StatelessWidget {
     required this.onCancel,
     required this.onSaveDraft,
     required this.onPublish,
+    required this.onPreview,
   });
 
   @override
@@ -60,7 +63,12 @@ class ExamSettingsPanel extends StatelessWidget {
             children: [
               _buildHeader(context, isDark),
               const SizedBox(height: AppTokens.spacing24),
-              _buildSectionTitle('الإعدادات', Icons.settings_outlined, isDark),
+              _buildSectionTitle(
+                'الإعدادات',
+                Icons.settings_outlined,
+                context,
+                isDark,
+              ),
               const SizedBox(height: AppTokens.spacing32),
               _buildTitleField(context, isDark),
               const SizedBox(height: AppTokens.spacing24),
@@ -68,7 +76,7 @@ class ExamSettingsPanel extends StatelessWidget {
               const SizedBox(height: AppTokens.spacing24),
               _buildGradeField(context, isDark),
               const SizedBox(height: AppTokens.spacing24),
-              _buildDurationField(context),
+              _buildDurationField(context, isDark),
               const SizedBox(height: AppTokens.spacing32),
               _buildPassagesSection(context, isDark),
               const SizedBox(height: AppTokens.spacing32),
@@ -97,11 +105,22 @@ class ExamSettingsPanel extends StatelessWidget {
             color: AppColors.mutedColor(context),
           ),
         ),
+        const Spacer(),
+        IconButton(
+          onPressed: onPreview,
+          icon: const Icon(Icons.devices),
+          tooltip: 'معاينة',
+        ),
       ],
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon, bool isDark) {
+  Widget _buildSectionTitle(
+    String title,
+    IconData icon,
+    BuildContext context,
+    bool isDark,
+  ) {
     return Row(
       children: [
         Icon(icon, color: AppColors.primary),
@@ -112,7 +131,7 @@ class ExamSettingsPanel extends StatelessWidget {
             fontSize: AppTokens.fontSize2xl,
             fontWeight: FontWeight.bold,
             fontFamily: AppTokens.fontFamilyDisplay,
-            color: isDark ? Colors.white : Colors.black87,
+            color: AppColors.foreground(context),
           ),
         ),
       ],
@@ -143,6 +162,7 @@ class ExamSettingsPanel extends StatelessWidget {
             'أدخل عنوان الامتحان...',
             Icons.title,
             isDark,
+            context,
           ),
           onChanged: onTitleChanged,
         ),
@@ -161,6 +181,7 @@ class ExamSettingsPanel extends StatelessWidget {
             'اختر الفرع',
             Icons.category_outlined,
             isDark,
+            context,
           ),
           dropdownColor: isDark ? AppColors.bgDark : Colors.white,
           items: CategoryMetadata.categories
@@ -196,12 +217,13 @@ class ExamSettingsPanel extends StatelessWidget {
             'اختر الصف',
             Icons.school_outlined,
             isDark,
+            context,
           ),
           dropdownColor: isDark ? AppColors.bgDark : Colors.white,
           items: const [
-            DropdownMenuItem(value: 1, child: Text('الأول الثانوي')),
-            DropdownMenuItem(value: 2, child: Text('الثاني الثانوي')),
-            DropdownMenuItem(value: 3, child: Text('الثالث الثانوي')),
+            DropdownMenuItem(value: 1, child: Text('الأول الثانوية')),
+            DropdownMenuItem(value: 2, child: Text('الثاني الثانوية')),
+            DropdownMenuItem(value: 3, child: Text('الثالث الثانوية')),
           ],
           onChanged: (val) {
             if (val != null) onGradeChanged(val);
@@ -211,7 +233,7 @@ class ExamSettingsPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildDurationField(BuildContext context) {
+  Widget _buildDurationField(BuildContext context, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -219,7 +241,7 @@ class ExamSettingsPanel extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _buildFieldLabel('تفعيل المؤقت'),
-            Switch.adaptive(
+            PotatoSwitch(
               value: durationEnabled,
               activeColor: AppColors.primary,
               onChanged: onDurationToggle,
@@ -234,7 +256,8 @@ class ExamSettingsPanel extends StatelessWidget {
             decoration: _inputDecoration(
               'المدة بالدقائق',
               Icons.timer_outlined,
-              Theme.of(context).brightness == Brightness.dark,
+              isDark,
+              context,
             ),
             onChanged: (value) {
               final parsed = int.tryParse(value);
@@ -259,7 +282,7 @@ class ExamSettingsPanel extends StatelessWidget {
               style: TextStyle(
                 fontSize: AppTokens.fontSizeXl,
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black87,
+                color: AppColors.foreground(context),
               ),
             ),
             const Spacer(),
@@ -275,13 +298,9 @@ class ExamSettingsPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppTokens.spacing16),
             decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white10
-                  : Colors.black.withValues(alpha: 0.03),
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(AppTokens.radiusMd),
-              border: Border.all(
-                color: isDark ? Colors.white12 : Colors.black12,
-              ),
+              border: Border.all(color: AppColors.mutedColor(context)),
             ),
             child: Text(
               'لم تقم بإضافة مقروءات بعد.\nاضغط + لإضافة مقروء جديد.',
@@ -311,9 +330,9 @@ class ExamSettingsPanel extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.03),
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(AppTokens.radiusMd),
-        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+        border: Border.all(color: AppColors.mutedColor(context)),
       ),
       child: Row(
         children: [
@@ -323,9 +342,10 @@ class ExamSettingsPanel extends StatelessWidget {
               children: [
                 Text(
                   passage['title'] ?? 'بدون عنوان',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: AppTokens.fontSizeSm,
+                    color: AppColors.foreground(context),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -414,8 +434,8 @@ class ExamSettingsPanel extends StatelessWidget {
             icon: const Icon(Icons.save_outlined),
             label: Text(isPublished ? 'حفظ التعديلات' : 'حفظ كمسودة'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: isDark ? Colors.white : Colors.black87,
-              side: BorderSide(color: isDark ? Colors.white38 : Colors.black38),
+              foregroundColor: AppColors.foreground(context),
+              side: BorderSide(color: AppColors.mutedColor(context)),
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: AppTokens.radiusLgAll,
@@ -444,12 +464,17 @@ class ExamSettingsPanel extends StatelessWidget {
     );
   }
 
-  InputDecoration _inputDecoration(String hint, IconData icon, bool isDark) {
+  InputDecoration _inputDecoration(
+    String hint,
+    IconData icon,
+    bool isDark,
+    BuildContext context,
+  ) {
     return InputDecoration(
       hintText: hint,
       prefixIcon: Icon(icon, size: 20),
       filled: true,
-      fillColor: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.03),
+      fillColor: AppColors.surface(context),
       border: OutlineInputBorder(
         borderRadius: AppTokens.radiusMdAll,
         borderSide: BorderSide.none,
