@@ -50,6 +50,6 @@ run_interactive_config() {
         auto_bump_version
     fi
     
-    RELEASE_DATE=$(get_arabic_date)
+    RELEASE_DATE=$(get_version_date)
     info "Version: $VERSION, Date: $RELEASE_DATE"
 }

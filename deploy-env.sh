@@ -3,18 +3,25 @@
 # deploy-env.sh - Environment & Helpers
 # ============================================
 
+# Load .env if exists
+if [ -f "$(dirname "$0")/.env" ]; then
+    set -a; source "$(dirname "$0")/.env"; set +a
+fi
+
 # Config
 LOG_FILE="build/deploy.log"
 ERRORS=0
 WARNINGS=0
 VERSION=""
 RELEASE_DATE=""
+VERSION=""
 NOTES=""
 OUTPUT_DIR=""
 ANDROID_ARCHS=""
 LINUX_BUILDS=""
 PUBLISH="no"
 AUTO_BUMP="no"
+USE_AI="yes"
 FLUTTER=""
 
 # Theme
@@ -59,15 +66,22 @@ get_arabic_date() {
     echo "${months[$(($(date +%-m)-1))]} $(date +%Y)"
 }
 
+# English date (e.g., "May 1, 2026")
+get_version_date() {
+    date "+%B %d, %Y"
+}
+
 # Version management
 update_version_files() {
     local ver="$1" r_date="$2"
     local legal="lib/core/constants/legal_content.dart"
     local shell="lib/features/dashboard/screens/dashboard_shell.dart"
+    local english_date
+    english_date=$(get_version_date)
     
-    [ -f "$legal" ] && sed -i "s/'الإصدار الحالي: v[0-9.]* | تاريخ الإصدار: [^}]*'/'الإصدار الحالي: v$ver | تاريخ الإصدار: $r_date'/" "$legal"
+    [ -f "$legal" ] && sed -i "s/'الإصدار الحالي: v[0-9.]* | تاريخ الإصدار: [^}]*'/'الإصدار الحالي: v$ver | تاريخ الإصدار: $english_date'/" "$legal"
     [ -f "$shell" ] && sed -i "s/'v[0-9.]*'/'v$ver'/" "$shell"
-    echo "✅ Version files updated to v$ver"
+    echo "✅ Version files updated to v$ver ($english_date)"
 }
 
 auto_bump_version() {
@@ -99,7 +113,7 @@ prepare_output_directory() {
 # Parse CLI args
 parse_args() {
     for arg in "$@"; do
-        case $arg in --bump|-b) AUTO_BUMP="yes" ;; --publish|-p) PUBLISH="yes" ;; esac
+        case $arg in --bump|-b) AUTO_BUMP="yes" ;; --publish|-p) PUBLISH="yes" ;; --no-ai) USE_AI="no" ;; esac
     done
 }
 
