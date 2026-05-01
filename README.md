@@ -103,7 +103,7 @@ lib/
 
 ## Version
 
-Current version: **0.0.2b**
+Current version: **0.0.26*****
 
 ## License
 
