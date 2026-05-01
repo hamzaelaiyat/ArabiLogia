@@ -1,0 +1,6 @@
+AppImage:
+  app: ArabiLogia
+  bin: ./arabilogia
+  arch: x86_64
+  description: ArabiLogia - Arabic Language Learning Platform
+  categories: Education

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:js' as js;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 /// Service for managing push notifications via OneSignal on web platform
 class NotificationService {
@@ -24,6 +25,10 @@ class NotificationService {
       await _checkExistingSubscription();
     } catch (e) {
       print('OneSignal initialization error: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'NotificationService.initializeWeb',
+      );
     }
   }
 
@@ -69,6 +74,10 @@ class NotificationService {
       }
     } catch (e) {
       print('Error checking subscription: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'NotificationService._checkExistingSubscription',
+      );
     }
   }
 
@@ -97,6 +106,10 @@ class NotificationService {
       return false;
     } catch (e) {
       print('Error subscribing to notifications: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'NotificationService.subscribeToNotifications',
+      );
       return false;
     }
   }
@@ -116,6 +129,10 @@ class NotificationService {
       }
     } catch (e) {
       print('Error unsubscribing from notifications: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'NotificationService.unsubscribeFromNotifications',
+      );
     }
   }
 
@@ -147,6 +164,10 @@ class NotificationService {
           .eq('id', user.id);
     } catch (e) {
       print('Error saving subscription to DB: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'NotificationService._saveSubscriptionToDb',
+      );
     }
   }
 
@@ -161,6 +182,10 @@ class NotificationService {
           .eq('id', user.id);
     } catch (e) {
       print('Error removing subscription from DB: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'NotificationService._removeSubscriptionFromDb',
+      );
     }
   }
 

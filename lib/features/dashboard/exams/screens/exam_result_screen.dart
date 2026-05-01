@@ -13,6 +13,7 @@ import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:go_router/go_router.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class ExamResultScreen extends StatefulWidget {
   final Exam exam;
@@ -76,6 +77,10 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
       );
     } catch (e) {
       debugPrint('Error sharing: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ExamResultScreen._shareResult',
+      );
     } finally {
       if (mounted) setState(() => _isSharing = false);
     }

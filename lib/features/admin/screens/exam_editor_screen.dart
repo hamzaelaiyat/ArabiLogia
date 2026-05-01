@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
 import 'package:arabilogia/features/admin/widgets/exam_editor.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class ExamEditorScreen extends StatelessWidget {
   final Exam? existingExam;
@@ -57,11 +58,15 @@ class ExamEditorScreen extends StatelessWidget {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('خطأ في الحفظ: $e'),
+        const SnackBar(
+          content: Text('خطأ في الحفظ، يرجى المحاولة مرة أخرى'),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
+          duration: Duration(seconds: 4),
         ),
+      );
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ExamEditorScreen._saveExam',
       );
     }
   }

@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -62,6 +63,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       }
     } catch (e) {
       if (mounted) setState(() => _isLoadingRank = false);
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'HomeScreen._fetchRank',
+      );
     }
   }
 
@@ -76,6 +81,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       }
     } catch (e) {
       if (mounted) setState(() => _isLoadingActivities = false);
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'HomeScreen._fetchRecentActivity',
+      );
     }
   }
 
@@ -514,6 +523,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
       return 'منذ فترة';
     } catch (e) {
+      ErrorLoggingService.instance.logException(
+        e,
+        context: 'HomeScreen._getTimeAgo',
+      );
       return '';
     }
   }

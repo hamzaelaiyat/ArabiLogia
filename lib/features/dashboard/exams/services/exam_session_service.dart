@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_session.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class ExamSessionService {
   static const _sessionKey = 'in_progress_exam_session';
@@ -37,6 +38,10 @@ class ExamSessionService {
     } catch (e) {
       // Invalid data, clear it
       await clearSession();
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ExamSessionService.getSession',
+      );
       return null;
     }
   }

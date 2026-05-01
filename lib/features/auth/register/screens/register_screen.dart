@@ -103,11 +103,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _handleVerifyEmail() async {
     final otp = _normalizeOtp(_otpController.text);
-    if (otp.length < 6 || otp.length > 8) {
+    if (otp.length != 8) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('يرجى إدخال رمز تفعيل صحيح (6 إلى 8 أرقام)'),
-        ),
+        const SnackBar(content: Text('يرجى إدخال رمز تفعيل صحيح (8 أرقام)')),
       );
       return;
     }
@@ -267,8 +265,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             validator: (value) {
               if (value == null || value.isEmpty) return 'يرجى إدخال الرمز';
               final normalized = _normalizeOtp(value);
-              if (normalized.length < 6 || normalized.length > 8) {
-                return 'يجب أن يكون الرمز من 6 إلى 8 أرقام';
+              if (normalized.length != 8) {
+                return 'يجب أن يكون الرمز 8 أرقام';
               }
               return null;
             },

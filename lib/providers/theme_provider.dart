@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 enum ThemeModeOption { light, dark, system }
 
@@ -26,6 +27,10 @@ class ThemeProvider extends ChangeNotifier {
       }
     } catch (e) {
       _themeMode = ThemeMode.system;
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ThemeProvider._loadTheme',
+      );
     }
     notifyListeners();
   }
@@ -35,7 +40,10 @@ class ThemeProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_themeKey, _themeMode.index);
     } catch (e) {
-      // Ignore save errors
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ThemeProvider._saveTheme',
+      );
     }
   }
 

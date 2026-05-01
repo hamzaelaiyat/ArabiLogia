@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:app_installer_plus/app_installer_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 /// Service for handling app updates from GitHub Releases
 /// Supports incremental patches and full APK downloads
@@ -44,6 +45,10 @@ class UpdateService {
       currentVersion = await getCurrentVersion();
     } catch (e) {
       debugPrint('Failed to get current version: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'UpdateService.getCurrentVersion',
+      );
       // Fallback - don't block update check
       currentVersion = '0.0.0';
     }
@@ -132,6 +137,10 @@ class UpdateService {
     } catch (e) {
       // Silently fail - don't bother user with network issues
       debugPrint('Update check failed: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'UpdateService.checkForUpdates',
+      );
     }
   }
 
@@ -444,6 +453,10 @@ class _UpdateDialogState extends State<_UpdateDialog> {
           _status = 'حدث خطأ';
         });
       }
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'UpdateService._startDownload',
+      );
     }
   }
 }

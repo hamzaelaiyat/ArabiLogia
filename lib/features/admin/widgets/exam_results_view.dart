@@ -7,6 +7,7 @@ import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:intl/intl.dart' as intl;
 import 'dart:async';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class ExamResultsView extends StatefulWidget {
   const ExamResultsView({super.key});
@@ -173,12 +174,16 @@ class _ExamResultsViewState extends State<ExamResultsView> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('فشل إلغاء النشر: $e'),
+            const SnackBar(
+              content: Text('فشل إلغاء النشر، يرجى المحاولة مرة أخرى'),
               backgroundColor: Colors.red,
             ),
           );
         }
+        await ErrorLoggingService.instance.logException(
+          e,
+          context: 'ExamResultsView._unpublishExam',
+        );
       }
     }
   }

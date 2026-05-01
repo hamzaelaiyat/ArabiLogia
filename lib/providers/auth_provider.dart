@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:arabilogia/core/config/supabase_config.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 
 class AuthState {
@@ -94,6 +95,11 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on AuthException catch (e) {
       debugPrint('SignIn AuthError: ${e.message}');
+      ErrorLoggingService.instance.logError(
+        errorMessage: e.message,
+        errorType: 'AuthException',
+        context: 'signIn',
+      );
       _state = _state.copyWith(
         isLoading: false,
         error: _getArabicError(e.message),
@@ -102,6 +108,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('SignIn UnexpectedError: $e');
+      ErrorLoggingService.instance.logException(e, context: 'signIn');
       _state = _state.copyWith(
         isLoading: false,
         error: 'حدث خطأ، يرجى المحاولة مرة أخرى',
@@ -137,6 +144,11 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on AuthException catch (e) {
       debugPrint('SignUp AuthError: ${e.message}');
+      ErrorLoggingService.instance.logError(
+        errorMessage: e.message,
+        errorType: 'AuthException',
+        context: 'signUp',
+      );
       _state = _state.copyWith(
         isLoading: false,
         error: _getArabicError(e.message),
@@ -145,6 +157,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('SignUp UnexpectedError: $e');
+      ErrorLoggingService.instance.logException(e, context: 'signUp');
       _state = _state.copyWith(
         isLoading: false,
         error: 'حدث خطأ، يرجى المحاولة مرة أخرى',
@@ -186,6 +199,11 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on AuthException catch (e) {
       debugPrint('VerifyEmail AuthError: ${e.message}');
+      ErrorLoggingService.instance.logError(
+        errorMessage: e.message,
+        errorType: 'AuthException',
+        context: 'verifyEmail',
+      );
       _state = _state.copyWith(
         isLoading: false,
         error: _getArabicError(e.message),
@@ -194,6 +212,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('VerifyEmail UnexpectedError: $e');
+      ErrorLoggingService.instance.logException(e, context: 'verifyEmail');
       _state = _state.copyWith(
         isLoading: false,
         error: 'حدث خطأ، يرجى المحاولة مرة أخرى',
@@ -215,6 +234,11 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on AuthException catch (e) {
       debugPrint('ResetPassword AuthError: ${e.message}');
+      ErrorLoggingService.instance.logError(
+        errorMessage: e.message,
+        errorType: 'AuthException',
+        context: 'resetPassword',
+      );
       _state = _state.copyWith(
         isLoading: false,
         error: _getArabicError(e.message),
@@ -223,6 +247,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('ResetPassword UnexpectedError: $e');
+      ErrorLoggingService.instance.logException(e, context: 'resetPassword');
       _state = _state.copyWith(
         isLoading: false,
         error: 'حدث خطأ، يرجى المحاولة مرة أخرى',
@@ -257,6 +282,11 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on AuthException catch (e) {
       debugPrint('VerifyResetCode AuthError: ${e.message}');
+      ErrorLoggingService.instance.logError(
+        errorMessage: e.message,
+        errorType: 'AuthException',
+        context: 'verifyResetCode',
+      );
       _state = _state.copyWith(
         isLoading: false,
         error: _getArabicError(e.message),
@@ -265,6 +295,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('VerifyResetCode UnexpectedError: $e');
+      ErrorLoggingService.instance.logException(e, context: 'verifyResetCode');
       _state = _state.copyWith(
         isLoading: false,
         error: 'حدث خطأ، يرجى المحاولة مرة أخرى',
@@ -286,6 +317,11 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on AuthException catch (e) {
       debugPrint('UpdatePassword AuthError: ${e.message}');
+      ErrorLoggingService.instance.logError(
+        errorMessage: e.message,
+        errorType: 'AuthException',
+        context: 'updatePassword',
+      );
       _state = _state.copyWith(
         isLoading: false,
         error: _getArabicError(e.message),
@@ -294,6 +330,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('UpdatePassword UnexpectedError: $e');
+      ErrorLoggingService.instance.logException(e, context: 'updatePassword');
       _state = _state.copyWith(
         isLoading: false,
         error: 'حدث خطأ، يرجى المحاولة مرة أخرى',
@@ -384,6 +421,11 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on PostgrestException catch (e) {
       debugPrint('Profile update DB error: ${e.message}');
+      ErrorLoggingService.instance.logError(
+        errorMessage: e.message,
+        errorType: 'PostgrestException',
+        context: 'updateProfile',
+      );
       String errorMsg = 'حدث خطأ في تحديث البيانات';
       if (e.message.contains('unique constraint') ||
           e.message.contains('username')) {
@@ -394,6 +436,11 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } on AuthException catch (e) {
       debugPrint('UpdateProfile AuthError: ${e.message}');
+      ErrorLoggingService.instance.logError(
+        errorMessage: e.message,
+        errorType: 'AuthException',
+        context: 'updateProfile',
+      );
       _state = _state.copyWith(
         isLoading: false,
         error: _getArabicError(e.message),
@@ -402,6 +449,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('UpdateProfile UnexpectedError: $e');
+      ErrorLoggingService.instance.logException(e, context: 'updateProfile');
       _state = _state.copyWith(
         isLoading: false,
         error: 'حدث خطأ في تحديث البيانات',
@@ -423,6 +471,11 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on AuthException catch (e) {
       debugPrint('ResendOTP AuthError: ${e.message}');
+      ErrorLoggingService.instance.logError(
+        errorMessage: e.message,
+        errorType: 'AuthException',
+        context: 'resendOTP',
+      );
       _state = _state.copyWith(
         isLoading: false,
         error: _getArabicError(e.message),
@@ -431,6 +484,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('ResendOTP UnexpectedError: $e');
+      ErrorLoggingService.instance.logException(e, context: 'resendOTP');
       _state = _state.copyWith(
         isLoading: false,
         error: 'حدث خطأ، يرجى المحاولة مرة أخرى',
@@ -470,17 +524,36 @@ class AuthProvider extends ChangeNotifier {
   }
 
   String _getArabicError(String message) {
-    if (message.contains('Invalid login credentials')) {
+    if (message.contains('Invalid login credentials') ||
+        message.contains('Invalid credentials')) {
       return 'بيانات الدخول غير صحيحة';
     } else if (message.contains('Email not confirmed')) {
       return 'يرجى تأكيد البريد الإلكتروني';
-    } else if (message.contains('User already registered')) {
+    } else if (message.contains('User already registered') ||
+        message.contains('already registered')) {
       return 'البريد الإلكتروني مستخدم بالفعل';
-    } else if (message.contains('Password should be at least')) {
+    } else if (message.contains('Password should be at least') ||
+        message.contains('Password too short')) {
       return 'كلمة المرور ضعيفة جداً';
     } else if (message.contains('Invalid email')) {
       return 'البريد الإلكتروني غير صالح';
+    } else if (message.contains('Token has expired') ||
+        message.contains('expired')) {
+      return 'انتهت صلاحية الرمز، يرجى إعادة المحاولة';
+    } else if (message.contains('Invalid token') ||
+        message.contains('Invalid OTP')) {
+      return 'الرمز غير صحيح';
+    } else if (message.contains('Too many requests')) {
+      return 'محاولات كثيرة جداً، يرجى المحاولة لاحقاً';
+    } else if (message.contains('Network') || message.contains('network')) {
+      return 'مشكلة في الاتصال بالإنترنت';
+    } else if (message.contains('Unable to validate email')) {
+      return 'تعذر التحقق من البريد الإلكتروني';
+    } else if (message.contains('Signup is disabled')) {
+      return 'التسجيل غير متاح حالياً';
+    } else if (message.contains('For security purposes')) {
+      return 'لأسباب أمنية، يرجى المحاولة لاحقاً';
     }
-    return message;
+    return 'حدث خطأ، يرجى المحاولة مرة أخرى';
   }
 }

@@ -10,6 +10,7 @@ import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/core/services/potato_mode_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class ExamsScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -94,6 +95,10 @@ class _ExamsScreenState extends State<ExamsScreen>
           _isLoadingByTab[index] = false;
         });
       }
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ExamsScreen._loadExams',
+      );
     }
   }
 
@@ -233,8 +238,8 @@ class _ExamsScreenState extends State<ExamsScreen>
 
     // Calculate total item count including ads
     // Each ad is inserted after every X exams based on mode
-    final int adCount = displayExams.length > examsPerAd 
-        ? (displayExams.length - 1) ~/ examsPerAd 
+    final int adCount = displayExams.length > examsPerAd
+        ? (displayExams.length - 1) ~/ examsPerAd
         : 0;
     final int totalItems = displayExams.length + adCount;
 
@@ -249,15 +254,17 @@ class _ExamsScreenState extends State<ExamsScreen>
         // Check if this position should be an ad
         // Ad appears after every X exams based on potato mode level
         // ad appears at: X+1, 2X+2, 3X+3... (0-based indices)
-        if ((index + 1) % adInterval == 0 && index > 0 && displayExams.length > examsPerAd) {
+        if ((index + 1) % adInterval == 0 &&
+            index > 0 &&
+            displayExams.length > examsPerAd) {
           // This is an ad position
           return const SimpleNativeAdWidget();
         }
 
         // This is an exam - find the actual exam index
         // The actual exam index = position - number of ads before this position
-        final int adsBeforeThis = displayExams.length > examsPerAd 
-            ? (index ~/ adInterval) 
+        final int adsBeforeThis = displayExams.length > examsPerAd
+            ? (index ~/ adInterval)
             : 0;
         final int actualExamIndex = index - adsBeforeThis;
 

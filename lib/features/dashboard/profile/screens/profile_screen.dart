@@ -13,6 +13,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as p;
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -70,6 +71,10 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       }
     } catch (e) {
       if (mounted) setState(() => _isLoadingStats = false);
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ProfileScreen._fetchStats',
+      );
     }
   }
 
@@ -111,10 +116,16 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في رفع الصورة: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('خطأ في رفع الصورة، يرجى المحاولة مرة أخرى'),
+          ),
+        );
       }
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ProfileScreen._pickAndUploadImage',
+      );
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
@@ -287,6 +298,10 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       ];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (e) {
+      ErrorLoggingService.instance.logException(
+        e,
+        context: 'ProfileScreen._formatArabicDate',
+      );
       return isoDate;
     }
   }
@@ -304,6 +319,10 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
 
       return _formatArabicDate(isoDate);
     } catch (e) {
+      ErrorLoggingService.instance.logException(
+        e,
+        context: 'ProfileScreen._formatLastExamDate',
+      );
       return isoDate ?? '';
     }
   }

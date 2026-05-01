@@ -6,6 +6,7 @@ import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:provider/provider.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -45,6 +46,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'LeaderboardScreen._fetchLeaderboard',
+      );
     }
   }
 

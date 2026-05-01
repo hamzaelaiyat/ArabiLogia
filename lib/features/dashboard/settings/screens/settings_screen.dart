@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -419,9 +420,16 @@ class SettingsScreen extends StatelessWidget {
       if (context.mounted) {
         Navigator.pop(context); // Dismiss loading
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text('حدث خطأ، يرجى المحاولة مرة أخرى'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'SettingsScreen._confirmDeleteAccount',
+      );
     }
   }
 

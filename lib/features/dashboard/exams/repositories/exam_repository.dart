@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 import '../models/exam_model.dart';
 import 'score_repository.dart';
 
@@ -84,6 +85,10 @@ class ExamRepository {
       }
     } catch (e) {
       print('Error fetching remote exams: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ExamRepository.getExamsBySubject',
+      );
       // If offline, load from cache
       final keys = prefs.getKeys().where((k) => k.startsWith('offline_exam_'));
       for (final key in keys) {
@@ -169,6 +174,10 @@ class ExamRepository {
       }
     } catch (e) {
       print('Error loading remote exam $examId: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ExamRepository.loadExamById',
+      );
     }
 
     return null;

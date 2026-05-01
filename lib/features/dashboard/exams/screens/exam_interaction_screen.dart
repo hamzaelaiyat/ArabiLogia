@@ -11,6 +11,7 @@ import 'package:arabilogia/features/dashboard/exams/services/exam_session_servic
 import 'package:arabilogia/providers/exam_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class ExamInteractionScreen extends StatefulWidget {
   final String examId;
@@ -194,6 +195,10 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
           .timeout(const Duration(seconds: 10));
     } catch (e) {
       debugPrint('Score Submission Error: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ExamInteractionScreen._submitScore',
+      );
     }
 
     if (!mounted) return;
@@ -262,6 +267,10 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
           .timeout(const Duration(seconds: 10));
     } catch (e) {
       debugPrint('Abandoned Score Submission Error: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ExamInteractionScreen._submitAbandonedScore',
+      );
     }
   }
 

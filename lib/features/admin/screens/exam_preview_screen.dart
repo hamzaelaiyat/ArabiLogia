@@ -7,6 +7,7 @@ import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dar
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:go_router/go_router.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class ExamPreviewScreen extends StatefulWidget {
   final Exam exam;
@@ -51,9 +52,16 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل الرفع: $e'), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text('فشل الرفع، يرجى المحاولة مرة أخرى'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ExamPreviewScreen._publishExam',
+      );
     } finally {
       if (mounted) setState(() => _isPublishing = false);
     }

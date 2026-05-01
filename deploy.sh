@@ -42,8 +42,52 @@ update_version_files() {
     echo "✅ Version files updated to v$ver"
 }
 
+auto_bump_version() {
+    local pubspec_file="pubspec.yaml"
+    local readme_file="README.md"
+    
+    if [ -f "$pubspec_file" ]; then
+        # Get current version from pubspec.yaml
+        local current_ver=$(grep -m1 "^version:" "$pubspec_file" | awk '{print $2}')
+        
+        # Extract major, minor, patch
+        local major=$(echo "$current_ver" | cut -d. -f1)
+        local minor=$(echo "$current_ver" | cut -d. -f2)
+        local patch=$(echo "$current_ver" | cut -d. -f3)
+        
+        # Increment patch version
+        local new_patch=$((patch + 1))
+        local new_ver="${major}.${minor}.${new_patch}"
+        
+        # Update pubspec.yaml
+        sed -i "s/^version:.*/version: $new_ver/" "$pubspec_file"
+        
+        # Update README.md if exists
+        if [ -f "$readme_file" ]; then
+            sed -i "s/Current version: \*\*[0-9.]*\*/Current version: **$new_ver**/" "$readme_file"
+        fi
+        
+        echo "✅ Version auto-bumped: $current_ver → $new_ver"
+        
+        # Also update local VERSION variable
+        VERSION="$new_ver"
+    else
+        echo "⚠️ pubspec.yaml not found, skipping auto-version bump"
+    fi
+}
+
 # --- Initialization ---
 clear
+
+# Parse command-line arguments
+AUTO_BUMP="no"
+for arg in "$@"; do
+    case $arg in
+        --bump|-b)
+            AUTO_BUMP="yes"
+            ;;
+    esac
+done
 
 chafa --size 40x assets/images/logo-removedbg.png
 
@@ -67,7 +111,10 @@ echo -e "\n📋 DEPLOYMENT CONFIGURATION\n"
 # Check if TTY is available
 if [ -t 0 ]; then
     # Interactive mode
-    VERSION=$(gum input --placeholder "e.g. 1.2.3" --prompt "🔖 Version: → ")
+    VERSION=$(gum input --placeholder "e.g. 1.2.3" --prompt "🔖 Version (leave empty for auto-bump): → ")
+    if [ -z "$VERSION" ]; then
+        AUTO_BUMP="yes"
+    fi
     VERSION=${VERSION:-"0.0.1"}
     echo "📝 RELEASE NOTES"
     NOTES=$(gum write --placeholder "• List changes here..." --height 5)
@@ -81,8 +128,10 @@ if [ -t 0 ]; then
     fi
     
     PUBLISH="no"
+    AUTO_BUMP="no"
     if [ "$GH_AVAILABLE" = true ]; then
         gum confirm "🚀 Publish to GitHub?" && PUBLISH="yes"
+        gum confirm "📈 Auto-bump version?" && AUTO_BUMP="yes"
     fi
 else
     # Non-interactive mode - use defaults
@@ -103,6 +152,12 @@ else
     echo "   → Using: $LINUX_BUILDS"
     
     PUBLISH="no"
+    AUTO_BUMP="no"
+fi
+
+# Auto-bump version if enabled
+if [ "$AUTO_BUMP" = "yes" ]; then
+    auto_bump_version
 fi
 
 # ============================================
@@ -163,8 +218,8 @@ if [ -n "$LINUX_BUILDS" ]; then
     # Ensure output directory exists
     mkdir -p "$OUTPUT_DIR"
     if [ -d "$BUNDLE" ]; then
-        for fmt in $LINUX_BUILDS; do
-            case "$fmt" in
+for fmt in $LINUX_BUILDS; do
+            case $fmt in
                 tar) tar -cJf "$OUTPUT_DIR/arabilogia-v${VERSION}-linux-x64.tar.xz" -C "$BUNDLE" . ;;
                 deb)
                     DEB_ROOT="build/deb_tmp"
@@ -173,6 +228,84 @@ if [ -n "$LINUX_BUILDS" ]; then
                     echo -e "Package: arabilogia\nVersion: $VERSION\nSection: education\nPriority: optional\nArchitecture: amd64\nMaintainer: Hamza\nDescription: ArabiLogia" > "$DEB_ROOT/DEBIAN/control"
                     dpkg-deb --build "$DEB_ROOT" "$OUTPUT_DIR/arabilogia-v${VERSION}-amd64.deb" &> /dev/null
                     rm -rf "$DEB_ROOT" ;;
+                appimage)
+                    APPIMAGE_TOOL="appimage-builder"
+                    if command -v appimagetool &> /dev/null; then
+                        APPIMAGE_TOOL="appimagetool"
+                    elif command -v appimage-builder &> /dev/null; then
+                        APPIMAGE_TOOL="appimage-builder"
+                    fi
+                    
+                    if [ "$APPIMAGE_TOOL" = "appimagetool" ]; then
+                        APPDIR="$BUNDLE/AppDir"
+                        mkdir -p "$APPDIR/usr/bin"
+                        cp -r "$BUNDLE/"* "$APPDIR/"
+                        cat > "$APPDIR/AppRun" << 'APPRUN'
+#!/bin/sh
+cd "$(dirname "$0")"
+exec ./arabilogia "$@"
+APPRUN
+                        chmod +x "$APPDIR/AppRun"
+                        appimagetool "$APPDIR" "$OUTPUT_DIR/arabilogia-v${VERSION}-x86_64.AppImage"
+                    elif [ "$APPIMAGE_TOOL" = "appimage-builder" ]; then
+                        cat > "appimage.yml" << 'APPYML'
+AppImage:
+  app: ArabiLogia
+  bin: ./arabilogia
+  arch: x86_64
+  description: ArabiLogia - Arabic Language Learning Platform
+  categories: Education
+APPYML
+                        cp -r "$BUNDLE"/* ./
+                        appimage-builder --appimage appimage.yml
+                        mv ArabiLogia*.AppImage "$OUTPUT_DIR/arabilogia-v${VERSION}-x86_64.AppImage"
+                        rm -f appimage.yml
+                    else
+                        echo "   ⚠️  AppImage tools not found. Install appimagetool or appimage-builder"
+                    fi ;;
+                rpm)
+                    RPM_ROOT="build/rpm_tmp"
+                    mkdir -p "$RPM_ROOT/BUILD/arabilogia" "$RPM_ROOT/RPMS" "$RPM_ROOT/SOURCES" "$RPM_ROOT/SPECS" "$RPM_ROOT/SRPMS"
+                    cp -r "$BUNDLE"/* "$RPM_ROOT/BUILD/arabilogia/"
+                    
+                    cat > "$RPM_ROOT/SPECS/arabilogia.spec" << 'SPEC'
+Name: arabilogia
+Version: VERSION_PLACEHOLDER
+Release: 1%{?dist}
+Summary: ArabiLogia - Arabic Language Learning Platform
+License: Proprietary
+URL: https://arabilogia.com
+BuildArch: x86_64
+
+%description
+ArabiLogia - Arabic Language Learning Platform
+
+%prep
+%setup -n arabilogia
+
+%install
+mkdir -p %{buildroot}/opt/arabilogia
+cp -r . %{buildroot}/opt/arabilogia/
+
+%files
+%dir /opt/arabilogia
+/opt/arabilogia/*
+
+%post
+ln -sf /opt/arabilogia/arabilogia /usr/bin/arabilogia 2>/dev/null || true
+
+%postun
+rm -f /usr/bin/arabilogia 2>/dev/null || true
+SPEC
+                    sed -i "s/VERSION_PLACEHOLDER/$VERSION/" "$RPM_ROOT/SPECS/arabilogia.spec"
+                    
+                    rpmbuild --define "_topdir $RPM_ROOT" -bb "$RPM_ROOT/SPECS/arabilogia.spec" 2>/dev/null || \
+                        (echo "   ⚠️  rpmbuild failed. Install rpm-build package." && rm -rf "$RPM_ROOT")
+                    
+                    if [ -f "$RPM_ROOT/RPMS/x86_64/arabilogia-*.rpm" ]; then
+                        cp "$RPM_ROOT/RPMS/x86_64/"arabilogia-*.rpm "$OUTPUT_DIR/arabilogia-v${VERSION}-x86_64.rpm"
+                    fi
+                    rm -rf "$RPM_ROOT" ;;
             esac
         done
     else

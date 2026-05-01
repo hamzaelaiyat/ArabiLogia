@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class GradeMetadata {
   final int id;
@@ -18,7 +19,7 @@ class GradeMetadata {
 
   static Future<void> loadGrades() async {
     if (_isLoaded) return;
-    
+
     try {
       final supabase = Supabase.instance.client;
       final response = await supabase
@@ -26,17 +27,25 @@ class GradeMetadata {
           .select('*')
           .eq('is_active', true)
           .order('sort_order');
-      
-      _grades = (response as List).map((g) => GradeMetadata(
-        id: g['id'] as int,
-        name: g['name'] as String,
-        sortOrder: g['sort_order'] as int? ?? 0,
-      )).toList();
-      
+
+      _grades = (response as List)
+          .map(
+            (g) => GradeMetadata(
+              id: g['id'] as int,
+              name: g['name'] as String,
+              sortOrder: g['sort_order'] as int? ?? 0,
+            ),
+          )
+          .toList();
+
       _isLoaded = true;
     } catch (e) {
       _grades = _defaultGrades;
       _isLoaded = true;
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'GradeMetadata.loadGrades',
+      );
     }
   }
 
@@ -50,7 +59,11 @@ class GradeMetadata {
     if (!_isLoaded) loadGrades();
     try {
       return _grades.firstWhere((g) => g.id == id);
-    } catch (_) {
+    } catch (e) {
+      ErrorLoggingService.instance.logException(
+        e,
+        context: 'GradeMetadata.getById',
+      );
       return null;
     }
   }
@@ -73,7 +86,8 @@ class GradeMetadata {
     await loadGrades();
   }
 
-  static Future<void> updateGrade(int id, {
+  static Future<void> updateGrade(
+    int id, {
     String? name,
     int? sortOrder,
     bool? isActive,
@@ -83,7 +97,7 @@ class GradeMetadata {
     if (name != null) updates['name'] = name;
     if (sortOrder != null) updates['sort_order'] = sortOrder;
     if (isActive != null) updates['is_active'] = isActive;
-    
+
     await supabase.from('grades').update(updates).eq('id', id);
     await loadGrades();
   }

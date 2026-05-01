@@ -5,6 +5,7 @@ import 'package:arabilogia/features/auth/widgets/glass_container.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class ForgotPasswordOverlay extends StatefulWidget {
   const ForgotPasswordOverlay({super.key});
@@ -64,7 +65,10 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
     if (success && mounted) {
       setState(() => _isSubmitted = true);
     } else if (mounted) {
-      setState(() => _errorMessage = 'فشل في إرسال رابط إعادة التعيين. يرجى التحقق من البريد الإلكتروني.');
+      setState(
+        () => _errorMessage =
+            'فشل في إرسال رابط إعادة التعيين. يرجى التحقق من البريد الإلكتروني.',
+      );
     }
   }
 
@@ -112,6 +116,10 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
       setState(
         () => _errorMessage =
             'حدث خطأ في الاتصال. يرجى التحقق من الاتصال بالانترنت والمحاولة مرة أخرى.',
+      );
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ForgotPasswordOverlay._resetPassword',
       );
     }
   }
@@ -272,7 +280,7 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'يرجى إدخال الرمز';
-                  if (value.length != 6) return 'الرمز يجب أن يكون 6 أرقام';
+                  if (value.length != 8) return 'الرمز يجب أن يكون 8 أرقام';
                   return null;
                 },
               ),
@@ -322,14 +330,6 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
               ),
               const SizedBox(height: AppTokens.spacing20),
               _buildActionButton(context, 'تغيير كلمة المرور'),
-              const SizedBox(height: AppTokens.spacing12),
-              TextButton(
-                onPressed: () => setState(() => _isSubmitted = false),
-                child: Text(
-                  'تغيير البريد الإلكتروني',
-                  style: TextStyle(color: AppColors.authHeaderColor(context)),
-                ),
-              ),
             ],
           ],
         ),

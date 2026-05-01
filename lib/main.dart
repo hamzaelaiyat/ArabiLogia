@@ -7,6 +7,7 @@ import 'package:arabilogia/core/theme/app_theme.dart';
 import 'package:arabilogia/core/config/supabase_config.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
 import 'package:arabilogia/core/services/update_service.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 import 'package:arabilogia/providers/theme_provider.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/providers/exam_provider.dart';
@@ -21,6 +22,10 @@ void main() async {
     await dotenv.load(fileName: ".env");
   } catch (e) {
     debugPrint("Warning: Could not load .env file: $e");
+    await ErrorLoggingService.instance.logException(
+      e,
+      context: 'main.dotenv.load',
+    );
   }
 
   if (SupabaseConfig.isConfigured) {

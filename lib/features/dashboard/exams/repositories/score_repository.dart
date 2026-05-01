@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class ScoreRepository {
   static final ScoreRepository _instance = ScoreRepository._internal();
@@ -35,6 +36,10 @@ class ScoreRepository {
         }
       } catch (e) {
         debugPrint('Poll error for exam $examId: $e');
+        await ErrorLoggingService.instance.logException(
+          e,
+          context: 'ScoreRepository.streamExamParticipants',
+        );
       }
     }
 
@@ -69,6 +74,10 @@ class ScoreRepository {
         }
       } catch (e) {
         debugPrint('Poll error for exams: $e');
+        await ErrorLoggingService.instance.logException(
+          e,
+          context: 'ScoreRepository.streamExamsManaged',
+        );
       }
     }
 
@@ -119,6 +128,10 @@ class ScoreRepository {
       return true;
     } catch (e) {
       debugPrint('Error submitting score to server: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ScoreRepository.submitScore',
+      );
       try {
         final minimalData = {
           'user_id': user.id,
@@ -131,6 +144,10 @@ class ScoreRepository {
         return true;
       } catch (e2) {
         debugPrint('Error: $e2');
+        await ErrorLoggingService.instance.logException(
+          e2,
+          context: 'ScoreRepository.submitScore.minimalInsert',
+        );
         return false;
       }
     }
@@ -213,6 +230,10 @@ class ScoreRepository {
             });
           } catch (e) {
             debugPrint('Failed to push local score $examId: $e');
+            await ErrorLoggingService.instance.logException(
+              e,
+              context: 'ScoreRepository.syncScoresWithSupabase.pushLocal',
+            );
           }
         }
       }
@@ -230,6 +251,10 @@ class ScoreRepository {
       debugPrint('Score synchronization completed successfully');
     } catch (e) {
       debugPrint('Critical error during score sync: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ScoreRepository.syncScoresWithSupabase',
+      );
     }
   }
 
@@ -253,6 +278,10 @@ class ScoreRepository {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('Error fetching leaderboard: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ScoreRepository.getLeaderboard',
+      );
       return [];
     }
   }
@@ -275,6 +304,10 @@ class ScoreRepository {
       return response;
     } catch (e) {
       debugPrint('Error fetching user stats: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ScoreRepository.getUserStats',
+      );
       return null;
     }
   }
@@ -294,6 +327,10 @@ class ScoreRepository {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('Error fetching recent activity: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ScoreRepository.getRecentActivity',
+      );
       return [];
     }
   }
@@ -334,6 +371,10 @@ class ScoreRepository {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('Error fetching managed exams: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ScoreRepository.getExamsManaged',
+      );
       return [];
     }
   }
@@ -353,6 +394,10 @@ class ScoreRepository {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('Error fetching exam participants: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ScoreRepository.getExamParticipants',
+      );
       return [];
     }
   }
@@ -377,6 +422,10 @@ class ScoreRepository {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('Error fetching grade profiles: $e');
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ScoreRepository.getGradeProfiles',
+      );
       return [];
     }
   }

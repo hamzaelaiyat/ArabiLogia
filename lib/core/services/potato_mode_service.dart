@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:battery_plus/battery_plus.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 enum PotatoLevel { off, sweet, tiny }
 
@@ -150,6 +151,10 @@ class DeviceSpecDetector {
 
       return _cachedSpec!;
     } catch (e) {
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'DeviceSpecDetector.detectDevice',
+      );
       return DeviceSpec(
         ramGB: 4,
         cpuCores: 2,

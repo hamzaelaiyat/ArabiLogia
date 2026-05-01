@@ -221,6 +221,7 @@ class ExamSettingsPanel extends StatelessWidget {
           ),
           dropdownColor: isDark ? AppColors.bgDark : Colors.white,
           items: const [
+            DropdownMenuItem(value: 0, child: Text('كل الصفوف')),
             DropdownMenuItem(value: 1, child: Text('الأول الثانوية')),
             DropdownMenuItem(value: 2, child: Text('الثاني الثانوية')),
             DropdownMenuItem(value: 3, child: Text('الثالث الثانوية')),

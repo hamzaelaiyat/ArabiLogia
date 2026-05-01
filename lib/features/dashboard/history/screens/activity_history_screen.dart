@@ -6,6 +6,7 @@ import 'package:arabilogia/features/dashboard/exams/repositories/score_repositor
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:provider/provider.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class ActivityHistoryScreen extends StatefulWidget {
   const ActivityHistoryScreen({super.key});
@@ -37,6 +38,10 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'ActivityHistoryScreen._fetchHistory',
+      );
     }
   }
 
@@ -198,6 +203,10 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
 
       return 'منذ فترة';
     } catch (e) {
+      ErrorLoggingService.instance.logException(
+        e,
+        context: 'ActivityHistoryScreen._formatTimeAgo',
+      );
       return '';
     }
   }

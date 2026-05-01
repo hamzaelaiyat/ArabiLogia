@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arabilogia/core/services/potato_mode_service.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/core/services/error_logging_service.dart';
 
 class PotatoModeProvider extends ChangeNotifier {
   DeviceSpec? _deviceSpec;
@@ -49,6 +50,10 @@ class PotatoModeProvider extends ChangeNotifier {
       }
     } catch (e) {
       _config = PotatoModeConfig.potatoOff;
+      await ErrorLoggingService.instance.logException(
+        e,
+        context: 'PotatoModeProvider.initialize',
+      );
     }
 
     _isLoaded = true;
