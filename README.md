@@ -41,7 +41,7 @@ A Flutter mobile application for learning Arabic language, featuring grammar, mo
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-org/ArabiLogia.git
+   git clone https://github.com/hamzaelaiyat/ArabiLogia.git
    cd ArabiLogia
    ```
 
