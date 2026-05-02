@@ -1,4 +1,7 @@
-# عربيلوجيا (ArabiLogia)
+<p align="center">
+  <img src="https://github.com/hamzaelaiyat/ArabiLogia/blob/main/assets/images/logo-removedbg.png" width="200">
+</p>
+<h1 align="center">منصة عربيلوجيا</h1>
 
 تطبيق Flutter لتعلم اللغة العربية، يتضمن القواعد، الصرف، الأدب، الشعر، وتمارين فهم القراءة لطلاب المرحلة الثانوية (الصفوف 10-12).
 
