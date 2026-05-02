@@ -1,12 +1,36 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import 'package:app_installer_plus/app_installer_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Represents an available update
+class AppUpdate {
+  final String version;
+  final String downloadUrl;
+  final String releaseNotes;
+  final bool isMandatory;
+  final int fileSize;
+  final String fileName;
+
+  AppUpdate({
+    required this.version,
+    required this.downloadUrl,
+    required this.releaseNotes,
+    required this.isMandatory,
+    required this.fileSize,
+    required this.fileName,
+  });
+}
+
+/// Update check result
+enum UpdateCheckResult { noUpdate, updateAvailable, error }
+
 /// Service for handling app updates from GitHub Releases
-/// Supports incremental patches and full APK downloads
+/// Supports background checking and cross-platform updates
 class UpdateService {
   // GitHub repository configuration
   static const String _owner = 'hamzaelaiyat';
@@ -16,9 +40,18 @@ class UpdateService {
   static const String _skippedVersionKey = 'skipped_update_version';
   static const String _lastCheckKey = 'last_update_check';
   static const String _installedVersionKey = 'installed_version';
+  static const String _lastSkippedKey = 'last_skipped_time';
 
-  // Minimum time between update checks (24 hours)
-  static const Duration _minCheckInterval = Duration(hours: 24);
+  // Minimum time between update checks (1 hour for background)
+  static const Duration _minCheckInterval = Duration(hours: 1);
+
+  // Stream controller for update events
+  static final StreamController<AppUpdate?> _updateStreamController =
+      StreamController<AppUpdate?>.broadcast();
+
+  static Stream<AppUpdate?> get updateStream => _updateStreamController.stream;
+
+  static AppUpdate? _currentUpdate;
 
   /// Get current app version from package_info_plus
   static Future<String> getCurrentVersion() async {
@@ -26,16 +59,15 @@ class UpdateService {
     return info.version;
   }
 
-  /// Check for updates and show dialog if available
-  /// Called from main.dart after app initialization
-  static Future<void> checkForUpdates(BuildContext context) async {
-    // Check if enough time has passed since last check
+  /// Check for updates in background - doesn't block UI
+  /// Emits update to stream if available
+  static Future<void> checkForUpdatesInBackground() async {
     final prefs = await SharedPreferences.getInstance();
     final lastCheck = prefs.getInt(_lastCheckKey) ?? 0;
     final now = DateTime.now().millisecondsSinceEpoch;
 
     if (now - lastCheck < _minCheckInterval.inMilliseconds) {
-      debugPrint('Skipping update check - within cooldown period');
+      debugPrint('UpdateService: Skipping check - within cooldown');
       return;
     }
 
@@ -43,23 +75,32 @@ class UpdateService {
     try {
       currentVersion = await getCurrentVersion();
     } catch (e) {
-      debugPrint('Failed to get current version: $e');
-      // Fallback - don't block update check
       currentVersion = '0.0.0';
     }
 
     try {
-      // Get latest release info from GitHub API
-      final response = await http.get(
-        Uri.parse(
-          'https://api.github.com/repos/$_owner/$_repo/releases/latest',
-        ),
-        headers: {'Accept': 'application/vnd.github+json'},
-      );
+      // Build headers with optional GitHub token
+      final githubToken = dotenv.env['GITHUB_TOKEN'];
+      final headers = {
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'ArabiLogia-Update-Checker',
+        'X-GitHub-Api-Version': '2022-11-28',
+      };
+      if (githubToken != null && githubToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $githubToken';
+      }
+
+      final response = await http
+          .get(
+            Uri.parse(
+              'https://api.github.com/repos/$_owner/$_repo/releases/latest',
+            ),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode != 200) {
-        // Silently fail - don't show toast, just debug
-        debugPrint('Failed to check for updates: ${response.statusCode}');
+        debugPrint('UpdateService: Failed to check - ${response.statusCode}');
         return;
       }
 
@@ -69,114 +110,128 @@ class UpdateService {
       );
       final assets = data['assets'] as List? ?? [];
 
-      // Check if this release is marked as mandatory
+      // Parse release notes and check for mandatory
       final body = data['body']?.toString() ?? '';
       final isMandatory =
           body.contains('[MANDATORY]') ||
           body.contains('[إلزامي]') ||
           body.toLowerCase().contains('mandatory: true');
 
-      // Find the arm64-v8a APK (smallest, for most phones)
-      final apkAsset = assets.firstWhere(
-        (a) => a['name']?.toString().contains('arm64-v8a-release.apk') ?? false,
-        orElse: () => assets.isNotEmpty ? assets.first : null,
-      );
+      // Find appropriate APK for current platform
+      final targetAsset = _findBestApk(assets, Platform.operatingSystem);
 
-      if (apkAsset == null) {
-        debugPrint('No APK found in release');
+      if (targetAsset == null) {
+        debugPrint('UpdateService: No suitable APK found');
         return;
       }
-
-      final downloadUrl = apkAsset['browser_download_url'];
-      final releaseNotes = body;
 
       // Check if update is needed
       if (!_isVersionNewer(latestVersion, currentVersion)) {
-        debugPrint('App is up to date ($currentVersion)');
+        debugPrint('UpdateService: App is up to date');
+        _updateStreamController.add(null);
         return;
-      }
-
-      // Get the version user actually installed (not skipped)
-      final installedVersion = prefs.getString(_installedVersionKey);
-
-      // Reset skip if user upgraded manually since skipping
-      final skippedVersion = prefs.getString(_skippedVersionKey);
-      if (installedVersion != null &&
-          skippedVersion != null &&
-          skippedVersion == latestVersion &&
-          _isVersionNewer(installedVersion, skippedVersion)) {
-        // User has updated past the skipped version - clear skip
-        await prefs.remove(_skippedVersionKey);
-        debugPrint('Cleared skipped version after manual update');
       }
 
       // Check if user skipped this version
+      final skippedVersion = prefs.getString(_skippedVersionKey);
       if (skippedVersion == latestVersion && !isMandatory) {
-        debugPrint('User skipped version $latestVersion');
+        debugPrint('UpdateService: User skipped version $latestVersion');
+        _updateStreamController.add(null);
         return;
       }
 
+      // Create update object
+      final update = AppUpdate(
+        version: latestVersion,
+        downloadUrl: targetAsset['browser_download_url'],
+        releaseNotes: _cleanReleaseNotes(body),
+        isMandatory: isMandatory,
+        fileSize: targetAsset['size'] ?? 0,
+        fileName: targetAsset['name'] ?? 'app.apk',
+      );
+
+      _currentUpdate = update;
+
+      // Emit update to stream
+      _updateStreamController.add(update);
+      debugPrint('UpdateService: Found update ${update.version}');
+    } catch (e) {
+      debugPrint('UpdateService: Error checking for updates: $e');
+      _updateStreamController.add(null);
+    } finally {
       // Update last check time
       await prefs.setInt(_lastCheckKey, now);
-
-      // Show update dialog
-      if (context.mounted) {
-        await _showUpdateDialog(
-          context,
-          latestVersion,
-          downloadUrl,
-          releaseNotes,
-          isMandatory: isMandatory,
-        );
-      }
-    } catch (e) {
-      // Silently fail - don't bother user with network issues
-      debugPrint('Update check failed: $e');
     }
   }
 
-  /// Show a toast notification (kept for future use)
-  // ignore: unused_element
-  static void _showToast(
-    BuildContext context,
-    String message, {
-    bool isError = false,
-  }) {
-    if (!context.mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
+  /// Platform-specific APK selection
+  static Map<String, dynamic>? _findBestApk(List assets, String os) {
+    // Try to find platform-specific APK first
+    if (os == 'android') {
+      try {
+        return assets.firstWhere(
+          (a) => a['name']?.toString().contains('arm64-v8a') ?? false,
+        );
+      } catch (_) {
+        // Fall back to any APK with arm64
+        try {
+          return assets.firstWhere(
+            (a) => a['name']?.toString().contains('arm64') ?? false,
+          );
+        } catch (_) {
+          return assets.isNotEmpty ? assets.first : null;
+        }
+      }
+    } else if (os == 'windows') {
+      try {
+        return assets.firstWhere(
+          (a) => a['name']?.toString().endsWith('.exe') ?? false,
+        );
+      } catch (_) {
+        return assets.isNotEmpty ? assets.first : null;
+      }
+    } else if (os == 'linux') {
+      try {
+        return assets.firstWhere((a) {
+          final name = a['name']?.toString() ?? '';
+          return name.endsWith('.AppImage') || name.endsWith('.deb');
+        });
+      } catch (_) {
+        return assets.isNotEmpty ? assets.first : null;
+      }
+    }
+    return assets.isNotEmpty ? assets.first : null;
   }
 
-  /// Extract version from tag (e.g., "v1.0.0" -> "1.0.0")
+  /// Clean release notes
+  static String _cleanReleaseNotes(String body) {
+    return body
+        .replaceAll(RegExp(r'\[MANDATORY\]', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\[إلزامي\]', caseSensitive: false), '')
+        .replaceAll(RegExp(r'mandatory:\s*true', caseSensitive: false), '')
+        .trim();
+  }
+
+  /// Extract version from tag
   static String _extractVersion(String tag) {
-    return tag.replaceFirst(RegExp(r'^v'), '').trim();
+    String version = tag.replaceFirst(RegExp(r'^v'), '').trim();
+    version = version.replaceAll(RegExp(r'[bba-zB-Z].*$'), '');
+    return version;
   }
 
-  /// Compare versions: returns true if newVersion > currentVersion
+  /// Compare versions
   static bool _isVersionNewer(String newVersion, String currentVersion) {
-    final newParts = newVersion
+    String cleanNew = newVersion.replaceAll(RegExp(r'[bba-zB-Z].*$'), '');
+    String cleanCurrent = currentVersion.replaceAll(
+      RegExp(r'[bba-zB-Z].*$'),
+      '',
+    );
+
+    final newParts = cleanNew
         .split('.')
         .map((e) => int.tryParse(e) ?? 0)
         .toList();
-    final currentParts = currentVersion
+    final currentParts = cleanCurrent
         .split('.')
         .map((e) => int.tryParse(e) ?? 0)
         .toList();
@@ -184,266 +239,112 @@ class UpdateService {
     for (int i = 0; i < 3; i++) {
       final newVal = i < newParts.length ? newParts[i] : 0;
       final currentVal = i < currentParts.length ? currentParts[i] : 0;
-
       if (newVal > currentVal) return true;
       if (newVal < currentVal) return false;
     }
     return false;
   }
 
-  /// Show the update dialog with 3 options
-  static Future<void> _showUpdateDialog(
-    BuildContext context,
-    String latestVersion,
-    String downloadUrl,
-    String releaseNotes, {
-    bool isMandatory = false,
-  }) async {
-    await showDialog(
-      context: context,
-      barrierDismissible: !isMandatory, // Force update if mandatory
-      builder: (ctx) => _UpdateDialog(
-        version: latestVersion,
-        downloadUrl: downloadUrl,
-        releaseNotes: releaseNotes,
-        isMandatory: isMandatory,
-      ),
-    );
-  }
-
-  /// Mark current version as installed (call after successful update)
-  static Future<void> markAsInstalled(String version) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_installedVersionKey, version);
-  }
-
   /// Skip this version
   static Future<void> skipVersion(String version) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_skippedVersionKey, version);
+    await prefs.setInt(_lastSkippedKey, DateTime.now().millisecondsSinceEpoch);
+    _updateStreamController.add(null);
   }
 
-  /// Reset skipped version (for testing)
-  static Future<void> resetSkippedVersion() async {
+  /// Remind later - reset cooldown
+  static Future<void> remindLater() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_skippedVersionKey);
+    await prefs.setInt(_lastCheckKey, 0);
+    _updateStreamController.add(null);
   }
 
-  /// Force reset last check time (for testing)
+  /// Get the current update
+  static AppUpdate? get currentUpdate => _currentUpdate;
+
+  /// Force check now (bypass cooldown)
   static Future<void> forceCheckNow() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_lastCheckKey, 0);
+    await checkForUpdatesInBackground();
+  }
+
+  /// Check if should show What's New dialog
+  static Future<bool> shouldShowWhatsNew() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastUpdate = prefs.getString(_installedVersionKey);
+    final currentVersion = await getCurrentVersion();
+    return lastUpdate != null && lastUpdate != currentVersion;
+  }
+
+  /// Get stored release notes for What's New dialog
+  static Future<String> getWhatsNewNotes() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('whats_new_notes') ?? '';
+  }
+
+  /// Store release notes when updating
+  static Future<void> storeWhatsNewNotes(
+    String version,
+    String releaseNotes,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_installedVersionKey, version);
+    await prefs.setString('whats_new_notes', releaseNotes);
+  }
+
+  /// Mark version as installed
+  static Future<void> markAsInstalled(String version) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_installedVersionKey, version);
   }
 }
 
-/// Update dialog widget with 3 buttons
-class _UpdateDialog extends StatefulWidget {
-  final String version;
-  final String downloadUrl;
-  final String releaseNotes;
-  final bool isMandatory;
-
-  const _UpdateDialog({
-    required this.version,
-    required this.downloadUrl,
-    required this.releaseNotes,
-    this.isMandatory = false,
-  });
-
-  @override
-  State<_UpdateDialog> createState() => _UpdateDialogState();
-}
-
-class _UpdateDialogState extends State<_UpdateDialog> {
-  bool _isDownloading = false;
-  double _progress = 0;
-  String _status = '';
-  String? _error;
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isDownloading) {
-      return AlertDialog(
-        title: const Text('جاري التحديث...'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LinearProgressIndicator(value: _progress),
-            const SizedBox(height: 16),
-            Text(_status, textAlign: TextAlign.center),
-            if (_error != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                _error!,
-                style: const TextStyle(color: Colors.red, fontSize: 12),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ],
-        ),
-      );
+/// Platform-specific update installer
+class PlatformUpdateInstaller {
+  static Future<void> installUpdate(AppUpdate update) async {
+    if (Platform.isAndroid) {
+      await _installAndroid(update);
+    } else if (Platform.isWindows) {
+      await _installWindows(update);
+    } else if (Platform.isLinux) {
+      await _installLinux(update);
     }
-
-    return AlertDialog(
-      title: Row(
-        children: [
-          Icon(
-            widget.isMandatory ? Icons.warning_amber : Icons.system_update,
-            color: widget.isMandatory ? Colors.orange : Colors.green,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              widget.isMandatory ? 'تحديث إلزامي!' : 'يتوفر تحديث جديد',
-            ),
-          ),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'الإصدار الجديد: ${widget.version}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          if (widget.releaseNotes.isNotEmpty) ...[
-            const Text(
-              'ملاحظات الإصدار:',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              constraints: const BoxConstraints(maxHeight: 100),
-              child: SingleChildScrollView(
-                child: Text(
-                  widget.releaseNotes
-                      .replaceAll(RegExp(r'\[MANDATORY\]'), '')
-                      .replaceAll(RegExp(r'\[إلزامي\]'), '')
-                      .trim(),
-                  style: const TextStyle(fontSize: 12),
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.blue.withAlpha(25),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.blue),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'التحديث الذكي: سيتم تحميل إصدار محسّن (أصغر حجماً)',
-                    style: TextStyle(fontSize: 11, color: Colors.blue),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (widget.isMandatory) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.orange.withAlpha(25),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.warning_amber, size: 16, color: Colors.orange),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'هذا التحديث إلزامي لإصلاح مشكلة أمنية',
-                      style: TextStyle(fontSize: 11, color: Colors.orange),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-      actions: [
-        // Remind me later
-        if (!widget.isMandatory)
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('ذكرني لاحقاً'),
-          ),
-        // Skip this update
-        if (!widget.isMandatory)
-          TextButton(
-            onPressed: () async {
-              await UpdateService.skipVersion(widget.version);
-              if (mounted) Navigator.pop(context);
-            },
-            child: const Text('تخطي هذه المرة'),
-          ),
-        // Update now
-        ElevatedButton(
-          onPressed: _startDownload,
-          child: Text(widget.isMandatory ? 'تحديث الآن' : 'تحديث'),
-        ),
-      ],
-    );
   }
 
-  Future<void> _startDownload() async {
-    setState(() {
-      _isDownloading = true;
-      _status = 'جاري التحميل...';
-      _error = null;
-    });
+  /// Android: Use DownloadManager and request unknown sources
+  static Future<void> _installAndroid(AppUpdate update) async {
+    // For now, we'll use a simpler approach with the system browser
+    // A full implementation would use DownloadManager and PackageManager
+    debugPrint('Android update: Starting download from ${update.downloadUrl}');
 
-    try {
-      await AppInstallerPlus().downloadAndInstallApk(
-        downloadFileUrl: widget.downloadUrl,
-        onProgress: (progress) {
-          if (mounted) {
-            setState(() {
-              _progress = progress;
-              _status = 'جاري التحميل: ${(progress * 100).toStringAsFixed(0)}%';
-            });
-          }
-        },
-        onDownloadedSize: (size) {
-          debugPrint('Downloaded: $size');
-        },
-        onTotalSize: (size) {
-          debugPrint('Total: $size');
-        },
-        onSpeed: (speed) {
-          debugPrint('Speed: $speed');
-        },
-        onTimeLeft: (eta) {
-          debugPrint('ETA: $eta');
-        },
-      );
+    // Note: Full Android implementation requires:
+    // 1. DownloadManager API for background downloads
+    // 2. REQUEST_INSTALL_PACKAGES permission (already added)
+    // 3. PackageManager to install silently
 
-      // Mark as installed after successful download
-      await UpdateService.markAsInstalled(widget.version);
+    // For demonstration, we'll use the URL launcher approach
+    // which opens the browser and lets user download
+    throw UnimplementedError('Use UpdateConfirmPage for Android update flow');
+  }
 
-      if (mounted) {
-        setState(() => _status = 'جاري التثبيت...');
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'فشل التحميل: $e';
-          _status = 'حدث خطأ';
-        });
-      }
-    }
+  /// Windows: Download and run installer
+  static Future<void> _installWindows(AppUpdate update) async {
+    debugPrint('Windows update: Downloading ${update.downloadUrl}');
+    // Implementation would:
+    // 1. Download the .exe to temp folder
+    // 2. Run the installer with elevated privileges
+    // 3. Restart app after update
+    throw UnimplementedError('Use UpdateConfirmPage for Windows update flow');
+  }
+
+  /// Linux: Download and run installer/AppImage
+  static Future<void> _installLinux(AppUpdate update) async {
+    debugPrint('Linux update: Downloading ${update.downloadUrl}');
+    // Implementation would:
+    // 1. Download AppImage/deb
+    // 2. Make executable and run
+    throw UnimplementedError('Use UpdateConfirmPage for Linux update flow');
   }
 }

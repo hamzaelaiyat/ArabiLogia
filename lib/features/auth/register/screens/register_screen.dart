@@ -242,7 +242,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           const SizedBox(height: AppTokens.spacing12),
           Text(
-            'لقد أرسلنا رمز تفعيل مكون من 6 أرقام إلى بريدك الإلكتروني:',
+            'لقد أرسلنا رمز تفعيل مكون من 6 إلى 8 أرقام إلى بريدك الإلكتروني:',
             style: TextStyle(
               color: AppColors.authHeaderColor(context),
               fontSize: AppTokens.fontSizeMd,

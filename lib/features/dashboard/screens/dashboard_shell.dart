@@ -309,7 +309,7 @@ class DashboardShell extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.all(AppTokens.spacing8),
                     child: Text(
-                      'v0.0.1b',
+                      'v0.0.32b',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.mutedColor(context),
                       ),

@@ -64,7 +64,10 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
     if (success && mounted) {
       setState(() => _isSubmitted = true);
     } else if (mounted) {
-      setState(() => _errorMessage = 'فشل في إرسال رابط إعادة التعيين. يرجى التحقق من البريد الإلكتروني.');
+      setState(
+        () => _errorMessage =
+            'فشل في إرسال رابط إعادة التعيين. يرجى التحقق من البريد الإلكتروني.',
+      );
     }
   }
 
@@ -231,8 +234,8 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
             const SizedBox(height: AppTokens.spacing8),
             Text(
               _isSubmitted
-                  ? 'تم إرسال رمز إعادة التعيين المكون من 6 أرقام إلى بريدك الإلكتروني'
-                  : 'أدخل بريدك الإلكتروني لإرسال رمز إعادة التعيين المكون من 6 أرقام',
+                  ? 'تم إرسال رمز إعادة التعيين المكون من 6 إلى 8 أرقام إلى بريدك الإلكتروني'
+                  : 'أدخل بريدك الإلكتروني لإرسال رمز إعادة التعيين المكون من 6 إلى 8 أرقام',
               style: TextStyle(
                 color: AppColors.authTextColor(context),
                 fontWeight: FontWeight.w500,
@@ -272,7 +275,8 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'يرجى إدخال الرمز';
-                  if (value.length != 6) return 'الرمز يجب أن يكون 6 أرقام';
+                  if (value.length < 6 || value.length > 8)
+                    return 'الرمز يجب أن يكون 6 إلى 8 أرقام';
                   return null;
                 },
               ),

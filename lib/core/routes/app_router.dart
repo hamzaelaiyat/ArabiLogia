@@ -6,6 +6,7 @@ import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/auth/login/screens/login_screen.dart';
 import 'package:arabilogia/features/auth/register/screens/register_screen.dart';
+import 'package:arabilogia/features/auth/update_confirm/screens/update_confirm_page.dart';
 import 'package:arabilogia/features/dashboard/screens/dashboard_shell.dart';
 import 'package:arabilogia/features/dashboard/home/screens/home_screen.dart';
 import 'package:arabilogia/features/dashboard/exams/screens/exams_screen.dart';
@@ -133,6 +134,19 @@ class AppRouter {
           state: state,
           child: const RegisterScreen(),
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.updateConfirm,
+        name: 'update-confirm',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final update = state.extra as dynamic;
+          return AppRouter._buildPage(
+            context: context,
+            state: state,
+            child: UpdateConfirmPage(update: update),
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.teacherPanel,

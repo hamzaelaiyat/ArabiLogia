@@ -1,11 +1,31 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Required for Google Mobile Ads -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Required for app_installer_plus to install APKs -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
     
     <application
         android:label="منصة عربيلوجيا"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true">
+        
+        <!-- AdMob App ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-8677686078416176~8033124601"/>
+        
+        <!-- FileProvider for app_installer_plus APK installation -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"/>
+        </provider>
         
         <!-- AdMob App ID -->
         <meta-data

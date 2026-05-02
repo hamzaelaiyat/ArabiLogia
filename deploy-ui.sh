@@ -41,7 +41,7 @@ run_interactive_config() {
         ANDROID_ARCHS="arm64-v8a"
         LINUX_BUILDS="tar"
         PUBLISH="yes"
-        AUTO_BUMP="yes"
+        # AUTO_BUMP stays as-is (default no)
         echo "   📱 Version: $VERSION (auto-bump: $AUTO_BUMP, publish: $PUBLISH)"
     fi
     

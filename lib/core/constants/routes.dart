@@ -24,4 +24,7 @@ abstract class AppRoutes {
   static const String teacherSettings = '/admin/teacher-settings';
   static const String examPreview = '/admin/exam-preview';
   static const String examEditor = '/admin/exam-editor';
+
+  // Update Routes
+  static const String updateConfirm = '/update-confirm';
 }

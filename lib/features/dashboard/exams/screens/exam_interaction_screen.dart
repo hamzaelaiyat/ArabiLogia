@@ -353,16 +353,15 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
                 minHeight: 6,
               ),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppTokens.spacing16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Passage Card (if exists)
-                      if (currentQuestion.passage != null) ...[
-                        Container(
+                child: Column(
+                  children: [
+                    // Scrollable Passage Area (if exists)
+                    if (currentQuestion.passage != null)
+                      Expanded(
+                        flex: 2,
+                        child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(AppTokens.spacing16),
+                          constraints: const BoxConstraints(maxHeight: 200),
                           decoration: BoxDecoration(
                             color: AppColors.surface(context),
                             borderRadius: AppTokens.radiusLgAll,
@@ -371,118 +370,144 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
                                   .withValues(alpha: 0.1),
                             ),
                           ),
-                          child: Text(
-                            currentQuestion.passage!,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  height: 1.8,
-                                  color: AppColors.foreground(context),
-                                ),
-                          ),
-                        ),
-                        const SizedBox(height: AppTokens.spacing24),
-                      ],
-
-                      // Question Section
-                      Text(
-                        'السؤال ${_currentQuestionIndex + 1} من ${_exam!.questions.length}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.mutedColor(context),
-                        ),
-                      ),
-                      const SizedBox(height: AppTokens.spacing8),
-                      Text(
-                        currentQuestion.text,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: AppTokens.spacing24),
-
-                      // Options
-                      ...currentQuestion.options.map((option) {
-                        final isSelected =
-                            _selectedAnswers[_currentQuestionIndex] ==
-                            option.id;
-                        return Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: AppTokens.spacing12,
-                          ),
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _selectedAnswers[_currentQuestionIndex] =
-                                    option.id;
-                              });
-                              // Save session on each answer change
-                              _saveSession();
-                            },
+                          child: ClipRRect(
                             borderRadius: AppTokens.radiusLgAll,
-                            child: Container(
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
                               padding: const EdgeInsets.all(
                                 AppTokens.spacing16,
                               ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? (category?.color ?? AppColors.primary)
-                                          .withValues(alpha: 0.1)
-                                    : AppColors.surface(context),
-                                borderRadius: AppTokens.radiusLgAll,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? (category?.color ?? AppColors.primary)
-                                      : Colors.transparent,
-                                  width: 2,
-                                ),
+                              child: Text(
+                                currentQuestion.passage!,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      height: 1.8,
+                                      color: AppColors.foreground(context),
+                                    ),
                               ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 24,
-                                    height: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (currentQuestion.passage != null)
+                      const SizedBox(height: AppTokens.spacing16),
+
+                    // Question Section (always visible)
+                    Expanded(
+                      flex: 3,
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'السؤال ${_currentQuestionIndex + 1} من ${_exam!.questions.length}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.mutedColor(context),
+                                  ),
+                            ),
+                            const SizedBox(height: AppTokens.spacing8),
+                            Text(
+                              currentQuestion.text,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: AppTokens.spacing24),
+
+                            // Options
+                            ...currentQuestion.options.map((option) {
+                              final isSelected =
+                                  _selectedAnswers[_currentQuestionIndex] ==
+                                  option.id;
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: AppTokens.spacing12,
+                                ),
+                                child: InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedAnswers[_currentQuestionIndex] =
+                                          option.id;
+                                    });
+                                    // Save session on each answer change
+                                    _saveSession();
+                                  },
+                                  borderRadius: AppTokens.radiusLgAll,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(
+                                      AppTokens.spacing16,
+                                    ),
                                     decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
+                                      color: isSelected
+                                          ? (category?.color ??
+                                                    AppColors.primary)
+                                                .withValues(alpha: 0.1)
+                                          : AppColors.surface(context),
+                                      borderRadius: AppTokens.radiusLgAll,
                                       border: Border.all(
                                         color: isSelected
                                             ? (category?.color ??
                                                   AppColors.primary)
-                                            : AppColors.mutedColor(context),
+                                            : Colors.transparent,
+                                        width: 2,
                                       ),
                                     ),
-                                    child: isSelected
-                                        ? Center(
-                                            child: Container(
-                                              width: 12,
-                                              height: 12,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color:
-                                                    (category?.color ??
-                                                    AppColors.primary),
-                                              ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 24,
+                                          height: 24,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? (category?.color ??
+                                                        AppColors.primary)
+                                                  : AppColors.mutedColor(
+                                                      context,
+                                                    ),
                                             ),
-                                          )
-                                        : null,
-                                  ),
-                                  const SizedBox(width: AppTokens.spacing12),
-                                  Expanded(
-                                    child: Text(
-                                      option.text,
-                                      style: TextStyle(
-                                        fontWeight: isSelected
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                      ),
+                                          ),
+                                          child: isSelected
+                                              ? Center(
+                                                  child: Container(
+                                                    width: 12,
+                                                    height: 12,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color:
+                                                          (category?.color ??
+                                                          AppColors.primary),
+                                                    ),
+                                                  ),
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(
+                                          width: AppTokens.spacing12,
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            option.text,
+                                            style: TextStyle(
+                                              fontWeight: isSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 

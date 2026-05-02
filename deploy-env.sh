@@ -21,7 +21,7 @@ ANDROID_ARCHS=""
 LINUX_BUILDS=""
 PUBLISH="no"
 AUTO_BUMP="no"
-USE_AI="yes"
+USE_AI="no"
 FLUTTER=""
 
 # Theme
