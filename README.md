@@ -1,7 +1,7 @@
 <p align="center">
   <img src="https://github.com/hamzaelaiyat/ArabiLogia/blob/main/assets/images/logo-removedbg.png" width="200">
 </p>
-<h1>ArabiLogia Platform</h1>
+<h1 align="center">ArabiLogia Platform</h1>
 
 A Flutter mobile application for learning Arabic language, featuring grammar, morphology, literature, poetry, and reading comprehension exercises for high school students (Grades 10-12).
 
