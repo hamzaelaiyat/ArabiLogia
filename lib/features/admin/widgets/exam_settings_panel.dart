@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
-import 'package:arabilogia/widgets/potato_switch.dart';
 
 class ExamSettingsPanel extends StatelessWidget {
   final String title;
@@ -11,19 +10,15 @@ class ExamSettingsPanel extends StatelessWidget {
   final int durationMinutes;
   final bool durationEnabled;
   final bool isPublished;
-  final List<Map<String, String>> passages;
   final bool isMobile;
   final Function(String) onTitleChanged;
   final Function(String) onCategoryChanged;
   final Function(int) onGradeChanged;
   final Function(int) onDurationChanged;
   final Function(bool) onDurationToggle;
-  final Function(String, String) onAddPassage;
-  final Function(int) onDeletePassage;
   final VoidCallback onCancel;
   final VoidCallback onSaveDraft;
   final VoidCallback onPublish;
-  final VoidCallback onPreview;
 
   const ExamSettingsPanel({
     super.key,
@@ -33,24 +28,21 @@ class ExamSettingsPanel extends StatelessWidget {
     required this.durationMinutes,
     required this.durationEnabled,
     required this.isPublished,
-    required this.passages,
     this.isMobile = false,
     required this.onTitleChanged,
     required this.onCategoryChanged,
     required this.onGradeChanged,
     required this.onDurationChanged,
     required this.onDurationToggle,
-    required this.onAddPassage,
-    required this.onDeletePassage,
     required this.onCancel,
     required this.onSaveDraft,
     required this.onPublish,
-    required this.onPreview,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       color: isDark ? AppColors.bgDark : AppColors.bgLight,
       child: SafeArea(
@@ -61,26 +53,17 @@ class ExamSettingsPanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildHeader(context, isDark),
+              _buildHeader(context),
               const SizedBox(height: AppTokens.spacing24),
-              _buildSectionTitle(
-                'الإعدادات',
-                Icons.settings_outlined,
-                context,
-                isDark,
-              ),
-              const SizedBox(height: AppTokens.spacing32),
-              _buildTitleField(context, isDark),
+              _buildTitleField(context),
+              const SizedBox(height: AppTokens.spacing16),
+              _buildCategoryField(context),
+              const SizedBox(height: AppTokens.spacing16),
+              _buildGradeField(context),
+              const SizedBox(height: AppTokens.spacing16),
+              _buildDurationField(context),
               const SizedBox(height: AppTokens.spacing24),
-              _buildCategoryField(context, isDark),
-              const SizedBox(height: AppTokens.spacing24),
-              _buildGradeField(context, isDark),
-              const SizedBox(height: AppTokens.spacing24),
-              _buildDurationField(context, isDark),
-              const SizedBox(height: AppTokens.spacing32),
-              _buildPassagesSection(context, isDark),
-              const SizedBox(height: AppTokens.spacing32),
-              _buildActionButtons(context, isDark),
+              _buildActionButtons(context),
             ],
           ),
         ),
@@ -88,7 +71,7 @@ class ExamSettingsPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, bool isDark) {
+  Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
         IconButton(
@@ -106,34 +89,6 @@ class ExamSettingsPanel extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        IconButton(
-          onPressed: onPreview,
-          icon: const Icon(Icons.devices),
-          tooltip: 'معاينة',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionTitle(
-    String title,
-    IconData icon,
-    BuildContext context,
-    bool isDark,
-  ) {
-    return Row(
-      children: [
-        Icon(icon, color: AppColors.primary),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: AppTokens.fontSize2xl,
-            fontWeight: FontWeight.bold,
-            fontFamily: AppTokens.fontFamilyDisplay,
-            color: AppColors.foreground(context),
-          ),
-        ),
       ],
     );
   }
@@ -151,39 +106,31 @@ class ExamSettingsPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildTitleField(BuildContext context, bool isDark) {
+  Widget _buildTitleField(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildFieldLabel('عنوان الامتحان'),
         TextFormField(
           initialValue: title,
-          decoration: _inputDecoration(
-            'أدخل عنوان الامتحان...',
-            Icons.title,
-            isDark,
-            context,
-          ),
+          decoration: _inputDecoration('أدخل عنوان الامتحان...', Icons.title, context),
           onChanged: onTitleChanged,
         ),
       ],
     );
   }
 
-  Widget _buildCategoryField(BuildContext context, bool isDark) {
+  Widget _buildCategoryField(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildFieldLabel('الفرع'),
         DropdownButtonFormField<String>(
           value: selectedCategoryId,
-          decoration: _inputDecoration(
-            'اختر الفرع',
-            Icons.category_outlined,
-            isDark,
-            context,
-          ),
+          decoration: _inputDecoration('اختر الفرع', Icons.category_outlined, context),
           dropdownColor: isDark ? AppColors.bgDark : Colors.white,
+          isExpanded: true,
           items: CategoryMetadata.categories
               .map(
                 (cat) => DropdownMenuItem(
@@ -192,7 +139,12 @@ class ExamSettingsPanel extends StatelessWidget {
                     children: [
                       Icon(cat.icon, color: cat.color, size: 18),
                       const SizedBox(width: 12),
-                      Text(cat.name),
+                      Flexible(
+                        child: Text(
+                          cat.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -206,20 +158,17 @@ class ExamSettingsPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildGradeField(BuildContext context, bool isDark) {
+  Widget _buildGradeField(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildFieldLabel('الصف الدراسي'),
         DropdownButtonFormField<int>(
           value: selectedGrade,
-          decoration: _inputDecoration(
-            'اختر الصف',
-            Icons.school_outlined,
-            isDark,
-            context,
-          ),
+          decoration: _inputDecoration('اختر الصف', Icons.school_outlined, context),
           dropdownColor: isDark ? AppColors.bgDark : Colors.white,
+          isExpanded: true,
           items: const [
             DropdownMenuItem(value: 1, child: Text('الأول الثانوية')),
             DropdownMenuItem(value: 2, child: Text('الثاني الثانوية')),
@@ -233,7 +182,8 @@ class ExamSettingsPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildDurationField(BuildContext context, bool isDark) {
+  Widget _buildDurationField(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -241,10 +191,10 @@ class ExamSettingsPanel extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _buildFieldLabel('تفعيل المؤقت'),
-            PotatoSwitch(
+            _TimerToggle(
               value: durationEnabled,
-              activeColor: AppColors.primary,
               onChanged: onDurationToggle,
+              isDark: isDark,
             ),
           ],
         ),
@@ -253,12 +203,7 @@ class ExamSettingsPanel extends StatelessWidget {
           TextFormField(
             initialValue: durationMinutes.toString(),
             keyboardType: TextInputType.number,
-            decoration: _inputDecoration(
-              'المدة بالدقائق',
-              Icons.timer_outlined,
-              isDark,
-              context,
-            ),
+            decoration: _inputDecoration('المدة بالدقائق', Icons.timer_outlined, context),
             onChanged: (value) {
               final parsed = int.tryParse(value);
               if (parsed != null) onDurationChanged(parsed);
@@ -269,163 +214,9 @@ class ExamSettingsPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildPassagesSection(BuildContext context, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.article_outlined, color: AppColors.primary),
-            const SizedBox(width: 12),
-            Text(
-              'المقروءات',
-              style: TextStyle(
-                fontSize: AppTokens.fontSizeXl,
-                fontWeight: FontWeight.bold,
-                color: AppColors.foreground(context),
-              ),
-            ),
-            const Spacer(),
-            IconButton(
-              onPressed: () => _showAddPassageDialog(context),
-              icon: const Icon(Icons.add_circle, color: AppColors.primary),
-              tooltip: 'إضافة مقروء',
-            ),
-          ],
-        ),
-        const SizedBox(height: AppTokens.spacing16),
-        if (passages.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(AppTokens.spacing16),
-            decoration: BoxDecoration(
-              color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(AppTokens.radiusMd),
-              border: Border.all(color: AppColors.mutedColor(context)),
-            ),
-            child: Text(
-              'لم تقم بإضافة مقروءات بعد.\nاضغط + لإضافة مقروء جديد.',
-              style: TextStyle(
-                color: AppColors.mutedColor(context),
-                fontSize: AppTokens.fontSizeSm,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          )
-        else
-          ...List.generate(
-            passages.length,
-            (idx) => _buildPassageItem(context, passages[idx], idx, isDark),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildPassageItem(
-    BuildContext context,
-    Map<String, String> passage,
-    int idx,
-    bool isDark,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
-        border: Border.all(color: AppColors.mutedColor(context)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  passage['title'] ?? 'بدون عنوان',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: AppTokens.fontSizeSm,
-                    color: AppColors.foreground(context),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${passage['content']?.length ?? 0} حرف',
-                  style: TextStyle(
-                    color: AppColors.mutedColor(context),
-                    fontSize: AppTokens.fontSizeXs,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => onDeletePassage(idx),
-            icon: const Icon(
-              Icons.delete_outline,
-              color: AppColors.error,
-              size: 20,
-            ),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddPassageDialog(BuildContext context) {
-    final titleController = TextEditingController();
-    final contentController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('إضافة مقروء جديد'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: 'عنوان المقروء',
-                  hintText: 'مثال: مقروء الوحدة الأولى',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: contentController,
-                maxLines: 8,
-                decoration: const InputDecoration(
-                  labelText: 'نص المقروء',
-                  hintText: 'أدخل النص الكامل للمقروء...',
-                  alignLabelWithHint: true,
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (titleController.text.isNotEmpty &&
-                  contentController.text.isNotEmpty) {
-                onAddPassage(titleController.text, contentController.text);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('إضافة'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(BuildContext context, bool isDark) {
+  Widget _buildActionButtons(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fgColor = AppColors.foreground(context);
     return Row(
       children: [
         Expanded(
@@ -434,8 +225,8 @@ class ExamSettingsPanel extends StatelessWidget {
             icon: const Icon(Icons.save_outlined),
             label: Text(isPublished ? 'حفظ التعديلات' : 'حفظ كمسودة'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.foreground(context),
-              side: BorderSide(color: AppColors.mutedColor(context)),
+              foregroundColor: fgColor,
+              side: BorderSide(color: isDark ? Colors.white38 : Colors.grey.shade400),
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: AppTokens.radiusLgAll,
@@ -450,13 +241,13 @@ class ExamSettingsPanel extends StatelessWidget {
             icon: Icon(isPublished ? Icons.check_circle : Icons.publish),
             label: Text(isPublished ? 'تم النشر' : 'نشر الآن'),
             style: FilledButton.styleFrom(
-              backgroundColor: isPublished ? Colors.green : AppColors.primary,
+              backgroundColor: isPublished ? AppColors.success : AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: AppTokens.radiusLgAll,
               ),
-              elevation: 0,
+              elevation: AppTokens.elevationNone,
             ),
           ),
         ),
@@ -467,7 +258,6 @@ class ExamSettingsPanel extends StatelessWidget {
   InputDecoration _inputDecoration(
     String hint,
     IconData icon,
-    bool isDark,
     BuildContext context,
   ) {
     return InputDecoration(
@@ -480,6 +270,65 @@ class ExamSettingsPanel extends StatelessWidget {
         borderSide: BorderSide.none,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+}
+
+class _TimerToggle extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final bool isDark;
+
+  const _TimerToggle({
+    required this.value,
+    required this.onChanged,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: AppTokens.durationFast,
+        width: 56,
+        height: 32,
+        decoration: BoxDecoration(
+          color: value 
+              ? AppColors.primary 
+              : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Stack(
+          children: [
+            AnimatedPositioned(
+              duration: AppTokens.durationFast,
+              left: value ? 28 : 4,
+              top: 4,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  value ? Icons.timer : Icons.timer_off_outlined,
+                  size: 14,
+                  color: value ? AppColors.primary : Colors.grey,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

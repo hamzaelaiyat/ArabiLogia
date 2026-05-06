@@ -34,7 +34,7 @@ class DarkTheme {
       foregroundColor: AppColors.fgDark,
       elevation: 0,
       centerTitle: true,
-      titleTextStyle: GoogleFonts.readexPro(
+      titleTextStyle: GoogleFonts.rubik(
         fontSize: AppTokens.fontSizeXl,
         fontWeight: FontWeight.w600,
         color: AppColors.fgDark,
@@ -200,42 +200,42 @@ class DarkTheme {
     const muted = AppColors.mutedDark;
 
     return TextTheme(
-      displayLarge: GoogleFonts.readexPro(
+      displayLarge: GoogleFonts.rubik(
         fontSize: AppTokens.fontSize5xl,
         fontWeight: FontWeight.bold,
         color: fg,
       ),
-      displayMedium: GoogleFonts.readexPro(
+      displayMedium: GoogleFonts.rubik(
         fontSize: AppTokens.fontSize6xl,
         fontWeight: FontWeight.bold,
         color: fg,
       ),
-      displaySmall: GoogleFonts.readexPro(
+      displaySmall: GoogleFonts.rubik(
         fontSize: AppTokens.fontSize4xl,
         fontWeight: FontWeight.w600,
         color: fg,
       ),
-      headlineLarge: GoogleFonts.readexPro(
+      headlineLarge: GoogleFonts.rubik(
         fontSize: AppTokens.fontSize5xl,
         fontWeight: FontWeight.w700,
         color: fg,
       ),
-      headlineMedium: GoogleFonts.readexPro(
+      headlineMedium: GoogleFonts.rubik(
         fontSize: AppTokens.fontSize4xl,
         fontWeight: FontWeight.bold,
         color: fg,
       ),
-      headlineSmall: GoogleFonts.readexPro(
+      headlineSmall: GoogleFonts.rubik(
         fontSize: AppTokens.fontSize3xl,
         fontWeight: FontWeight.w600,
         color: fg,
       ),
-      titleLarge: GoogleFonts.readexPro(
+      titleLarge: GoogleFonts.rubik(
         fontSize: AppTokens.fontSize2xl,
         fontWeight: FontWeight.w600,
         color: fg,
       ),
-      titleMedium: GoogleFonts.readexPro(
+      titleMedium: GoogleFonts.rubik(
         fontSize: AppTokens.fontSizeXl,
         fontWeight: FontWeight.w600,
         color: fg,

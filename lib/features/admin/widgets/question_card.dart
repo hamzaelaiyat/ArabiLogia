@@ -6,6 +6,10 @@ import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/models/question_style.dart';
 
 class QuestionCard extends StatelessWidget {
+  static String? _defaultGetPassageValue(String? value) => null;
+  static String? _defaultGetPassageContent(String? value) => null;
+  static bool _defaultIsSavedPassage(String? value) => false;
+
   final Question question;
   final QuestionSettings? settings;
   final int index;
@@ -23,15 +27,17 @@ class QuestionCard extends StatelessWidget {
     required this.question,
     this.settings,
     required this.index,
-    required this.passages,
-    required this.getPassageValue,
-    required this.getPassageContent,
-    required this.isSavedPassage,
+    this.passages = const [],
+    String? Function(String?)? getPassageValue,
+    String? Function(String?)? getPassageContent,
+    bool Function(String?)? isSavedPassage,
     this.isMobile = false,
     required this.onDelete,
     required this.onUpdate,
     this.onSettingsUpdate,
-  });
+  })  : getPassageValue = getPassageValue ?? _defaultGetPassageValue,
+        getPassageContent = getPassageContent ?? _defaultGetPassageContent,
+        isSavedPassage = isSavedPassage ?? _defaultIsSavedPassage;
 
   @override
   Widget build(BuildContext context) {
@@ -217,7 +223,6 @@ class QuestionCard extends StatelessWidget {
     final option = optIndex < question.options.length
         ? question.options[optIndex]
         : Option(id: 'o${optIndex + 1}', text: '', isCorrect: false);
-    final isCorrect = option.isCorrect;
     final correctIdx = question.options.indexWhere((o) => o.isCorrect);
     final isSelectedCorrect = correctIdx >= 0 && correctIdx == optIndex;
 
@@ -225,7 +230,7 @@ class QuestionCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          // Radio button
+          // Clickable option label (أ, ب, جـ, د) - acts as radio button
           GestureDetector(
             onTap: () {
               final updatedOpts = <Option>[];
@@ -241,32 +246,33 @@ class QuestionCard extends StatelessWidget {
               onUpdate(_copyWithQuestion(question, options: updatedOpts));
             },
             child: Container(
-              width: 24,
-              height: 24,
+              width: 32,
+              height: 32,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                color: isSelectedCorrect
+                    ? AppColors.primary
+                    : (isDark ? Colors.white10 : Colors.grey.shade100),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: isSelectedCorrect ? Colors.green : Colors.grey[400]!,
-                  width: 2,
+                  color: isSelectedCorrect
+                      ? AppColors.primary.withValues(alpha: 0.3)
+                      : (isDark ? Colors.white12 : Colors.black12),
+                  width: 1.5,
                 ),
-                color: isSelectedCorrect ? Colors.green : Colors.transparent,
               ),
-              child: isSelectedCorrect
-                  ? const Icon(Icons.check, size: 16, color: Colors.white)
-                  : null,
+              child: Text(
+                ['أ', 'ب', 'جـ', 'د'][optIndex],
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isSelectedCorrect ? Colors.white : AppColors.foreground(context),
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 12),
-          // Option letter (A, B, C, D)
-          Text(
-            ['أ', 'ب', 'ج', 'د'][optIndex],
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isSelectedCorrect ? Colors.green : Colors.grey[600],
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Underline input - RTL support
+          // Answer text input
           Expanded(
             child: TextFormField(
               initialValue: option.text,
@@ -274,48 +280,40 @@ class QuestionCard extends StatelessWidget {
               textAlign: TextAlign.right,
               style: TextStyle(
                 fontSize: 14,
+                fontWeight: isSelectedCorrect ? FontWeight.w600 : FontWeight.normal,
                 color: AppColors.foreground(context),
               ),
               decoration: InputDecoration(
                 hintText: 'إجابة...',
-                hintStyle: TextStyle(
-                  color: AppColors.mutedColor(context),
-                  fontSize: 13,
-                ),
+                hintStyle: TextStyle(color: AppColors.mutedColor(context), fontSize: 13),
                 filled: false,
-                border: UnderlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.mutedColor(context)),
-                ),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.mutedColor(context)),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(
-                    color: isSelectedCorrect ? Colors.green : AppColors.primary,
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
                 isDense: true,
               ),
-              onChanged: (val) {
-                final updatedOpts = <Option>[];
-                for (int i = 0; i < question.options.length; i++) {
-                  updatedOpts.add(
-                    Option(
-                      id: question.options[i].id,
-                      text: i == optIndex ? val : question.options[i].text,
-                      isCorrect: question.options[i].isCorrect,
-                    ),
-                  );
-                }
-                onUpdate(_copyWithQuestion(question, options: updatedOpts));
-              },
+              onChanged: (val) => _updateOptionText(optIndex, val),
             ),
           ),
+          if (isSelectedCorrect) const SizedBox(width: 8),
+            if (isSelectedCorrect)
+              const Icon(Icons.check_circle, size: 20, color: AppColors.primary),
         ],
       ),
     );
+  }
+
+  void _updateOptionText(int optIndex, String val) {
+    final updatedOpts = <Option>[];
+    for (int i = 0; i < question.options.length; i++) {
+      updatedOpts.add(
+        Option(
+          id: question.options[i].id,
+          text: i == optIndex ? val : question.options[i].text,
+          isCorrect: question.options[i].isCorrect,
+        ),
+      );
+    }
+    onUpdate(_copyWithQuestion(question, options: updatedOpts));
   }
 
   Question _copyWithQuestion(
@@ -511,15 +509,15 @@ class _QuestionInputWithToolbarState extends State<_QuestionInputWithToolbar> {
                       fillColor: _text.isEmpty
                           ? null
                           : Colors.transparent,
-                      border: UnderlineInputBorder(
-                        borderSide: BorderSide(color: AppColors.mutedColor(context)),
-                      ),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: AppColors.mutedColor(context)),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: AppColors.primary, width: 2),
-                      ),
+                       border: UnderlineInputBorder(
+                         borderSide: BorderSide(color: AppColors.mutedColor(context)),
+                       ),
+                       enabledBorder: UnderlineInputBorder(
+                         borderSide: BorderSide(color: AppColors.mutedColor(context)),
+                       ),
+                       focusedBorder: UnderlineInputBorder(
+                         borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         vertical: 8,
                         horizontal: 12,
@@ -575,6 +573,26 @@ class _QuestionInputWithToolbarState extends State<_QuestionInputWithToolbar> {
     return PopupMenuButton<int>(
       offset: const Offset(0, 40),
       tooltip: 'لون النص',
+      itemBuilder: (context) => List.generate(10, (index) {
+        return PopupMenuItem<int>(
+          value: index,
+          child: Row(
+            children: [
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: QuestionTextStyle.textColors[index],
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey.shade300, width: 1),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(QuestionTextStyle.colorNames[index]),
+            ],
+          ),
+        );
+      }),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
@@ -596,30 +614,6 @@ class _QuestionInputWithToolbarState extends State<_QuestionInputWithToolbar> {
           ],
         ),
       ),
-      itemBuilder: (context) => List.generate(10, (index) {
-        return PopupMenuItem<int>(
-          value: index,
-          child: Row(
-            children: [
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: QuestionTextStyle.textColors[index],
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey.shade300, width: 1),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                QuestionTextStyle.colorNames[index],
-                style: const TextStyle(fontSize: 12),
-              ),
-            ],
-          ),
-        );
-      }),
-      onSelected: _applyColor,
     );
   }
 }

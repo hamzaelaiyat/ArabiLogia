@@ -1,6 +1,7 @@
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
+import 'package:arabilogia/features/dashboard/exams/models/question_style.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/result_share_card.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
@@ -405,9 +406,14 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            question.text,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          RichText(
+            text: TextSpan(
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              children: parseQuestionText(
+                question.text,
+                isDark: Theme.of(context).brightness == Brightness.dark,
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           _buildAnswerBox(

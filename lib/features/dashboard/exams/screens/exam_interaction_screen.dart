@@ -5,6 +5,7 @@ import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_session.dart';
+import 'package:arabilogia/features/dashboard/exams/models/question_style.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/services/exam_session_service.dart';
@@ -408,10 +409,15 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
                                   ),
                             ),
                             const SizedBox(height: AppTokens.spacing8),
-                            Text(
-                              currentQuestion.text,
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            RichText(
+                              text: TextSpan(
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                children: parseQuestionText(
+                                  currentQuestion.text,
+                                  isDark: Theme.of(context).brightness == Brightness.dark,
+                                ),
+                              ),
                             ),
                             const SizedBox(height: AppTokens.spacing24),
 

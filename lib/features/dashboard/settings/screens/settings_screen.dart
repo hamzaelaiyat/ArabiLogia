@@ -158,21 +158,6 @@ class SettingsScreen extends StatelessWidget {
                   }).toList(),
                 ),
               ),
-              const Divider(height: 1),
-              PotatoSwitchListTile(
-                secondary: const Icon(Icons.animation_outlined),
-                title: const Text('تفعيل الحركة'),
-                value: potato.animationsEnabled,
-                onChanged: (value) {
-                  // value=true means "animations ON" -> potato off (all animations)
-                  // value=false means "animations OFF" -> potato mode on (reduced animations)
-                  if (value) {
-                    potato.setPotatoLevel(PotatoLevel.off);
-                  } else {
-                    potato.setPotatoLevel(PotatoLevel.sweet);
-                  }
-                },
-              ),
             ],
           );
         },
@@ -562,6 +547,65 @@ class SettingsScreen extends StatelessWidget {
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
           color: AppColors.primary,
           fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleTile({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required bool value,
+    required Function(bool) onToggle,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
+      onTap: () => onToggle(!value),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 22, color: AppColors.primary),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: AppTokens.fontSizeMd,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.foreground(context),
+                ),
+              ),
+            ),
+            Container(
+              width: 50,
+              height: 28,
+              decoration: BoxDecoration(
+                color: value 
+                    ? AppColors.primary 
+                    : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Stack(
+                children: [
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 150),
+                    left: value ? 26 : 4,
+                    top: 4,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+),
+          ],
         ),
       ),
     );

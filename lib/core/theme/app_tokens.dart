@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AppTokens {
   AppTokens._();
 
-  static const String fontFamilyDisplay = 'ReadexPro';
+  static const String fontFamilyDisplay = 'Rubik';
   static const String fontFamilyBody = 'Rubik';
 
   static const double fontSizeXs = 11.0;
