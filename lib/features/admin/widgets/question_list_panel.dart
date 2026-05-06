@@ -89,6 +89,7 @@ class QuestionListPanel extends StatelessWidget {
                     itemCount: questions.length + 1,
                     itemBuilder: (context, index) {
                       if (index == questions.length) {
+                        if (isMobile) return const SizedBox.shrink();
                         return Padding(
                           padding: EdgeInsets.only(
                             top: AppTokens.spacing16,
@@ -106,6 +107,7 @@ class QuestionListPanel extends StatelessWidget {
                               : AppTokens.spacing32,
                         ),
                         child: QuestionCard(
+                          key: ValueKey(questions[index].id),
                           question: questions[index],
                           settings: index < questionSettings.length
                               ? questionSettings[index]
@@ -166,15 +168,19 @@ class QuestionListPanel extends StatelessWidget {
 
   Widget _buildAddQuestionButton(bool isDark) {
     return Center(
-      child: OutlinedButton.icon(
+      child: ElevatedButton.icon(
         onPressed: onAddQuestion,
-        icon: const Icon(Icons.add_circle_outline),
+        icon: const Icon(Icons.add_circle, size: 20),
         label: const Text('إضافة سؤال جديد'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary, width: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-          shape: RoundedRectangleBorder(borderRadius: AppTokens.radiusLgAll),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFFF6B35),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: AppTokens.radiusLgAll,
+          ),
+          elevation: 4,
+          shadowColor: const Color(0xFFFF6B35).withValues(alpha: 0.4),
         ),
       ),
     );

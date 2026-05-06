@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:uuid/uuid.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
@@ -47,28 +46,40 @@ class QuestionCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF6B35).withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Text(
                   '${index + 1}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 16,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Text(
-                'سؤال',
+                'سؤال ${index + 1}',
                 style: TextStyle(
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.mutedColor(context),
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
               const Spacer(),
@@ -130,9 +141,9 @@ class QuestionCard extends StatelessWidget {
     required bool isDark,
     required Function(String) onChanged,
   }) {
-    // Use a key to force rebuild when value changes externally
+    // Use question.id as key to prevent focus loss on text changes
     return _QuestionInputWithToolbar(
-      key: ValueKey('question_input_${question.text.hashCode}'),
+      key: ValueKey('question_input_${question.id}'),
       value: value,
       hint: hint,
       onChanged: onChanged,
@@ -315,7 +326,7 @@ class QuestionCard extends StatelessWidget {
     List<Option>? options,
   }) {
     return Question(
-      id: id ?? const Uuid().v4(),
+      id: id ?? q.id,
       text: text ?? q.text,
       passage: passage ?? q.passage,
       options: options ?? q.options,
@@ -344,31 +355,37 @@ class _QuestionInputWithToolbar extends StatefulWidget {
 
 class _QuestionInputWithToolbarState extends State<_QuestionInputWithToolbar> {
   late TextEditingController _controller;
+  late FocusNode _focusNode;
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.value);
-  }
-
-  @override
-  void didUpdateWidget(covariant _QuestionInputWithToolbar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Only update if value changed externally (not from our own edits)
-    if (widget.value != _controller.text && widget.value != oldWidget.value) {
-      final selection = _controller.selection;
-      _controller.text = widget.value;
-      // Try to restore cursor position if valid
-      if (selection.isValid && selection.end <= widget.value.length) {
-        _controller.selection = selection;
-      }
-    }
+    _focusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _QuestionInputWithToolbar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only sync from external if not yet initialized or controller is empty
+    if (!_initialized && widget.value != _controller.text) {
+      _controller.text = widget.value;
+    }
+    _initialized = true;
+    // Restore focus after rebuild by requesting it
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
   }
 
   void _wrapSelection(String prefix, String suffix) {
@@ -394,8 +411,8 @@ class _QuestionInputWithToolbarState extends State<_QuestionInputWithToolbar> {
 
     _controller.text = newText;
     widget.onChanged(newText);
+    _initialized = true;
 
-    // Position cursor after the inserted text
     _controller.selection = TextSelection.collapsed(
       offset: selection.end + prefix.length + suffix.length,
     );
@@ -404,6 +421,8 @@ class _QuestionInputWithToolbarState extends State<_QuestionInputWithToolbar> {
   void _applyColor(int colorIndex) {
     _wrapSelection('{$colorIndex}', '{$colorIndex}');
   }
+
+  String get _text => _controller.text;
 
   @override
   Widget build(BuildContext context) {
@@ -422,9 +441,9 @@ class _QuestionInputWithToolbarState extends State<_QuestionInputWithToolbar> {
               ),
               const SizedBox(width: 8),
               _buildToolbarButton(
-                icon: Icons.format_italic,
-                label: 'مائل',
-                onTap: () => _wrapSelection('*', '*'),
+                icon: Icons.format_underlined,
+                label: 'تسطير',
+                onTap: () => _wrapSelection('__', '__'),
               ),
               const SizedBox(width: 8),
               _buildColorPicker(),
@@ -432,37 +451,85 @@ class _QuestionInputWithToolbarState extends State<_QuestionInputWithToolbar> {
           ),
         ),
         const SizedBox(height: 8),
-        // RTL TextField
-        Directionality(
-          textDirection: TextDirection.rtl,
-          child: TextFormField(
-            controller: _controller,
-            maxLines: 3,
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: AppTokens.fontSizeLg,
-              color: AppColors.foreground(context),
-              height: 1.4,
-            ),
-            decoration: InputDecoration(
-              hintText: widget.hint,
-              hintStyle: TextStyle(
-                color: AppColors.mutedColor(context),
-                fontSize: AppTokens.fontSizeLg,
+        // RTL TextField with Live Preview stacked
+        SizedBox(
+          height: 120,
+          child: Stack(
+            children: [
+              // Live Markdown Preview (bottom layer)
+              if (_text.isNotEmpty)
+                Positioned.fill(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.03),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Directionality(
+                      textDirection: TextDirection.rtl,
+                      child: MarkdownBody(
+                        data: _text,
+                        styleSheet: MarkdownStyleSheet(
+                          p: TextStyle(
+                            fontSize: AppTokens.fontSizeLg,
+                            color: AppColors.foreground(context),
+                            height: 1.5,
+                          ),
+                          strong: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              // TextField (top layer - transparent when has content)
+              Positioned.fill(
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: TextFormField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    maxLines: null,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: AppTokens.fontSizeLg,
+                      color: _text.isNotEmpty
+                          ? Colors.transparent
+                          : AppColors.foreground(context),
+                      height: 1.4,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: widget.hint,
+                      hintStyle: TextStyle(
+                        color: AppColors.mutedColor(context),
+                        fontSize: AppTokens.fontSizeLg,
+                      ),
+                      filled: _text.isEmpty,
+                      fillColor: _text.isEmpty
+                          ? null
+                          : Colors.transparent,
+                      border: UnderlineInputBorder(
+                        borderSide: BorderSide(color: AppColors.mutedColor(context)),
+                      ),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: AppColors.mutedColor(context)),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: AppColors.primary, width: 2),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
+                    ),
+                    onChanged: widget.onChanged,
+                  ),
+                ),
               ),
-              filled: false,
-              border: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.mutedColor(context)),
-              ),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.mutedColor(context)),
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.primary, width: 2),
-              ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 8),
-            ),
-            onChanged: widget.onChanged,
+            ],
           ),
         ),
       ],
