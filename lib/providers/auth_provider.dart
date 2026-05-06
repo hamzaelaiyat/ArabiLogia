@@ -154,11 +154,11 @@ class AuthProvider extends ChangeNotifier {
 
           notifyListeners();
           return true;
-        } on AuthException signUpError {
-          debugPrint('SignUp AuthError: ${signUpError.message}');
+        } catch (signUpError) {
+          debugPrint('SignUp AuthError: ${signUpError}');
           _state = _state.copyWith(
             isLoading: false,
-            error: _getArabicError(signUpError.message),
+            error: _getArabicError(signUpError.toString()),
           );
           notifyListeners();
           return false;
