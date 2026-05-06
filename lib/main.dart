@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -33,8 +35,14 @@ void main() async {
     );
   }
 
-  // Initialize Google Mobile Ads
-  await MobileAds.instance.initialize();
+  // Initialize Google Mobile Ads only on mobile platforms
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    try {
+      await MobileAds.instance.initialize();
+    } catch (e) {
+      debugPrint('MobileAds initialization failed: $e');
+    }
+  }
 
   runApp(const ArabiLogiaApp());
 }

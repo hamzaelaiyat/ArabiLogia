@@ -122,21 +122,50 @@ class AuthProvider extends ChangeNotifier {
       _state = _state.copyWith(isLoading: true, error: null);
       notifyListeners();
 
-      final response = await _auth.signUp(
+      final signInResponse = await _auth.signInWithPassword(
         email: email,
         password: password,
-        data: {'full_name': fullName, 'username': username, 'grade': grade},
       );
 
-      _state = _state.copyWith(isLoading: false, user: response.user);
+      if (signInResponse.session != null) {
+        _state = _state.copyWith(
+          isLoading: false,
+          error: 'لديك حساب بالفعل، يرجى تسجيل الدخول',
+        );
+        notifyListeners();
+        return false;
+      }
 
-      // Sync scores after signup (especially if they had local scores as anonymous)
-      await ScoreRepository().syncScoresWithSupabase();
-
+      _state = _state.copyWith(isLoading: false, user: signInResponse.user);
       notifyListeners();
       return true;
     } on AuthException catch (e) {
-      debugPrint('SignUp AuthError: ${e.message}');
+      if (e.message.contains('Invalid login credentials')) {
+        try {
+          final response = await _auth.signUp(
+            email: email,
+            password: password,
+            data: {'full_name': fullName, 'username': username, 'grade': grade},
+          );
+
+          _state = _state.copyWith(isLoading: false, user: response.user);
+
+          await ScoreRepository().syncScoresWithSupabase();
+
+          notifyListeners();
+          return true;
+        } on AuthException signUpError {
+          debugPrint('SignUp AuthError: ${signUpError.message}');
+          _state = _state.copyWith(
+            isLoading: false,
+            error: _getArabicError(signUpError.message),
+          );
+          notifyListeners();
+          return false;
+        }
+      }
+
+      debugPrint('SignIn check AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
         error: _getArabicError(e.message),
