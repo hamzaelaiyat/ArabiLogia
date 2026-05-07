@@ -24,7 +24,6 @@ class ExamSettingsPanel extends StatelessWidget {
   final VoidCallback onCancel;
   final VoidCallback onSaveDraft;
   final VoidCallback onPublish;
-  final VoidCallback onPreview;
 
   const ExamSettingsPanel({
     super.key,
@@ -46,7 +45,6 @@ class ExamSettingsPanel extends StatelessWidget {
     required this.onCancel,
     required this.onSaveDraft,
     required this.onPublish,
-    required this.onPreview,
   });
 
   @override
@@ -224,7 +222,6 @@ class ExamSettingsPanel extends StatelessWidget {
       isPublished: isPublished,
       onSaveDraft: onSaveDraft,
       onPublish: onPublish,
-      onPreview: onPreview,
     );
   }
 
