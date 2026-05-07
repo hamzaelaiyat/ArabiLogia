@@ -167,21 +167,18 @@ class _ExamEditorContentState extends State<_ExamEditorContent> with TickerProvi
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              flex: 3,
-              child: _buildQuestionListPanel(),
-            ),
-            VerticalDivider(
-              width: 1,
-              thickness: 1,
-              color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
-            ),
-            // Sub-Sidebar Container
+            // Sidebar Container (Right side now)
             Container(
               width: 400,
               color: isDark ? const Color(0xFF191B1D) : const Color(0xFFF7FCFF),
               child: Row(
                 children: [
+                  SubSidebar(
+                    activeIndex: state.activeSidebarIndex,
+                    onIndexChanged: (index) => state.setActiveSidebarIndex(index),
+                    onSave: () => _saveExam(publish: false),
+                    onPublish: () => _saveExam(publish: true),
+                  ),
                   Expanded(
                     child: AnimatedSwitcher(
                       duration: AppTokens.durationFast,
@@ -218,14 +215,18 @@ class _ExamEditorContentState extends State<_ExamEditorContent> with TickerProvi
                             ),
                     ),
                   ),
-                  SubSidebar(
-                    activeIndex: state.activeSidebarIndex,
-                    onIndexChanged: (index) => state.setActiveSidebarIndex(index),
-                    onSave: () => _saveExam(publish: false),
-                    onPublish: () => _saveExam(publish: true),
-                  ),
                 ],
               ),
+            ),
+            VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+            ),
+            // Question List Panel (Left side now)
+            Expanded(
+              flex: 3,
+              child: _buildQuestionListPanel(),
             ),
           ],
         );

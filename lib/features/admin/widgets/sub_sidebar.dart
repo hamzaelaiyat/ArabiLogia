@@ -26,7 +26,7 @@ class SubSidebar extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.glassBackgroundColor(context),
         border: Border(
-          left: BorderSide(
+          right: BorderSide(
             color: AppColors.glassBorderColor(context),
             width: 1,
           ),
