@@ -52,7 +52,7 @@ class SubSidebar extends StatelessWidget {
                   activeIcon: Icons.edit_note,
                   isActive: activeIndex == 1,
                   onTap: () => onIndexChanged(1),
-                  tooltip: 'إدارة الفقرات',
+                  tooltip: 'الفقرات',
                 ),
                 const Spacer(),
                 _SidebarIcon(

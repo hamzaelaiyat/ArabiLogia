@@ -202,7 +202,6 @@ class _ExamEditorContentState extends State<_ExamEditorContent> with TickerProvi
                               onCancel: widget.onCancel,
                               onSaveDraft: () => _saveExam(publish: false),
                               onPublish: () => _saveExam(publish: true),
-                              onPreview: _togglePreview,
                             )
                           : Padding(
                               key: const ValueKey('passages'),
@@ -249,6 +248,8 @@ class _ExamEditorContentState extends State<_ExamEditorContent> with TickerProvi
                 child: InsetToggle(
                   value: state.isMobileSettingsMode,
                   onChanged: (val) => state.setMobileSettingsMode(val),
+                  labelLeft: 'الفقرات',
+                  labelRight: 'إعدادات',
                 ),
               ),
             ),
@@ -278,7 +279,6 @@ class _ExamEditorContentState extends State<_ExamEditorContent> with TickerProvi
                         onCancel: widget.onCancel,
                         onSaveDraft: () => _saveExam(publish: false),
                         onPublish: () => _saveExam(publish: true),
-                        onPreview: _togglePreview,
                       ),
                       Positioned(
                         bottom: 0,

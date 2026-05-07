@@ -44,7 +44,7 @@ class InsetToggle extends StatelessWidget {
               AnimatedAlign(
                 duration: AppTokens.durationFast,
                 curve: Curves.easeInOutCubic,
-                alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+                alignment: value ? Alignment.centerLeft : Alignment.centerRight,
                 child: Container(
                   width: width,
                   decoration: BoxDecoration(
