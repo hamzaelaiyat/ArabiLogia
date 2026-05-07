@@ -171,12 +171,13 @@ class ExamEditorState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addPassage(String title, String content) {
+  void addPassage(String title, String content, [String imageUrl = '']) {
     final id = 'passage_${DateTime.now().millisecondsSinceEpoch}';
     passages.add({
       'id': id,
       'title': title,
       'content': content,
+      'imageUrl': imageUrl,
     });
     _passageCache[id] = content;
     notifyListeners();

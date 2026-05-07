@@ -97,8 +97,8 @@ class _ExamEditorContentState extends State<_ExamEditorContent> with TickerProvi
     context.read<ExamEditorState>().updateQuestionSettings(index, settings);
   }
 
-  void _addPassage(String title, String content) {
-    context.read<ExamEditorState>().addPassage(title, content);
+  void _addPassage(String title, String content, [String imageUrl = '']) {
+    context.read<ExamEditorState>().addPassage(title, content, imageUrl);
   }
 
   void _deletePassage(int index) {

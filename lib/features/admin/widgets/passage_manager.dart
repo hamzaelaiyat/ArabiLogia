@@ -1,10 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 
 class PassageManager extends StatelessWidget {
   final List<Map<String, String>> passages;
-  final Function(String, String) onAddPassage;
+  final Function(String, String, String) onAddPassage;
   final Function(int) onDeletePassage;
 
   const PassageManager({
@@ -116,7 +118,10 @@ class PassageManager extends StatelessWidget {
     bool isDark,
   ) {
     final fgColor = AppColors.foreground(context);
+    final imageUrl = passage['imageUrl'];
     final charCount = passage['content']?.length ?? 0;
+    final hasImage = imageUrl != null && imageUrl.isNotEmpty;
+    final isImageOnly = hasImage && (passage['content']?.isEmpty ?? true);
 
     return Dismissible(
       key: ValueKey('passage_$idx'),
@@ -133,7 +138,7 @@ class PassageManager extends StatelessWidget {
       onDismissed: (_) => onDeletePassage(idx),
       confirmDismiss: (_) => _confirmDelete(context),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF111315) : const Color(0xFFF0F4F7),
           borderRadius: BorderRadius.circular(AppTokens.radiusMd),
@@ -142,21 +147,23 @@ class PassageManager extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
-                child: Text(
-                  '${idx + 1}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    fontSize: AppTokens.fontSizeSm,
-                  ),
-                ),
+                child: hasImage
+                    ? const Icon(Icons.image, color: AppColors.primary, size: 22)
+                    : Text(
+                        '${idx + 1}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                          fontSize: AppTokens.fontSizeSm,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: 12),
@@ -165,7 +172,7 @@ class PassageManager extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    passage['title'] ?? 'بدون عنوان',
+                    passage['title'] ?? (isImageOnly ? 'صورة' : 'بدون عنوان'),
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: AppTokens.fontSizeMd,
@@ -178,13 +185,13 @@ class PassageManager extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        Icons.text_fields,
+                        isImageOnly ? Icons.image : Icons.text_fields,
                         size: 12,
                         color: AppColors.mutedColor(context),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '$charCount حرف',
+                        isImageOnly ? 'صورة' : '$charCount حرف',
                         style: TextStyle(
                           color: AppColors.mutedColor(context),
                           fontSize: AppTokens.fontSizeXs,
@@ -241,142 +248,205 @@ class PassageManager extends StatelessWidget {
     final titleCtrl = TextEditingController();
     final contentCtrl = TextEditingController();
     final fgColor = AppColors.foreground(context);
+    final imagePicker = ImagePicker();
+    String? selectedImagePath;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(ctx).size.height * 0.85,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF232527) : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => Container(
+          height: MediaQuery.of(ctx).size.height * 0.85,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF232527) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Text(
-                    'إضافة فقرة جديدة',
-                    style: TextStyle(
-                      fontSize: AppTokens.fontSizeXl,
-                      fontWeight: FontWeight.bold,
-                      color: fgColor,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    icon: Icon(Icons.close, color: fgColor),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: SingleChildScrollView(
+              Padding(
                 padding: const EdgeInsets.all(20),
-                child: Column(
+                child: Row(
                   children: [
-                    TextField(
-                      controller: titleCtrl,
-                      style: TextStyle(color: fgColor),
-                      decoration: InputDecoration(
-                        labelText: 'عنوان الفقرة',
-                        hintText: 'مثال: فقرة الوحدة الأولى',
-                        filled: true,
-                        fillColor: isDark ? const Color(0xFF111315) : const Color(0xFFF0F4F7),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        prefixIcon: const Icon(Icons.title, color: AppColors.primary),
+                    Text(
+                      'إضافة فقرة جديدة',
+                      style: TextStyle(
+                        fontSize: AppTokens.fontSizeXl,
+                        fontWeight: FontWeight.bold,
+                        color: fgColor,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: contentCtrl,
-                      maxLines: 12,
-                      style: TextStyle(color: fgColor, height: 1.6),
-                      decoration: InputDecoration(
-                        labelText: 'نص الفقرة',
-                        hintText: 'أدخل النص الكامل للفقرة...',
-                        alignLabelWithHint: true,
-                        filled: true,
-                        fillColor: isDark ? const Color(0xFF111315) : const Color(0xFFF0F4F7),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      icon: Icon(Icons.close, color: fgColor),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: titleCtrl,
+                        style: TextStyle(color: fgColor),
+                        decoration: InputDecoration(
+                          labelText: 'عنوان الفقرة',
+                          hintText: 'مثال: فقرة الوحدة الأولى',
+                          filled: true,
+                          fillColor: isDark ? const Color(0xFF111315) : const Color(0xFFF0F4F7),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          prefixIcon: const Icon(Icons.title, color: AppColors.primary),
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final image = await imagePicker.pickImage(source: ImageSource.gallery);
+                                if (image != null) {
+                                  setState(() => selectedImagePath = image.path);
+                                }
+                              },
+                              icon: Icon(Icons.image, color: AppColors.primary),
+                              label: Text(
+                                selectedImagePath != null ? 'تم اختيار صورة' : 'إضافة صورة',
+                                style: TextStyle(
+                                  color: selectedImagePath != null ? AppColors.success : fgColor,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(
+                                  color: selectedImagePath != null 
+                                      ? AppColors.success 
+                                      : AppColors.primary.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (selectedImagePath != null) ...[
+                            const SizedBox(width: 8),
+                            IconButton(
+                              onPressed: () => setState(() => selectedImagePath = null),
+                              icon: const Icon(Icons.close, color: AppColors.error),
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (selectedImagePath != null) ...[
+                        const SizedBox(height: 12),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            File(selectedImagePath!),
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: contentCtrl,
+                        maxLines: 8,
+                        style: TextStyle(color: fgColor, height: 1.6),
+                        decoration: InputDecoration(
+                          labelText: 'نص الفقرة (اختياري)',
+                          hintText: 'أدخل النص الكامل للفقرة...',
+                          alignLabelWithHint: true,
+                          filled: true,
+                          fillColor: isDark ? const Color(0xFF111315) : const Color(0xFFF0F4F7),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  bottom: MediaQuery.of(ctx).padding.bottom + 20,
+                  top: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF232527) : Colors.white,
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark ? Colors.white10 : Colors.black12,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('إلغاء'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          if (titleCtrl.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('يرجى إدخال عنوان للفقرة')),
+                            );
+                            return;
+                          }
+                          if (selectedImagePath == null && contentCtrl.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('يرجى إضافة نص أو صورة للفقرة')),
+                            );
+                            return;
+                          }
+                          onAddPassage(titleCtrl.text, contentCtrl.text, selectedImagePath ?? '');
+                          Navigator.pop(ctx);
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('إضافة'),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            Container(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                bottom: MediaQuery.of(ctx).padding.bottom + 20,
-                top: 16,
-              ),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF232527) : Colors.white,
-                border: Border(
-                  top: BorderSide(
-                    color: isDark ? Colors.white10 : Colors.black12,
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('إلغاء'),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        if (titleCtrl.text.isNotEmpty && contentCtrl.text.isNotEmpty) {
-                          onAddPassage(titleCtrl.text, contentCtrl.text);
-                          Navigator.pop(ctx);
-                        }
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('إضافة'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
