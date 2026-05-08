@@ -43,6 +43,8 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _stepsController = TextEditingController();
+  final _whatsappController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _picker = ImagePicker();
   final List<XFile> _attachments = [];
   bool _isSubmitting = false;
@@ -98,9 +100,10 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
 
   Future<void> _submitReport() async {
     if (_titleController.text.trim().isEmpty ||
-        _descriptionController.text.trim().isEmpty) {
+        _descriptionController.text.trim().isEmpty ||
+        _whatsappController.text.trim().isEmpty) {
       setState(() {
-        _error = 'الرجاء إدخال عنوان المشكلة ووصفها';
+        _error = 'الرجاء إدخال عنوان المشكلة ووصفها ورقم الواتساب';
       });
       return;
     }
@@ -124,6 +127,10 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
         'issue': _descriptionController.text.trim(),
         'steps_to_reproduce': _stepsController.text.trim().isNotEmpty
             ? _stepsController.text.trim()
+            : null,
+        'whatsapp': _whatsappController.text.trim(),
+        'phone': _phoneController.text.trim().isNotEmpty
+            ? _phoneController.text.trim()
             : null,
         'device_info': deviceInfo,
         'app_version': appVersion,
@@ -266,6 +273,23 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
                 ),
                 const SizedBox(height: AppTokens.spacing20),
                 _buildTextField(
+                  controller: _whatsappController,
+                  label: 'رقم الواتساب *',
+                  hint: 'أدخل رقم الواتساب',
+                  maxLines: 1,
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: AppTokens.spacing20),
+                _buildTextField(
+                  controller: _phoneController,
+                  label: 'رقم الهاتف',
+                  hint: 'أدخل رقم الهاتف (اختياري)',
+                  maxLines: 1,
+                  keyboardType: TextInputType.phone,
+                  optional: true,
+                ),
+                const SizedBox(height: AppTokens.spacing20),
+                _buildTextField(
                   controller: _stepsController,
                   label: 'كيفية إعادة إنتاج المشكلة (اختياري)',
                   hint: '1. افتح الإعدادات\n2. اضغط على زر X\n3. يظهر الخطأ...',
@@ -346,6 +370,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
     required String hint,
     required int maxLines,
     bool optional = false,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
@@ -377,6 +402,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
           controller: controller,
           maxLines: maxLines,
           minLines: 1,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
