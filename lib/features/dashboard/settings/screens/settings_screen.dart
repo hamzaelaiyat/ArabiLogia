@@ -10,6 +10,7 @@ import 'package:arabilogia/features/dashboard/settings/widgets/notification_sett
 import 'package:arabilogia/features/dashboard/settings/widgets/exam_offline_settings.dart';
 import 'package:arabilogia/features/dashboard/settings/widgets/about_section.dart';
 import 'package:arabilogia/features/dashboard/settings/widgets/logout_button.dart';
+import 'package:arabilogia/features/dashboard/settings/widgets/report_problem_section.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -41,6 +42,9 @@ class SettingsScreen extends StatelessWidget {
             SizedBox(height: AppTokens.spacing16),
             SettingsSectionTitle(title: 'حول'),
             AboutSection(),
+            SizedBox(height: AppTokens.spacing16),
+            SettingsSectionTitle(title: 'الدعم والمساعدة'),
+            ReportProblemSection(),
             SizedBox(height: AppTokens.spacing24),
             LogoutButton(),
             SizedBox(height: 80),
