@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:arabilogia/features/dashboard/exams/utils/grade_mapper.dart';
 
 class ScoreRepository {
   static final ScoreRepository _instance = ScoreRepository._internal();
@@ -357,18 +358,13 @@ class ScoreRepository {
     }
   }
 
-  int _mapUiGradeToDbGrade(int uiGrade) {
-    if (uiGrade == 0) return 0;
-    return uiGrade + 9;
-  }
-
   Future<List<Map<String, dynamic>>> getGradeProfiles(int grade) async {
     try {
       var query = _supabase
           .from('profiles')
           .select('id, full_name, username, grade');
 
-      final dbGrade = _mapUiGradeToDbGrade(grade);
+      final dbGrade = mapUiGradeToDbGrade(grade);
       if (dbGrade != 0) {
         query = query.eq('grade', dbGrade);
       }

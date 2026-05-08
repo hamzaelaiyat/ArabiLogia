@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:go_router/go_router.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/services/exam_session_service.dart';
-import 'package:arabilogia/providers/potato_mode_provider.dart';
-import 'dart:ui';
-import 'package:provider/provider.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/exam_header.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/exam_stats_row.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/exam_instructions_section.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/exam_bottom_bar.dart';
 
 class ExamDetailsScreen extends StatefulWidget {
   final String examId;
@@ -49,6 +49,75 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _startExam() async {
+    final savedSession = await _sessionService.getSession();
+
+    if (savedSession != null && savedSession.examId == widget.examId) {
+      if (!context.mounted) return;
+
+      final remainingSeconds = savedSession.getRemainingSeconds();
+      final remainingTime = _sessionService.formatRemainingTime(
+        remainingSeconds,
+      );
+
+      final category = CategoryMetadata.categories.firstWhere(
+        (c) => c.id == widget.subjectId,
+      );
+
+      final shouldResume = await showDialog<bool>(
+        context: context,
+        builder: (context) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Text('امتحان غير مكتمل'),
+            content: Text(
+              'لديك امتحان لم تكمله. هل تريد المتابعة؟\nالوقت المتبقي: $remainingTime',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('بدء جديد'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(
+                  backgroundColor: category.color,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('متابعة'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (shouldResume == true) {
+        if (!context.mounted) return;
+        context.pushNamed(
+          'exam-interaction',
+          pathParameters: {'id': widget.examId},
+          extra: {
+            'subjectId': widget.subjectId,
+            'subjectName': widget.subjectName,
+          },
+        );
+        return;
+      } else {
+        await _sessionService.clearSession();
+      }
+    }
+
+    if (!context.mounted) return;
+    context.pushNamed(
+      'exam-interaction',
+      pathParameters: {'id': widget.examId},
+      extra: {
+        'subjectId': widget.subjectId,
+        'subjectName': widget.subjectName,
+      },
+    );
   }
 
   @override
@@ -118,37 +187,22 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                   padding: const EdgeInsets.all(AppTokens.spacing16),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      _buildHeader(context),
-                      const SizedBox(height: AppTokens.spacing24),
-                      _buildStats(context),
-                      const SizedBox(height: AppTokens.spacing24),
-                      _buildSectionTitle(context, 'الوصف'),
-                      const SizedBox(height: AppTokens.spacing8),
-                      Text(
-                        'يتناول هذا الاختبار مهارات ${_exam!.subject} المقررة. تأكد من مراجعة الدروس جيداً قبل البدء.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.mutedColor(context),
-                          height: 1.6,
-                        ),
+                      ExamHeader(
+                        subjectName: widget.subjectName,
+                        subjectId: widget.subjectId,
+                        title: _exam!.title,
                       ),
                       const SizedBox(height: AppTokens.spacing24),
-                      _buildSectionTitle(context, 'تعليمات هامة'),
-                      const SizedBox(height: AppTokens.spacing12),
-                      _buildInstructionItem(
-                        context,
-                        'تأكد من استقرار اتصال الإنترنت.',
+                      ExamStatsRow(
+                        questionCount: _exam!.questions.length,
+                        durationMinutes: _exam!.durationMinutes,
+                        subjectId: widget.subjectId,
                       ),
-                      _buildInstructionItem(
-                        context,
-                        'لديك ${_exam!.durationMinutes} دقيقة فقط لإنهاء الاختبار.',
-                      ),
-                      _buildInstructionItem(
-                        context,
-                        'بمجرد البدء، لا يمكنك إيقاف المؤقت أو الخروج من الامتحان.',
-                      ),
-                      _buildInstructionItem(
-                        context,
-                        'سيتم احتساب الدرجة من المحاولة الأولى فقط (للمتصدرين).',
+                      const SizedBox(height: AppTokens.spacing24),
+                      ExamInstructionsSection(
+                        subjectName: _exam!.subject,
+                        durationMinutes: _exam!.durationMinutes,
+                        subjectId: widget.subjectId,
                       ),
                       const SizedBox(height: 100),
                     ]),
@@ -160,240 +214,14 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
               bottom: 0,
               left: 0,
               right: 0,
-              child: _buildBottomBar(context, category),
+              child: ExamBottomBar(
+                color: category.color,
+                onPressed: _startExam,
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: CategoryMetadata.categories
-                .firstWhere((c) => c.id == widget.subjectId)
-                .color
-                .withValues(alpha: 0.1),
-            borderRadius: AppTokens.radiusFullAll,
-          ),
-          child: Text(
-            widget.subjectName,
-            style: TextStyle(
-              color: CategoryMetadata.categories
-                  .firstWhere((c) => c.id == widget.subjectId)
-                  .color,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppTokens.spacing12),
-        Text(
-          _exam!.title,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStats(BuildContext context) {
-    return Row(
-      children: [
-        _buildStatItem(
-          context,
-          '${_exam!.questions.length}',
-          'سؤال',
-          Icons.help_outline,
-        ),
-        const SizedBox(width: AppTokens.spacing16),
-        _buildStatItem(
-          context,
-          '${_exam!.durationMinutes}',
-          'دقيقة',
-          Icons.timer_outlined,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatItem(
-    BuildContext context,
-    String value,
-    String label,
-    IconData icon,
-  ) {
-    final color = CategoryMetadata.categories
-        .firstWhere((c) => c.id == widget.subjectId)
-        .color;
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(AppTokens.spacing16),
-        decoration: BoxDecoration(
-          color: AppColors.surface(context),
-          borderRadius: AppTokens.radiusLgAll,
-          border: Border.all(color: color.withValues(alpha: 0.05)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: AppTokens.spacing12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                Text(label, style: Theme.of(context).textTheme.bodySmall),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Text(
-      title,
-      style: Theme.of(
-        context,
-      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-    );
-  }
-
-  Widget _buildInstructionItem(BuildContext context, String text) {
-    final color = CategoryMetadata.categories
-        .firstWhere((c) => c.id == widget.subjectId)
-        .color;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppTokens.spacing8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.check_circle_outline, size: 16, color: color),
-          const SizedBox(width: AppTokens.spacing8),
-          Expanded(
-            child: Text(text, style: Theme.of(context).textTheme.bodySmall),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomBar(BuildContext context, CategoryMetadata category) {
-    final potato = context.watch<PotatoModeProvider>();
-    final hasBlur = potato.blurEffectsEnabled;
-
-    Future<void> startExam() async {
-      // Check for in-progress exam
-      final savedSession = await _sessionService.getSession();
-
-      if (savedSession != null && savedSession.examId == widget.examId) {
-        if (!context.mounted) return;
-
-        final remainingSeconds = savedSession.getRemainingSeconds();
-        final remainingTime = _sessionService.formatRemainingTime(
-          remainingSeconds,
-        );
-
-        final shouldResume = await showDialog<bool>(
-          context: context,
-          builder: (context) => Directionality(
-            textDirection: TextDirection.rtl,
-            child: AlertDialog(
-              title: const Text('امتحان غير مكتمل'),
-              content: Text(
-                'لديك امتحان لم تكمله. هل تريد المتابعة؟\nالوقت المتبقي: $remainingTime',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('بدء جديد'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: TextButton.styleFrom(
-                    backgroundColor: category.color,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('متابعة'),
-                ),
-              ],
-            ),
-          ),
-        );
-
-        if (shouldResume == true) {
-          if (!context.mounted) return;
-          context.pushNamed(
-            'exam-interaction',
-            pathParameters: {'id': widget.examId},
-            extra: {
-              'subjectId': widget.subjectId,
-              'subjectName': widget.subjectName,
-            },
-          );
-          return;
-        } else {
-          // Clear old session and start fresh
-          await _sessionService.clearSession();
-        }
-      }
-
-      if (!context.mounted) return;
-      context.pushNamed(
-        'exam-interaction',
-        pathParameters: {'id': widget.examId},
-        extra: {
-          'subjectId': widget.subjectId,
-          'subjectName': widget.subjectName,
-        },
-      );
-    }
-
-    final button = ElevatedButton(
-      onPressed: startExam,
-      style: ElevatedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 56),
-        backgroundColor: category.color,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      child: const Text(
-        'ابدأ الاختبار الآن',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-      ),
-    );
-
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        AppTokens.spacing16,
-        AppTokens.spacing16,
-        AppTokens.spacing16,
-        MediaQuery.of(context).padding.bottom + AppTokens.spacing16,
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
-      ),
-      child: hasBlur
-          ? ClipRRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: button,
-              ),
-            )
-          : button,
     );
   }
 }

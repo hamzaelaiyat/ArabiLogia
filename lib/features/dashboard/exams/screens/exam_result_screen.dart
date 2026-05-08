@@ -1,8 +1,11 @@
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
-import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
-import 'package:arabilogia/features/dashboard/exams/models/question_style.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/score_summary_widget.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/stats_row_widget.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/question_review_widget.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/action_buttons_widget.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/result_share_card.dart';
+import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -162,50 +165,72 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             right: AppTokens.spacing16,
             bottom: AppTokens.spacing16,
           ),
-          child: Column(
-            children: [
-              _buildScoreSummary(context, isPassed),
-              const SizedBox(height: AppTokens.spacing24),
-
-              _buildStatsRow(context),
-              const SizedBox(height: AppTokens.spacing32),
-
-              if (wrongAnswerIndices.isNotEmpty) ...[
-                _buildReviewHeader(context),
-                const SizedBox(height: AppTokens.spacing16),
-                ...wrongAnswerIndices.map(
-                  (index) => _buildQuestionReview(context, index),
-                ),
-              ] else if (widget.score == 100) ...[
-                const Icon(Icons.stars, color: AppColors.primary, size: 48),
-                const SizedBox(height: 16),
-                const Text(
-                  'أحسنت! جميع إجاباتك كانت صحيحة.',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-
-              const SizedBox(height: AppTokens.spacing32),
-              _buildActionButtons(context),
-
-              // Share Card (Hidden for capture)
-              Offstage(
-                offstage: true,
-                child: RepaintBoundary(
-                  key: _shareKey,
-                  child: ResultShareCard(
-                    studentName: studentName,
-                    examTitle: widget.exam.title,
-                    subject: widget.exam.subject,
+              child: Column(
+                children: [
+                  ScoreSummaryWidget(
                     score: widget.score,
+                    isPassed: isPassed,
+                  ),
+                  const SizedBox(height: AppTokens.spacing24),
+
+                  StatsRowWidget(
+                    totalQuestions: widget.exam.questions.length,
+                    correctCount: widget.correctCount,
                     accuracy: widget.accuracy,
                     speedBonus: widget.speedBonus,
-                    grade: gradeText,
                   ),
-                ),
+                  const SizedBox(height: AppTokens.spacing32),
+
+                  if (wrongAnswerIndices.isNotEmpty) ...[
+                    const ReviewHeaderWidget(),
+                    const SizedBox(height: AppTokens.spacing16),
+                    ...wrongAnswerIndices.map(
+                      (index) => QuestionReviewCardWidget(
+                        question: widget.exam.questions[index],
+                        index: index,
+                        selectedId: widget.userAnswers[index],
+                      ),
+                    ),
+                  ] else if (widget.score == 100) ...[
+                    const Icon(Icons.stars, color: AppColors.primary, size: 48),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'أحسنت! جميع إجاباتك كانت صحيحة.',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+
+                  const SizedBox(height: AppTokens.spacing32),
+                  ActionButtonsWidget(
+                    onHomePressed: () => context.goNamed('home'),
+                    onRetakePressed: () => context.pushReplacementNamed(
+                      'exam-interaction',
+                      pathParameters: {
+                        'id': widget.exam.id,
+                        'subjectId': widget.exam.subjectId,
+                        'subjectName': widget.exam.subject,
+                      },
+                    ),
+                  ),
+
+                  // Share Card (Hidden for capture)
+                  Offstage(
+                    offstage: true,
+                    child: RepaintBoundary(
+                      key: _shareKey,
+                      child: ResultShareCard(
+                        studentName: studentName,
+                        examTitle: widget.exam.title,
+                        subject: widget.exam.subject,
+                        score: widget.score,
+                        accuracy: widget.accuracy,
+                        speedBonus: widget.speedBonus,
+                        grade: gradeText,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
         ),
       ),
     );
@@ -226,274 +251,4 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
     }
   }
 
-  Widget _buildScoreSummary(BuildContext context, bool isPassed) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppTokens.spacing32),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: AppTokens.radiusLgAll,
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 140,
-                height: 140,
-                child: CircularProgressIndicator(
-                  value: widget.score / 100,
-                  strokeWidth: 10,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    AppColors.primary,
-                  ),
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${widget.score}%',
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Text(
-                    'الدرجة النهائية',
-                    style: TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            isPassed
-                ? 'تهانينا! لقد اجتزت الاختبار'
-                : 'حاول مرة أخرى لتحسين مستواك',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsRow(BuildContext context) {
-    return Row(
-      children: [
-        _buildStatCard(
-          context,
-          'الأسئلة',
-          '${widget.exam.questions.length}',
-          Icons.quiz_outlined,
-        ),
-        const SizedBox(width: 8),
-        _buildStatCard(
-          context,
-          'الصحيحة',
-          '${widget.correctCount}',
-          Icons.check_circle_outline,
-        ),
-        const SizedBox(width: 8),
-        _buildStatCard(context, 'الدقة', '${widget.accuracy}%', Icons.percent),
-        const SizedBox(width: 8),
-        _buildStatCard(
-          context,
-          'المكافأة',
-          '+${widget.speedBonus}',
-          Icons.bolt,
-          color: Colors.orange,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon, {
-    Color? color,
-  }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: AppColors.surface(context),
-          borderRadius: AppTokens.radiusMdAll,
-          border: Border.all(
-            color: (color ?? AppColors.primary).withValues(alpha: 0.1),
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 20, color: color ?? AppColors.primary),
-            const SizedBox(height: 4),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReviewHeader(BuildContext context) {
-    return Row(
-      children: [
-        const Icon(
-          Icons.analytics_outlined,
-          color: AppColors.primary,
-          size: 20,
-        ),
-        const SizedBox(width: 8),
-        const Text(
-          'مراجعة الأخطاء',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.error.withValues(alpha: 0.1),
-            borderRadius: AppTokens.radiusFullAll,
-          ),
-          child: const Text(
-            'أخطاء فقط',
-            style: TextStyle(color: AppColors.error, fontSize: 12),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuestionReview(BuildContext context, int index) {
-    final question = widget.exam.questions[index];
-    final selectedId = widget.userAnswers[index];
-    final correctOption = question.options.cast<Option?>().firstWhere(
-      (o) => o?.isCorrect == true,
-      orElse: () => null,
-    );
-    if (correctOption == null) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: AppTokens.radiusLgAll,
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.error_outline, size: 16, color: AppColors.error),
-              const SizedBox(width: 8),
-              Text(
-                'سؤال رقم ${index + 1}',
-                style: const TextStyle(fontSize: 12, color: AppColors.error),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(fontWeight: FontWeight.bold),
-              children: parseQuestionText(
-                question.text,
-                isDark: Theme.of(context).brightness == Brightness.dark,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildAnswerBox(
-            context,
-            'إجابتك:',
-            selectedId == null
-                ? 'لم تجب'
-                : question.options.firstWhere((o) => o.id == selectedId).text,
-            false,
-          ),
-          const SizedBox(height: 8),
-          _buildAnswerBox(
-            context,
-            'الإجابة الصحيحة:',
-            correctOption.text,
-            true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnswerBox(
-    BuildContext context,
-    String label,
-    String text,
-    bool isCorrect,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: (isCorrect ? AppColors.success : AppColors.error).withValues(
-          alpha: 0.05,
-        ),
-        borderRadius: AppTokens.radiusMdAll,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-          RichText(
-            text: TextSpan(
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: isCorrect ? AppColors.success : AppColors.error,
-              ),
-              children: parseQuestionText(text, isDark: isDark),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: () => context.goNamed('home'),
-            child: const Text('العودة للرئيسية'),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () => context.pushReplacementNamed(
-              'exam-interaction',
-              pathParameters: {
-                'id': widget.exam.id,
-                'subjectId': widget.exam.subjectId,
-                'subjectName': widget.exam.subject,
-              },
-            ),
-            child: const Text('إعادة الاختبار'),
-          ),
-        ),
-      ],
-    );
-  }
 }

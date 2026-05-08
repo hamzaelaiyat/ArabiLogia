@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/features/dashboard/exams/utils/grade_mapper.dart';
 
 class ExamNonParticipantsList extends StatelessWidget {
   final List<Map<String, dynamic>> nonParticipants;
@@ -21,7 +22,7 @@ class ExamNonParticipantsList extends StatelessWidget {
       itemBuilder: (context, index) {
         final profile = nonParticipants[index];
         final dbGrade = profile['grade'] as int? ?? 0;
-        final uiGrade = dbGrade > 9 ? dbGrade - 9 : dbGrade;
+        final uiGrade = mapDbGradeToUiGrade(dbGrade);
         return ListTile(
           leading: const CircleAvatar(child: Icon(Icons.person_outline)),
           title: Text(
