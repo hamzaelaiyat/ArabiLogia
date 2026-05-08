@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
@@ -8,6 +7,9 @@ import 'package:go_router/go_router.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
+import 'package:arabilogia/features/dashboard/profile/widgets/profile_header.dart';
+import 'package:arabilogia/features/dashboard/profile/widgets/profile_stats_grid.dart';
+import 'package:arabilogia/features/dashboard/profile/widgets/profile_info_section.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -196,6 +198,29 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
         ? _formatArabicDate(user!.createdAt)
         : '---';
 
+    final lastExam = _stats['last_exam'] as Map<String, dynamic>?;
+    final lastExamSubject = lastExam?['subject'] ?? 'لا يوجد';
+    final lastExamTime = _formatLastExamDate(lastExam?['created_at']);
+    final lastExamLabel = lastExamSubject != 'لا يوجد'
+        ? '$lastExamSubject ($lastExamTime)'
+        : lastExamTime;
+
+    final examsCompleted =
+        _stats['exams_completed'] ??
+        _stats['exams_count'] ??
+        _stats['total_exams'] ??
+        0;
+    final avgScore =
+        _stats['avg_score'] ??
+        _stats['average_score'] ??
+        _stats['average'] ??
+        0;
+    final totalScore =
+        _stats['total_score'] ??
+        _stats['total_points'] ??
+        _stats['points'] ??
+        0;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -225,22 +250,32 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
             child: Column(
               children: [
                 AnimatedWrapper(
-                  child: _buildProfileHeader(
-                    context,
-                    fullName,
-                    username,
-                    gradeText,
-                    avatarUrl,
-                    potato.shadowsEnabled,
+                  child: ProfileHeader(
+                    name: fullName,
+                    username: username,
+                    grade: gradeText,
+                    avatarUrl: avatarUrl,
+                    isUploading: _isUploading,
+                    shadowsEnabled: potato.shadowsEnabled,
+                    onPickImage: _pickAndUploadImage,
                   ),
                 ),
                 const SizedBox(height: AppTokens.spacing32),
                 AnimatedWrapper(
-                  child: _buildStatsGrid(context, potato.shadowsEnabled),
+                  child: ProfileStatsGrid(
+                    examsCompleted: examsCompleted,
+                    avgScore: avgScore,
+                    totalScore: totalScore,
+                    shadowsEnabled: potato.shadowsEnabled,
+                  ),
                 ),
                 const SizedBox(height: AppTokens.spacing32),
                 AnimatedWrapper(
-                  child: _buildInfoSection(context, email, createdAt),
+                  child: ProfileInfoSection(
+                    email: email,
+                    registrationDate: createdAt,
+                    lastExamLabel: lastExamLabel,
+                  ),
                 ),
                 const SizedBox(height: 100),
               ],
@@ -306,303 +341,4 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     }
   }
 
-  Widget _buildProfileHeader(
-    BuildContext context,
-    String name,
-    String username,
-    String grade,
-    String? avatarUrl,
-    bool shadowsEnabled,
-  ) {
-    return Column(
-      children: [
-        Stack(
-          children: [
-            GestureDetector(
-              onTap: _pickAndUploadImage,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    width: 4,
-                  ),
-                  boxShadow: shadowsEnabled
-                      ? [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: CircleAvatar(
-                  radius: 60,
-                  backgroundColor: AppColors.surface(context),
-                  backgroundImage: avatarUrl != null
-                      ? NetworkImage(avatarUrl)
-                      : null,
-                  child: avatarUrl == null
-                      ? Text(
-                          name.isNotEmpty ? name[0] : '؟',
-                          style: Theme.of(context).textTheme.headlineLarge
-                              ?.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        )
-                      : null,
-                ),
-              ),
-            ),
-            if (_isUploading)
-              const Positioned.fill(
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            Positioned(
-              bottom: 4,
-              right: 4,
-              child: GestureDetector(
-                onTap: _pickAndUploadImage,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppTokens.spacing16),
-        Text(
-          name,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        Text(
-          '@$username',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.mutedColor(context),
-          ),
-        ),
-        const SizedBox(height: AppTokens.spacing8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-          ),
-          child: Text(
-            grade,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatsGrid(BuildContext context, bool shadowsEnabled) {
-    // Use fallback keys for compatibility with different backend responses
-    final examsCompleted =
-        _stats['exams_completed'] ??
-        _stats['exams_count'] ??
-        _stats['total_exams'] ??
-        0;
-    final avgScore =
-        _stats['avg_score'] ??
-        _stats['average_score'] ??
-        _stats['average'] ??
-        0;
-    final totalScore =
-        _stats['total_score'] ??
-        _stats['total_points'] ??
-        _stats['points'] ??
-        0;
-
-    return Container(
-      padding: const EdgeInsets.all(AppTokens.spacing24),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: AppTokens.radius2xlAll,
-        boxShadow: shadowsEnabled
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ]
-            : null,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem(
-            context,
-            '$examsCompleted',
-            'امتحانات',
-            Icons.assignment_outlined,
-          ),
-          _buildStatDivider(),
-          _buildStatItem(
-            context,
-            '${((avgScore as num).toInt())}%',
-            'المتوسط',
-            Icons.analytics_outlined,
-          ),
-          _buildStatDivider(),
-          _buildStatItem(
-            context,
-            '${((totalScore as num).toInt())}',
-            'نقاط',
-            Icons.emoji_events_outlined,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatDivider() {
-    return Container(
-      height: 40,
-      width: 1,
-      color: AppColors.primary.withValues(alpha: 0.1),
-    );
-  }
-
-  Widget _buildStatItem(
-    BuildContext context,
-    String value,
-    String label,
-    IconData icon,
-  ) {
-    return Column(
-      children: [
-        Icon(icon, color: AppColors.primary.withValues(alpha: 0.7), size: 20),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: AppColors.foreground(context),
-          ),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppColors.mutedColor(context),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoSection(BuildContext context, String email, String date) {
-    final lastExam = _stats['last_exam'] as Map<String, dynamic>?;
-    final lastExamSubject = lastExam?['subject'] ?? 'لا يوجد';
-    final lastExamTime = _formatLastExamDate(lastExam?['created_at']);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(right: 8, bottom: 12),
-          child: Text(
-            'معلومات الحساب',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface(context),
-            borderRadius: AppTokens.radius2xlAll,
-          ),
-          child: Column(
-            children: [
-              _buildInfoTile(
-                context,
-                Icons.email_outlined,
-                'البريد الإلكتروني',
-                email,
-              ),
-              _buildInfoTile(
-                context,
-                Icons.calendar_today_outlined,
-                'تاريخ التسجيل',
-                date,
-              ),
-              _buildInfoTile(
-                context,
-                Icons.history,
-                'آخر امتحان',
-                lastExamSubject != 'لا يوجد'
-                    ? '$lastExamSubject ($lastExamTime)'
-                    : lastExamTime,
-                isLast: true,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoTile(
-    BuildContext context,
-    IconData icon,
-    String title,
-    String value, {
-    bool isLast = false,
-  }) {
-    return Column(
-      children: [
-        ListTile(
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.background(context),
-              borderRadius: AppTokens.radiusMdAll,
-            ),
-            child: Icon(icon, size: 20, color: AppColors.primary),
-          ),
-          title: Text(
-            title,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.mutedColor(context),
-            ),
-          ),
-          subtitle: Text(
-            value,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-          ),
-        ),
-        if (!isLast)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Divider(
-              height: 1,
-              color: AppColors.primary.withValues(alpha: 0.05),
-            ),
-          ),
-      ],
-    );
-  }
 }

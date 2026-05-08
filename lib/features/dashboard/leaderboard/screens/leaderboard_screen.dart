@@ -7,6 +7,10 @@ import 'package:arabilogia/features/dashboard/exams/repositories/score_repositor
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 import 'package:provider/provider.dart';
+import '../widgets/leaderboard_empty_state.dart';
+import '../widgets/leaderboard_filters.dart';
+import '../widgets/leaderboard_rank_card.dart';
+import '../widgets/leaderboard_helpers.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -28,7 +32,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch will happen in didChangeDependencies once we have user grade
   }
 
   Future<void> _fetchLeaderboard() async {
@@ -71,133 +74,74 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         ? _leaders.take(potato.maxListItems).toList()
         : _leaders;
 
-    final gradeName = _getGradeName(_selectedGrade);
-
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: GlassAppBar(
-          title: const ResponsiveAppBarTitle('المتصدرون'),
+        appBar: const GlassAppBar(
+          title: ResponsiveAppBarTitle('المتصدرون'),
         ),
         body: Column(
           children: [
             SizedBox(
               height: MediaQuery.paddingOf(context).top + kToolbarHeight,
             ),
-            _buildFilters(context),
+            LeaderboardFilters(
+              userGrade: _userGrade,
+              showOnlyMyGrade: _showOnlyMyGrade,
+              selectedPeriod: _selectedPeriod,
+              onGradeChanged: (onlyMyGrade) {
+                setState(() {
+                  _showOnlyMyGrade = onlyMyGrade;
+                  _selectedGrade = onlyMyGrade ? _userGrade : 0;
+                });
+                _fetchLeaderboard();
+              },
+              onPeriodChanged: (period) {
+                setState(() => _selectedPeriod = period);
+                _fetchLeaderboard();
+              },
+            ),
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : filteredLeaders.isEmpty
-                  ? _buildEmptyState(context)
+                  ? const LeaderboardEmptyState()
                   : PotatoModeWrapper(
                       child: ListView.builder(
                         padding: const EdgeInsets.all(AppTokens.spacing8),
                         itemCount: filteredLeaders.length,
-                        itemBuilder: (context, index) =>
-                            _buildLeaderItem(context, filteredLeaders[index]),
+                        itemBuilder: (context, index) {
+                          final leader = filteredLeaders[index];
+                          final rank = leader['rank'] as int;
+                          final currentUserId =
+                              context.read<AuthProvider>().state.user?.id;
+                          final isMe = currentUserId != null &&
+                              leader['user_id'] == currentUserId;
+                          final gradeName = getGradeName(
+                            leader['grade'] is int
+                                ? leader['grade']
+                                : int.tryParse(
+                                        leader['grade']?.toString() ?? '') ??
+                                    0,
+                          );
+                          final avatarLetters =
+                              getAvatar(leader['full_name'] ?? '');
+                          return LeaderboardRankCard(
+                            leader: leader,
+                            isMe: isMe,
+                            rank: rank,
+                            isTopThree: rank <= 3,
+                            gradeName: gradeName,
+                            avatarLetters: avatarLetters,
+                          );
+                        },
                       ),
                     ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  String _getGradeName(int grade) {
-    switch (grade) {
-      case 10:
-        return 'الأولى باكالوريا';
-      case 11:
-        return 'الثانية ثانوي';
-      case 12:
-        return 'الثالثة ثانوي';
-      default:
-        return 'كل الصفوف';
-    }
-  }
-
-  int _getGradeValueFromLabel(String label) {
-    if (label.contains('الأول')) return 10;
-    if (label.contains('الثاني')) return 11;
-    if (label.contains('الثالث')) return 12;
-    return 0;
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.leaderboard_outlined,
-            size: 64,
-            color: AppColors.mutedColor(context).withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'لا يوجد متصدرين لهذا الصف حالياً',
-            style: TextStyle(color: AppColors.mutedColor(context)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilters(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppTokens.spacing8),
-      child: Column(
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildGradeFilterChip(context, 'صفي الدراسي', true),
-                const SizedBox(width: 8),
-                _buildGradeFilterChip(context, 'كل الصفوف', false),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildPeriodChip(context, 'كل الوقت', 'all'),
-                const SizedBox(width: 8),
-                _buildPeriodChip(context, 'هذا الأسبوع', 'week'),
-                const SizedBox(width: 8),
-                _buildPeriodChip(context, 'هذا الشهر', 'month'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGradeFilterChip(
-    BuildContext context,
-    String label,
-    bool onlyMyGrade,
-  ) {
-    final isSelected = _showOnlyMyGrade == onlyMyGrade;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        if (selected) {
-          setState(() {
-            _showOnlyMyGrade = onlyMyGrade;
-            _selectedGrade = onlyMyGrade ? _userGrade : 0;
-          });
-          _fetchLeaderboard();
-        }
-      },
-      selectedColor: AppColors.chipSelectedColor(context),
     );
   }
 
@@ -216,138 +160,5 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       },
       selectedColor: AppColors.chipSelectedColor(context),
     );
-  }
-
-  Widget _buildPeriodChip(BuildContext context, String label, String value) {
-    final isSelected = _selectedPeriod == value;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        if (selected && _selectedPeriod != value) {
-          setState(() => _selectedPeriod = value);
-          _fetchLeaderboard();
-        }
-      },
-      selectedColor: AppColors.chipSelectedColor(context),
-    );
-  }
-
-  Widget _buildLeaderItem(BuildContext context, Map<String, dynamic> leader) {
-    final rank = leader['rank'] as int;
-    final isTopThree = rank <= 3;
-    final currentUserId = context.read<AuthProvider>().state.user?.id;
-    final isMe = currentUserId != null && leader['user_id'] == currentUserId;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppTokens.spacing8),
-      child: Card(
-        color: isMe ? AppColors.primary.withValues(alpha: 0.08) : null,
-        shape: isMe
-            ? RoundedRectangleBorder(
-                side: BorderSide(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  width: 1.5,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              )
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.all(AppTokens.spacing8),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isMe
-                      ? AppColors.primary
-                      : AppColors.rankColor(rank, context),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    '${leader['rank']}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isMe || isTopThree
-                          ? Colors.white
-                          : AppColors.mutedColor(context),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppTokens.spacing8),
-              CircleAvatar(
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                backgroundImage: leader['avatar_url'] != null
-                    ? NetworkImage(leader['avatar_url'])
-                    : null,
-                child: leader['avatar_url'] == null
-                    ? Center(
-                        child: Text(
-                          _getAvatar(leader['full_name'] ?? ''),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            height: 1.0,
-                          ),
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: AppTokens.spacing8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      leader['full_name'] ?? '',
-                      style: (isMe
-                              ? Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  )
-                              : null) ??
-                          Theme.of(context).textTheme.titleSmall,
-                    ),
-                    Text(
-                      _getGradeName(
-                        leader['grade'] is int
-                            ? leader['grade']
-                            : int.tryParse(leader['grade']?.toString() ?? '') ??
-                                  0,
-                      ),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                '${(leader['total_score'] as num).toInt()}',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: isMe ? AppColors.primary : AppColors.primary,
-                  fontWeight: isMe ? FontWeight.w900 : FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _getAvatar(String name) {
-    if (name.trim().isEmpty) return 'ط';
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.length >= 2) {
-      // Use first letter of first name and first letter of second name without space
-      final first = parts[0].isNotEmpty ? parts[0].substring(0, 1) : '';
-      final second = parts[1].isNotEmpty ? parts[1].substring(0, 1) : '';
-      return '$first$second';
-    }
-    return name.trim().isNotEmpty ? name.trim().substring(0, 1) : 'ط';
   }
 }
