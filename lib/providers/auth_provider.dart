@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:arabilogia/core/config/supabase_config.dart';
+import 'package:arabilogia/core/utils/auth_error_mapper.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 
 class AuthState {
@@ -96,7 +97,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('SignIn AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -158,7 +159,7 @@ class AuthProvider extends ChangeNotifier {
           debugPrint('SignUp AuthError: ${signUpError}');
           _state = _state.copyWith(
             isLoading: false,
-            error: _getArabicError(signUpError.toString()),
+            error: getArabicAuthError(signUpError.toString()),
           );
           notifyListeners();
           return false;
@@ -168,7 +169,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('SignIn check AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -217,7 +218,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('VerifyEmail AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -246,7 +247,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('ResetPassword AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -288,7 +289,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('VerifyResetCode AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -317,7 +318,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('UpdatePassword AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -439,7 +440,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('UpdateProfile AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -468,7 +469,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('ResendOTP AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -510,20 +511,5 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       return _state.user?.userMetadata?['role'] as String?;
     }
-  }
-
-  String _getArabicError(String message) {
-    if (message.contains('Invalid login credentials')) {
-      return 'بيانات الدخول غير صحيحة';
-    } else if (message.contains('Email not confirmed')) {
-      return 'يرجى تأكيد البريد الإلكتروني';
-    } else if (message.contains('User already registered')) {
-      return 'البريد الإلكتروني مستخدم بالفعل';
-    } else if (message.contains('Password should be at least')) {
-      return 'كلمة المرور ضعيفة جداً';
-    } else if (message.contains('Invalid email')) {
-      return 'البريد الإلكتروني غير صالح';
-    }
-    return message;
   }
 }
