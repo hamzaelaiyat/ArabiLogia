@@ -5,6 +5,7 @@ import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
+import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 import 'package:provider/provider.dart';
 
 class LeaderboardScreen extends StatefulWidget {
@@ -76,11 +77,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: const GlassAppBar(
-          title: Text(
-            'المتصدرون',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+        appBar: GlassAppBar(
+          title: const ResponsiveAppBarTitle('المتصدرون'),
         ),
         body: Column(
           children: [
@@ -238,10 +236,22 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   Widget _buildLeaderItem(BuildContext context, Map<String, dynamic> leader) {
     final rank = leader['rank'] as int;
     final isTopThree = rank <= 3;
+    final currentUserId = context.read<AuthProvider>().state.user?.id;
+    final isMe = currentUserId != null && leader['user_id'] == currentUserId;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppTokens.spacing8),
       child: Card(
+        color: isMe ? AppColors.primary.withValues(alpha: 0.08) : null,
+        shape: isMe
+            ? RoundedRectangleBorder(
+                side: BorderSide(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              )
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(AppTokens.spacing8),
           child: Row(
@@ -250,7 +260,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.rankColor(rank, context),
+                  color: isMe
+                      ? AppColors.primary
+                      : AppColors.rankColor(rank, context),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -258,7 +270,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     '${leader['rank']}',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: isTopThree
+                      color: isMe || isTopThree
                           ? Colors.white
                           : AppColors.mutedColor(context),
                     ),
@@ -293,7 +305,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   children: [
                     Text(
                       leader['full_name'] ?? '',
-                      style: Theme.of(context).textTheme.titleSmall,
+                      style: (isMe
+                              ? Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  )
+                              : null) ??
+                          Theme.of(context).textTheme.titleSmall,
                     ),
                     Text(
                       _getGradeName(
@@ -310,8 +328,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               Text(
                 '${(leader['total_score'] as num).toInt()}',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
+                  color: isMe ? AppColors.primary : AppColors.primary,
+                  fontWeight: isMe ? FontWeight.w900 : FontWeight.bold,
                 ),
               ),
             ],

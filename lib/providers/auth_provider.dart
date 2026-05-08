@@ -339,6 +339,8 @@ class AuthProvider extends ChangeNotifier {
     int? grade,
     bool? isPublic,
     bool? hideAvatar,
+    bool? hideName,
+    String? randomName,
     Map<String, bool>? notifications,
   }) async {
     try {
@@ -393,6 +395,16 @@ class AuthProvider extends ChangeNotifier {
         data['hide_avatar'] = hideAvatar;
         profileUpdate['hide_avatar'] = hideAvatar;
       }
+      if (hideName != null) {
+        data['hide_name'] = hideName;
+        profileUpdate['hide_name'] = hideName;
+      }
+      if (randomName != null) {
+        data['random_name'] = randomName;
+        profileUpdate['random_name'] = randomName;
+      } else if (hideName == false && hideName != null) {
+        profileUpdate['random_name'] = null;
+      }
       if (notifications != null) {
         data['notifications'] = notifications;
       }
@@ -405,14 +417,16 @@ class AuthProvider extends ChangeNotifier {
             .eq('id', _auth.currentUser!.id);
       }
 
-      // 2. Update Auth Metadata
+      // 2. Update Auth Metadata (only non-null values)
+      data.removeWhere((_, v) => v == null);
       final response = await _auth.updateUser(UserAttributes(data: data));
 
+      debugPrint('updateProfile SUCCESS: data=$data');
       _state = _state.copyWith(isLoading: false, user: response.user);
       notifyListeners();
       return true;
     } on PostgrestException catch (e) {
-      debugPrint('Profile update DB error: ${e.message}');
+      debugPrint('updateProfile DB error: ${e.message}');
       String errorMsg = 'حدث خطأ في تحديث البيانات';
       if (e.message.contains('unique constraint') ||
           e.message.contains('username')) {

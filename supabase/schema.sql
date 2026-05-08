@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     is_public BOOLEAN DEFAULT true,
     hide_avatar BOOLEAN DEFAULT false,
+    hide_name BOOLEAN DEFAULT false,
+    random_name TEXT,
     role TEXT DEFAULT 'student' CHECK (role IN ('student', 'teacher', 'admin')),
     grade_updated_at TIMESTAMPTZ DEFAULT (NOW() - INTERVAL '4 days')
 );
@@ -148,3 +150,12 @@ CREATE POLICY "Teachers can view all exam results" ON public.exam_results
 -- Create index for faster queries by exam_id
 CREATE INDEX IF NOT EXISTS idx_exam_results_exam_id ON public.exam_results(exam_id);
 CREATE INDEX IF NOT EXISTS idx_exam_results_user_id ON public.exam_results(user_id);
+
+-- SECURITY DEFINER function to check if a random name already exists (bypasses RLS)
+CREATE OR REPLACE FUNCTION public.check_random_name_exists(name TEXT)
+RETURNS BOOLEAN
+SECURITY DEFINER
+LANGUAGE sql
+AS $$
+  SELECT EXISTS (SELECT 1 FROM public.profiles WHERE random_name = name);
+$$;

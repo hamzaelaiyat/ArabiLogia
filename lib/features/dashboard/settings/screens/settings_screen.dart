@@ -3,16 +3,19 @@ import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/services/potato_mode_service.dart';
+import 'package:arabilogia/core/widgets/glass_bottom_sheet.dart';
 import 'package:arabilogia/providers/theme_provider.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/legal/widgets/legal_bottom_sheet.dart';
-import 'package:arabilogia/core/widgets/glass_bottom_sheet.dart';
 import 'package:arabilogia/widgets/potato_switch.dart';
+import 'package:arabilogia/core/widgets/glass_app_bar.dart';
+import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:arabilogia/core/utils/anonymous_name_generator.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -22,7 +25,7 @@ class SettingsScreen extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(title: const Text('الإعدادات')),
+        appBar: GlassAppBar(title: const ResponsiveAppBarTitle('الإعدادات')),
         body: ListView(
           padding: const EdgeInsets.all(AppTokens.spacing8),
           // Extra bottom padding to ensure logout button is visible above bottom nav on mobile
@@ -187,43 +190,7 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => context.push(AppRoutes.profileEdit),
           ),
           const Divider(height: 1),
-          Consumer<AuthProvider>(
-            builder: (context, authProvider, _) {
-              final metadata = authProvider.state.user?.userMetadata ?? {};
-              final isPublic = metadata['is_public'] ?? true;
-              final hideAvatar = metadata['hide_avatar'] ?? false;
-
-              return Column(
-                children: [
-                  _buildSectionHeader(context, 'الخصوصية'),
-                  const SizedBox(height: AppTokens.spacing8),
-                  Card(
-                    child: Column(
-                      children: [
-                        PotatoSwitchListTile(
-                          secondary: const Icon(Icons.visibility_outlined),
-                          title: const Text('إظهار ملفي للآخرين'),
-                          value: isPublic,
-                          onChanged: (value) async {
-                            await authProvider.updateProfile(isPublic: value);
-                          },
-                        ),
-                        const Divider(height: 1),
-                        PotatoSwitchListTile(
-                          secondary: const Icon(Icons.no_photography_outlined),
-                          title: const Text('إخفاء صورتي في لوحة الصدارة'),
-                          value: hideAvatar,
-                          onChanged: (value) async {
-                            await authProvider.updateProfile(hideAvatar: value);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+          const _PrivacySection(),
           const Divider(height: 1),
           ListTile(
             leading: const Icon(Icons.delete_outline, color: Colors.red),
@@ -536,32 +503,156 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTokens.spacing4,
-        vertical: AppTokens.spacing8,
-      ),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: AppColors.primary,
-          fontWeight: FontWeight.bold,
+}
+
+class _PrivacySection extends StatefulWidget {
+  const _PrivacySection();
+
+  @override
+  State<_PrivacySection> createState() => _PrivacySectionState();
+}
+
+class _PrivacySectionState extends State<_PrivacySection> {
+  bool _hideAvatar = false;
+  bool _hideName = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('hide_avatar, hide_name')
+          .eq('id', user.id)
+          .single();
+      if (mounted) {
+        setState(() {
+          _hideAvatar = profile['hide_avatar'] ?? false;
+          _hideName = profile['hide_name'] ?? false;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('PrivacySection load error: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _saveToDb({
+    bool? hideAvatar,
+    bool? hideName,
+    String? randomName,
+  }) async {
+    if (!mounted) return;
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.updateProfile(
+      hideAvatar: hideAvatar,
+      hideName: hideName,
+      randomName: randomName,
+    );
+    if (!mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(hideName == true ? 'سيظهر اسم عشوائي في لوحة الصدارة' : 'تم الحفظ'),
+          duration: const Duration(seconds: 2),
         ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('فشل الحفظ، حاول مرة أخرى')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final header = Padding(
+      padding: const EdgeInsets.only(bottom: AppTokens.spacing8),
+      child: Text(
+        'الخصوصية',
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primary),
       ),
+    );
+
+    return Column(
+      children: [
+        header,
+        const SizedBox(height: AppTokens.spacing8),
+        Card(
+          child: _isLoading
+              ? const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : Column(
+                  children: [
+                    _buildToggleTile(
+                      icon: Icons.no_photography_outlined,
+                      title: 'إخفاء صورتي في لوحة الصدارة',
+                      value: _hideAvatar,
+                      onChanged: (value) async {
+                        setState(() {
+                          _hideAvatar = value;
+                          if (!value) {
+                            _hideName = false;
+                          }
+                        });
+                        if (!value) {
+                          await _saveToDb(hideName: false, randomName: null);
+                        }
+                        await _saveToDb(hideAvatar: value);
+                      },
+                    ),
+                    if (_hideAvatar) ...[
+                      const Divider(height: 1),
+                      _buildToggleTile(
+                        icon: Icons.person_off_outlined,
+                        title: 'إخفاء حسابي في لوحة الصدارة',
+                        subtitle: 'سيظهر اسم عشوائي بدلاً من اسمك الحقيقي',
+                        value: _hideName,
+                        onChanged: (value) async {
+                          if (value) {
+                            try {
+                              final name = await AnonymousNameGenerator.generate(
+                                supabase: Supabase.instance.client,
+                              );
+                              setState(() => _hideName = true);
+                              await _saveToDb(hideName: true, randomName: name);
+                            } catch (e) {
+                              debugPrint('Name generation failed: $e');
+                              setState(() => _hideName = false);
+                            }
+                          } else {
+                            setState(() => _hideName = false);
+                            await _saveToDb(hideName: false, randomName: null);
+                          }
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+        ),
+      ],
     );
   }
 
   Widget _buildToggleTile({
-    required BuildContext context,
     required IconData icon,
     required String title,
+    String? subtitle,
     required bool value,
-    required Function(bool) onToggle,
+    required ValueChanged<bool> onChanged,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
-      onTap: () => onToggle(!value),
+      onTap: () => onChanged(!value),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -569,42 +660,75 @@ class SettingsScreen extends StatelessWidget {
             Icon(icon, size: 22, color: AppColors.primary),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: AppTokens.fontSizeMd,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.foreground(context),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: AppTokens.fontSizeMd,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: AppTokens.fontSizeSm,
+                        color: AppColors.mutedColor(context),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            _CustomSwitch(value: value, onChanged: onChanged),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomSwitch extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  const _CustomSwitch({required this.value, this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = AppColors.primary;
+    final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+
+    return GestureDetector(
+      onTap: onChanged != null ? () => onChanged!(!value) : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 50,
+        height: 28,
+        decoration: BoxDecoration(
+          color: value ? activeColor : inactiveColor,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Stack(
+          children: [
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              left: value ? 26 : 4,
+              top: 4,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
                 ),
               ),
             ),
-            Container(
-              width: 50,
-              height: 28,
-              decoration: BoxDecoration(
-                color: value 
-                    ? AppColors.primary 
-                    : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Stack(
-                children: [
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 150),
-                    left: value ? 26 : 4,
-                    top: 4,
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-),
           ],
         ),
       ),
