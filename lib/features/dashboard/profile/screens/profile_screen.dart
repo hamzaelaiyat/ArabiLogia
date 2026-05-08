@@ -13,6 +13,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as p;
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
+import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -200,10 +201,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
-          title: const Text(
-            'الملف الشخصي',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          title: const ResponsiveAppBarTitle('الملف الشخصي'),
           actions: [
             IconButton(
               icon: const Icon(Icons.edit_outlined),

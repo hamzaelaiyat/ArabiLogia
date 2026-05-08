@@ -3,6 +3,8 @@ import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/widgets/native_ad_widget.dart';
+import 'package:arabilogia/core/widgets/glass_app_bar.dart';
+import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
@@ -110,8 +112,8 @@ class _ExamsScreenState extends State<ExamsScreen>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('الامتحانات'),
+        appBar: GlassAppBar(
+          title: const ResponsiveAppBarTitle('الامتحانات'),
           bottom: potato.blurEffectsEnabled
               ? TabBar(
                   controller: _tabController,

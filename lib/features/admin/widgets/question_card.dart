@@ -94,9 +94,6 @@ class _QuestionCardState extends State<QuestionCard> {
         color: isDark ? const Color(0xFF232527) : Colors.white,
         borderRadius: AppTokens.radiusLgAll,
         boxShadow: AppTokens.shadowOutside,
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -125,22 +122,17 @@ class _QuestionCardState extends State<QuestionCard> {
 
   Widget _buildInsideContent(BuildContext context, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(AppTokens.spacing12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF111315) : const Color(0xFFF0F4F7),
         borderRadius: AppTokens.radiusMdAll,
-        boxShadow: AppTokens.shadowInside,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              if (widget.passages.isNotEmpty)
-                Expanded(child: _buildPassageSelector(context, isDark)),
-            ],
-          ),
-          const SizedBox(height: AppTokens.spacing12),
+          if (widget.passages.isNotEmpty)
+            _buildPassageSelector(context, isDark),
+          if (widget.passages.isNotEmpty) const SizedBox(height: 12),
           QuestionInput(
             key: _inputKey,
             value: widget.question.text,
@@ -262,7 +254,16 @@ class _QuestionCardState extends State<QuestionCard> {
 
   void _showPointsBottomSheet(BuildContext context, int currentPoints) {
     final controller = TextEditingController(text: currentPoints.toString());
+    final isMobile = MediaQuery.of(context).size.width < AppTokens.breakpointTablet;
 
+    if (isMobile) {
+      _showPointsBottomSheetMobile(context, currentPoints, controller);
+    } else {
+      _showPointsDialogDesktop(context, currentPoints, controller);
+    }
+  }
+
+  void _showPointsBottomSheetMobile(BuildContext context, int currentPoints, TextEditingController controller) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -316,13 +317,8 @@ class _QuestionCardState extends State<QuestionCard> {
                   decoration: InputDecoration(
                     hintText: '0.5 - 10',
                     suffixText: 'نقطة',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
-                    ),
+                    border: InputBorder.none,
+                    focusedBorder: InputBorder.none,
                   ),
                   onSubmitted: (val) => _savePoints(context, val),
                 ),
@@ -390,6 +386,114 @@ class _QuestionCardState extends State<QuestionCard> {
     );
   }
 
+  void _showPointsDialogDesktop(BuildContext context, int currentPoints, TextEditingController controller) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: 400,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF232527) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.star, color: AppColors.primary, size: 24),
+                  const SizedBox(width: 12),
+                  Text(
+                    'تعديل النقاط',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.foreground(context),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'أدخل عدد النقاط للسؤال (من 0.5 إلى 10)',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.mutedColor(context),
+                ),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textAlign: TextAlign.center,
+                autofocus: true,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  hintText: '0.5 - 10',
+                  suffixText: 'نقطة',
+                  border: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+                onSubmitted: (val) => _savePoints(dialogContext, val),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: _buildQuickPointButton(0.5, controller)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildQuickPointButton(1, controller)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildQuickPointButton(2, controller)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildQuickPointButton(5, controller)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildQuickPointButton(10, controller)),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('إلغاء'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _savePoints(dialogContext, controller.text),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('حفظ'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuickPointButton(double points, TextEditingController controller) {
     return OutlinedButton(
       onPressed: () => controller.text = points.toString(),
@@ -428,7 +532,16 @@ class _QuestionCardState extends State<QuestionCard> {
   void _showQuestionPreview(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fgColor = AppColors.foreground(context);
+    final isMobile = MediaQuery.of(context).size.width < AppTokens.breakpointTablet;
 
+    if (isMobile) {
+      _showQuestionPreviewMobile(context, isDark, fgColor);
+    } else {
+      _showQuestionPreviewDesktop(context, isDark, fgColor);
+    }
+  }
+
+  void _showQuestionPreviewMobile(BuildContext context, bool isDark, Color fgColor) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -461,7 +574,6 @@ class _QuestionCardState extends State<QuestionCard> {
                 ],
               ),
             ),
-            const Divider(height: 1),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
@@ -513,12 +625,6 @@ class _QuestionCardState extends State<QuestionCard> {
                                 color: option.isCorrect
                                     ? const Color(0xFF4CAF50)
                                     : (isDark ? Colors.white10 : Colors.black12),
-                                border: Border.all(
-                                  color: option.isCorrect
-                                      ? const Color(0xFF4CAF50)
-                                      : (isDark ? Colors.white30 : Colors.black26),
-                                  width: 2,
-                                ),
                               ),
                               child: option.isCorrect
                                   ? const Icon(Icons.check, size: 14, color: Colors.white)
@@ -559,6 +665,141 @@ class _QuestionCardState extends State<QuestionCard> {
     );
   }
 
+  void _showQuestionPreviewDesktop(BuildContext context, bool isDark, Color fgColor) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: 500,
+          height: 500,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF232527) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'معاينة السؤال ${widget.index + 1}',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: fgColor,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: Icon(Icons.close, color: fgColor),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF111315) : const Color(0xFFF0F4F7),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Directionality(
+                          textDirection: TextDirection.rtl,
+                          child: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(fontSize: 16, height: 1.6),
+                              children: parseQuestionText(
+                                widget.question.text.isEmpty
+                                    ? 'السؤال يظهر هنا...'
+                                    : widget.question.text,
+                                isDark: isDark,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'الخيارات:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: fgColor,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...List.generate(widget.question.options.length, (optIndex) {
+                        final options = widget.question.options;
+                        if (optIndex >= options.length) return const SizedBox.shrink();
+                        final option = options[optIndex];
+                        final labels = ['أ', 'ب', 'ج', 'د'];
+                        final label = optIndex < labels.length ? labels[optIndex] : '${optIndex + 1}';
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: option.isCorrect
+                                      ? const Color(0xFF4CAF50)
+                                      : (isDark ? Colors.white10 : Colors.black12),
+                                ),
+                                child: option.isCorrect
+                                    ? const Icon(Icons.check, size: 14, color: Colors.white)
+                                    : Center(
+                                        child: Text(
+                                          label,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDark ? Colors.white38 : Colors.black26,
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: option.text.isEmpty
+                                          ? AppColors.mutedColor(context)
+                                          : fgColor,
+                                    ),
+                                    children: parseQuestionText(
+                                      option.text.isEmpty ? 'الخيار $label' : option.text,
+                                      isDark: isDark,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildPassageSelector(BuildContext context, bool isDark) {
     final currentPassageId = widget.getPassageValue(widget.question.passage);
@@ -570,9 +811,6 @@ class _QuestionCardState extends State<QuestionCard> {
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
         borderRadius: AppTokens.radiusMdAll,
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -643,12 +881,6 @@ class _QuestionCardState extends State<QuestionCard> {
                 color: isCorrect
                     ? const Color(0xFF4CAF50)
                     : (isDark ? Colors.white10 : Colors.black12),
-                border: Border.all(
-                  color: isCorrect
-                      ? const Color(0xFF4CAF50)
-                      : (isDark ? Colors.white30 : Colors.black26),
-                  width: 2,
-                ),
               ),
               child: isCorrect
                   ? const Icon(Icons.check, size: 14, color: Colors.white)
@@ -672,7 +904,15 @@ class _QuestionCardState extends State<QuestionCard> {
                 filled: true,
                 fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
                 isDense: true,
@@ -726,19 +966,6 @@ class _QuestionCardState extends State<QuestionCard> {
                 color: isCorrect
                     ? const Color(0xFF4CAF50)
                     : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
-                border: Border.all(
-                  color: isCorrect
-                      ? const Color(0xFF4CAF50)
-                      : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1)),
-                  width: 1.5,
-                ),
-                boxShadow: isCorrect ? [
-                  BoxShadow(
-                    color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  )
-                ] : null,
               ),
               child: isCorrect
                   ? const Icon(Icons.check, size: 14, color: Colors.white)
@@ -757,32 +984,37 @@ class _QuestionCardState extends State<QuestionCard> {
           const SizedBox(width: 12),
           // Input (Inside look)
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF111315) : const Color(0xFFF0F4F7),
-                borderRadius: AppTokens.radiusMdAll,
-                boxShadow: AppTokens.shadowInside,
+            child: TextField(
+              controller: _optionControllers[optIndex],
+              onChanged: (val) => _updateOptionText(optIndex, val),
+              maxLines: null,
+              minLines: 1,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.white : Colors.black87,
               ),
-              child: TextField(
-                controller: _optionControllers[optIndex],
-                onChanged: (val) => _updateOptionText(optIndex, val),
-                maxLines: null,
-                minLines: 1,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? Colors.white : Colors.black87,
+              decoration: InputDecoration(
+                hintText: 'أدخل الخيار $label...',
+                hintStyle: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.mutedColor(context).withValues(alpha: 0.5),
                 ),
-                decoration: InputDecoration(
-                  hintText: 'أدخل الخيار $label...',
-                  hintStyle: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.mutedColor(context).withValues(alpha: 0.5),
-                  ),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
+                filled: true,
+                fillColor: isDark ? const Color(0xFF111315) : const Color(0xFFF0F4F7),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               ),
             ),
           ),

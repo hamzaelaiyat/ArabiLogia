@@ -494,12 +494,18 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
                                           width: AppTokens.spacing12,
                                         ),
                                         Expanded(
-                                          child: Text(
-                                            option.text,
-                                            style: TextStyle(
-                                              fontWeight: isSelected
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
+                                          child: RichText(
+                                            text: TextSpan(
+                                              style: TextStyle(
+                                                fontWeight: isSelected
+                                                    ? FontWeight.bold
+                                                    : FontWeight.normal,
+                                                color: AppColors.foreground(context),
+                                              ),
+                                              children: parseQuestionText(
+                                                option.text,
+                                                isDark: Theme.of(context).brightness == Brightness.dark,
+                                              ),
                                             ),
                                           ),
                                         ),

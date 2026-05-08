@@ -118,21 +118,21 @@ class QuestionInputState extends State<QuestionInput> {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.fromLTRB(60, 16, 16, 40),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDark ? Colors.white12 : Colors.black12,
-              ),
+              borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 2,
-              ),
+              borderSide: BorderSide.none,
             ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.all(16),
           ),
         ),
         Padding(
@@ -208,7 +208,6 @@ class QuestionInputState extends State<QuestionInput> {
                 decoration: BoxDecoration(
                   color: QuestionTextStyle.textColors[index],
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                 ),
               ),
               const SizedBox(width: 12),

@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
+import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -96,11 +97,8 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: const GlassAppBar(
-          title: Text(
-            'عربيلوجيا',
-            style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
-          ),
+        appBar: GlassAppBar(
+          title: const ResponsiveAppBarTitle('الرئيسية'),
         ),
         body: RefreshIndicator(
           onRefresh: () async {

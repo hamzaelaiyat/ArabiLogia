@@ -442,6 +442,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
     String text,
     bool isCorrect,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -455,11 +456,13 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-          Text(
-            text,
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              color: isCorrect ? AppColors.success : AppColors.error,
+          RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: isCorrect ? AppColors.success : AppColors.error,
+              ),
+              children: parseQuestionText(text, isDark: isDark),
             ),
           ),
         ],

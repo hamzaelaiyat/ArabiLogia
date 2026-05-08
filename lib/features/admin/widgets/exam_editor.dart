@@ -12,27 +12,32 @@ import 'package:arabilogia/features/admin/widgets/inset_toggle.dart';
 import 'package:arabilogia/features/admin/widgets/sub_sidebar.dart';
 import 'package:arabilogia/features/admin/widgets/passage_manager.dart';
 import 'package:arabilogia/features/admin/widgets/exam_settings_action_buttons.dart';
+import 'package:arabilogia/providers/teacher_exam_defaults_provider.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 
 class ExamEditor extends StatelessWidget {
   final Exam? existingExam;
   final Function(Exam) onSave;
   final VoidCallback onCancel;
+  final TeacherExamDefaults? defaults;
 
   const ExamEditor({
     super.key,
     this.existingExam,
     required this.onSave,
     required this.onCancel,
+    this.defaults,
   });
 
   @override
   Widget build(BuildContext context) {
+    final examDefaults = defaults ?? context.read<TeacherExamDefaultsProvider?>()?.defaults;
     return ChangeNotifierProvider(
       create: (_) {
         if (existingExam != null) {
           return ExamEditorState.fromExam(existingExam!);
         } else {
-          return ExamEditorState.empty();
+          return ExamEditorState.empty(defaults: examDefaults);
         }
       },
       child: _ExamEditorContent(
@@ -128,6 +133,77 @@ class _ExamEditorContentState extends State<_ExamEditorContent> with TickerProvi
     context.read<ExamEditorState>().setShowPreview(_isPreviewOpen);
   }
 
+  void _showExitConfirmation(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < AppTokens.breakpointTablet;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (isMobile) {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (ctx) => Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF232527) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.exit_to_app, size: 48, color: AppColors.primary),
+              const SizedBox(height: 16),
+              Text('الخروج من المحرر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.foreground(context))),
+              const SizedBox(height: 8),
+              Text('هل تريد حفظ التغييرات قبل الخروج؟', style: TextStyle(color: AppColors.mutedColor(context))),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(child: OutlinedButton(onPressed: () { Navigator.pop(ctx); widget.onCancel(); }, child: const Text('الخروج بدون حفظ'))),
+                  const SizedBox(width: 12),
+                  Expanded(child: ElevatedButton(onPressed: () { Navigator.pop(ctx); _saveExam(publish: false); widget.onCancel(); }, style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary), child: const Text('حفظ وخروج'))),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+            ],
+          ),
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 400,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(color: isDark ? const Color(0xFF232527) : Colors.white, borderRadius: BorderRadius.circular(20)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.exit_to_app, size: 48, color: AppColors.primary),
+                const SizedBox(height: 16),
+                Text('الخروج من المحرر', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.foreground(context))),
+                const SizedBox(height: 8),
+                Text('هل تريد حفظ التغييرات قبل الخروج؟', style: TextStyle(color: AppColors.mutedColor(context))),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(child: OutlinedButton(onPressed: () { Navigator.pop(ctx); widget.onCancel(); }, child: const Text('الخروج بدون حفظ'))),
+                    const SizedBox(width: 12),
+                    Expanded(child: ElevatedButton(onPressed: () { Navigator.pop(ctx); _saveExam(publish: false); widget.onCancel(); }, style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary), child: const Text('حفظ وخروج'))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -178,10 +254,11 @@ class _ExamEditorContentState extends State<_ExamEditorContent> with TickerProvi
                     onIndexChanged: (index) => state.setActiveSidebarIndex(index),
                     onSave: () => _saveExam(publish: false),
                     onPublish: () => _saveExam(publish: true),
+                    onExit: () => _showExitConfirmation(context),
                   ),
                   Expanded(
                     child: AnimatedSwitcher(
-                      duration: AppTokens.durationFast,
+                      duration: context.watch<PotatoModeProvider>().animationsEnabled ? AppTokens.durationFast : Duration.zero,
                       child: state.activeSidebarIndex == 0
                           ? ExamSettingsPanel(
                               key: const ValueKey('settings'),
@@ -240,69 +317,102 @@ class _ExamEditorContentState extends State<_ExamEditorContent> with TickerProvi
         
         return Scaffold(
           backgroundColor: isDark ? AppColors.bgDark : AppColors.bgLight,
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(80),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: InsetToggle(
-                  value: state.isMobileSettingsMode,
-                  onChanged: (val) => state.setMobileSettingsMode(val),
-                  labelLeft: 'الفقرات',
-                  labelRight: 'إعدادات',
-                ),
-              ),
-            ),
-          ),
-          body: AnimatedSwitcher(
-            duration: AppTokens.durationFast,
-            child: !state.isMobileSettingsMode
-                ? _buildQuestionListPanel(isMobile: true)
-                : Stack(
-                    children: [
-                      ExamSettingsPanel(
-                        title: state.title,
-                        selectedCategoryId: state.selectedCategoryId,
-                        selectedGrade: state.selectedGrade,
-                        durationMinutes: state.durationMinutes,
-                        durationEnabled: state.durationEnabled,
-                        isPublished: state.isPublished,
-                        passages: state.passages,
-                        isMobile: true,
-                        onTitleChanged: (v) => state.title = v,
-                        onCategoryChanged: (v) => state.selectedCategoryId = v,
-                        onGradeChanged: (v) => state.selectedGrade = v,
-                        onDurationChanged: (v) => state.durationMinutes = v,
-                        onDurationToggle: (v) => state.durationEnabled = v,
-                        onAddPassage: _addPassage,
-                        onDeletePassage: _deletePassage,
-                        onCancel: widget.onCancel,
-                        onSaveDraft: () => _saveExam(publish: false),
-                        onPublish: () => _saveExam(publish: true),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(AppTokens.spacing16),
-                          decoration: BoxDecoration(
-                            color: isDark ? AppColors.bgDark : AppColors.bgLight,
-                            border: Border(
-                              top: BorderSide(
-                                color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
-                              ),
-                            ),
-                          ),
-                          child: ExamSettingsActionButtons(
-                            isPublished: state.isPublished,
-                            onSaveDraft: () => _saveExam(publish: false),
-                            onPublish: () => _saveExam(publish: true),
-                          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => _showExitConfirmation(context),
+                      icon: Icon(Icons.arrow_back, color: AppColors.foreground(context)),
+                    ),
+                    Expanded(
+                      child: Text(
+                        state.title.isEmpty ? 'اختبار جديد' : state.title,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.foreground(context),
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
+                    ),
+                    IconButton(
+                      onPressed: () => _saveExam(publish: false),
+                      icon: Icon(Icons.save_outlined, color: AppColors.mutedColor(context)),
+                      tooltip: 'حفظ كمسودة',
+                    ),
+                    IconButton(
+                      onPressed: () => _saveExam(publish: true),
+                      icon: Icon(Icons.publish, color: AppColors.primary),
+                      tooltip: 'نشر',
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: InsetToggle(
+                    value: state.isMobileSettingsMode,
+                    onChanged: (val) => state.setMobileSettingsMode(val),
+                    labelLeft: 'الاسئلة',
+                    labelRight: 'إعدادات',
                   ),
+                ),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: context.watch<PotatoModeProvider>().animationsEnabled ? AppTokens.durationFast : Duration.zero,
+                    child: !state.isMobileSettingsMode
+                        ? _buildQuestionListPanel(isMobile: true)
+                        : Stack(
+                            children: [
+                              ExamSettingsPanel(
+                                title: state.title,
+                                selectedCategoryId: state.selectedCategoryId,
+                                selectedGrade: state.selectedGrade,
+                                durationMinutes: state.durationMinutes,
+                                durationEnabled: state.durationEnabled,
+                                isPublished: state.isPublished,
+                                passages: state.passages,
+                                isMobile: true,
+                                onTitleChanged: (v) => state.title = v,
+                                onCategoryChanged: (v) => state.selectedCategoryId = v,
+                                onGradeChanged: (v) => state.selectedGrade = v,
+                                onDurationChanged: (v) => state.durationMinutes = v,
+                                onDurationToggle: (v) => state.durationEnabled = v,
+                                onAddPassage: _addPassage,
+                                onDeletePassage: _deletePassage,
+                                onCancel: widget.onCancel,
+                                onSaveDraft: () => _saveExam(publish: false),
+                                onPublish: () => _saveExam(publish: true),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(AppTokens.spacing16),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? AppColors.bgDark : AppColors.bgLight,
+                                    border: Border(
+                                      top: BorderSide(
+                                        color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                                      ),
+                                    ),
+                                  ),
+                                  child: ExamSettingsActionButtons(
+                                    isPublished: state.isPublished,
+                                    onSaveDraft: () => _saveExam(publish: false),
+                                    onPublish: () => _saveExam(publish: true),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ],
+            ),
           ),
           floatingActionButton: !state.isMobileSettingsMode
               ? FloatingActionButton(

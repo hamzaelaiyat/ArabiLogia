@@ -15,6 +15,7 @@ import 'package:arabilogia/providers/theme_provider.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/providers/exam_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
+import 'package:arabilogia/providers/teacher_exam_defaults_provider.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -105,6 +106,9 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
         ChangeNotifierProvider(create: (_) => ExamProvider()),
         ChangeNotifierProvider(
           create: (_) => PotatoModeProvider()..initialize(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => TeacherExamDefaultsProvider()..loadDefaults(),
         ),
       ],
       child: Builder(

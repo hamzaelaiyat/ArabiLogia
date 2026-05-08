@@ -23,7 +23,6 @@ class QuestionCardExtras {
             ? Colors.white.withValues(alpha: 0.1)
             : Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isDark ? Colors.white24 : Colors.black12),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(

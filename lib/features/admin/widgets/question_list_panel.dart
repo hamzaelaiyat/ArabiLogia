@@ -93,74 +93,86 @@ class QuestionListPanel extends StatelessWidget {
   }
 
   Widget _buildReorderableList(BuildContext context, bool isDark) {
-    return ReorderableListView.builder(
-      buildDefaultDragHandles: false,
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? AppTokens.spacing12 : AppTokens.spacing32,
-        vertical: isMobile ? AppTokens.spacing8 : AppTokens.spacing16,
-      ),
-      itemCount: questions.length + 1,
-      onReorder: (oldIndex, newIndex) {
-        if (oldIndex < questions.length && newIndex <= questions.length) {
-          if (oldIndex < newIndex) {
-            newIndex -= 1;
-          }
-          onReorderQuestions!(oldIndex, newIndex);
-        }
-      },
-      proxyDecorator: (child, index, animation) {
-        return Material(
-          elevation: 8,
-          color: Colors.transparent,
-          shadowColor: Colors.black26,
-          borderRadius: BorderRadius.circular(12),
-          child: child,
-        );
-      },
-      itemBuilder: (context, index) {
-        if (index == questions.length) {
-          if (isMobile) return SizedBox.shrink(key: ValueKey('add_question_placeholder_$index'));
-          return Padding(
-            key: const ValueKey('add_question_button'),
-            padding: EdgeInsets.only(
-              top: isMobile ? AppTokens.spacing8 : AppTokens.spacing16,
-              bottom: isMobile ? AppTokens.spacing8 : AppTokens.spacing32,
-            ),
-            child: _buildAddQuestionButton(isDark),
-          );
-        }
-        return TweenAnimationBuilder<double>(
-          key: ValueKey(questions[index].id),
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: AppTokens.durationMd,
-          curve: Curves.easeOutCubic,
-          builder: (context, value, child) {
-            return Transform.translate(
-              offset: Offset(0, 20 * (1 - value)),
-              child: Opacity(
-                opacity: value,
-                child: child,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          clipBehavior: Clip.none,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: ReorderableListView.builder(
+              buildDefaultDragHandles: false,
+              shrinkWrap: true,
+              physics: const ClampingScrollPhysics(),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? AppTokens.spacing12 : AppTokens.spacing32,
+                vertical: isMobile ? AppTokens.spacing8 : AppTokens.spacing16,
               ),
-            );
-          },
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: isMobile ? AppTokens.spacing8 : AppTokens.spacing24,
-            ),
-            child: QuestionCard(
-              key: ValueKey(questions[index].id),
-              question: questions[index],
-              settings: index < questionSettings.length ? questionSettings[index] : null,
-              index: index,
-              passages: passages,
-              getPassageValue: getPassageValue,
-              getPassageContent: getPassageContent,
-              isSavedPassage: isSavedPassage,
-              isMobile: isMobile,
-              onDelete: () => onDeleteQuestion(index),
-              onDuplicate: () => onDuplicateQuestion(index),
-              onUpdate: (q) => onUpdateQuestion(index, q),
-              onSettingsUpdate: (s) => onUpdateSettings(index, s),
+              itemCount: questions.length + 1,
+              onReorder: (oldIndex, newIndex) {
+                if (oldIndex < questions.length && newIndex <= questions.length) {
+                  if (oldIndex < newIndex) {
+                    newIndex -= 1;
+                  }
+                  onReorderQuestions!(oldIndex, newIndex);
+                }
+              },
+              proxyDecorator: (child, index, animation) {
+                return Material(
+                  elevation: 8,
+                  color: Colors.transparent,
+                  shadowColor: Colors.black26,
+                  borderRadius: BorderRadius.circular(12),
+                  child: child,
+                );
+              },
+              itemBuilder: (context, index) {
+                if (index == questions.length) {
+                  if (isMobile) return SizedBox.shrink(key: ValueKey('add_question_placeholder_$index'));
+                  return Padding(
+                    key: const ValueKey('add_question_button'),
+                    padding: EdgeInsets.only(
+                      top: isMobile ? AppTokens.spacing8 : AppTokens.spacing16,
+                      bottom: isMobile ? AppTokens.spacing8 : AppTokens.spacing32,
+                    ),
+                    child: _buildAddQuestionButton(isDark),
+                  );
+                }
+                return TweenAnimationBuilder<double>(
+                  key: ValueKey(questions[index].id),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: AppTokens.durationMd,
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: Opacity(
+                        opacity: value,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: isMobile ? AppTokens.spacing8 : AppTokens.spacing24,
+                    ),
+                    child: QuestionCard(
+                      key: ValueKey(questions[index].id),
+                      question: questions[index],
+                      settings: index < questionSettings.length ? questionSettings[index] : null,
+                      index: index,
+                      passages: passages,
+                      getPassageValue: getPassageValue,
+                      getPassageContent: getPassageContent,
+                      isSavedPassage: isSavedPassage,
+                      isMobile: isMobile,
+                      onDelete: () => onDeleteQuestion(index),
+                      onDuplicate: () => onDuplicateQuestion(index),
+                      onUpdate: (q) => onUpdateQuestion(index, q),
+                      onSettingsUpdate: (s) => onUpdateSettings(index, s),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         );
@@ -273,9 +285,6 @@ class QuestionListPanel extends StatelessWidget {
               decoration: BoxDecoration(
                 color: surfaceColor,
                 borderRadius: AppTokens.radiusLgAll,
-                border: Border.all(
-                  color: isDark ? Colors.white12 : Colors.black12,
-                ),
               ),
               child: Column(
                 children: [

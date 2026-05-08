@@ -62,14 +62,14 @@ class AppColors {
 
   static Color glassBackgroundColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.light
-        ? Colors.white.withValues(alpha: 0.2)
-        : Colors.white.withValues(alpha: 0.06);
+        ? Colors.white.withValues(alpha: 0.7)
+        : const Color(0xFF1E1E1E).withValues(alpha: 0.6);
   }
 
   static Color glassBorderColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.light
-        ? Colors.white.withValues(alpha: 0.3)
-        : Colors.white.withValues(alpha: 0.15);
+        ? Colors.white.withValues(alpha: 0.4)
+        : Colors.white.withValues(alpha: 0.1);
   }
 
   static Color authTextColor(BuildContext context) {
