@@ -9,6 +9,10 @@ import 'package:arabilogia/features/auth/widgets/theme_toggle_button.dart';
 import 'package:arabilogia/features/auth/forgot_password/screens/forgot_password_overlay.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../widgets/login_header.dart';
+import '../widgets/login_button.dart';
+import '../widgets/login_error_banner.dart';
+import '../widgets/login_footer.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -159,20 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Image.asset(
-            'assets/images/logo-removedbg.png',
-            height: isMobile ? 80 : 100,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(height: AppTokens.spacing12),
-          Text(
-            AppStrings.login,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFFEB8A00),
-            ),
-            textAlign: TextAlign.center,
-          ),
+          LoginHeader(isMobile: isMobile),
           const SizedBox(height: AppTokens.spacing24),
           TextFormField(
             controller: _emailController,
@@ -242,109 +233,24 @@ class _LoginScreenState extends State<LoginScreen> {
             builder: (context, auth, child) {
               return Column(
                 children: [
-                  Container(
-                    width: double.infinity,
-                    height: AppTokens.isMobile(context)
-                        ? AppTokens.buttonHeightLg
-                        : AppTokens.buttonHeightMd,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFEB8A00), Color(0xFFFFA726)],
-                      ),
-                      borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFEB8A00).withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ElevatedButton(
-                      onPressed: auth.state.isLoading ? null : _handleLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppTokens.radiusFull,
-                          ),
-                        ),
-                      ),
-                      child: auth.state.isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(
-                              AppStrings.login,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
+                  LoginButton(
+                    isLoading: auth.state.isLoading,
+                    onPressed: _handleLogin,
                   ),
                   if (auth.state.error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: AppTokens.spacing8),
-                      child: Column(
-                        children: [
-                          Text(
-                            auth.state.error!,
-                            style: const TextStyle(
-                              color: Color(0xFFD32F2F),
-                              fontWeight: FontWeight.bold,
-                              fontSize: AppTokens.fontSizeSm,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          if (auth.state.error ==
-                              'يرجى تأكيد البريد الإلكتروني')
-                            TextButton(
-                              onPressed: () => _handleResendVerification(auth),
-                              child: const Text(
-                                'إعادة إرسال رمز التفعيل',
-                                style: TextStyle(
-                                  color: Color(0xFFEB8A00),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                    LoginErrorBanner(
+                      error: auth.state.error!,
+                      onResendVerification: auth.state.error ==
+                              'يرجى تأكيد البريد الإلكتروني'
+                          ? () => _handleResendVerification(auth)
+                          : null,
                     ),
                 ],
               );
             },
           ),
           const SizedBox(height: AppTokens.spacing12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                AppStrings.noAccount,
-                style: TextStyle(
-                  color: AppColors.authHeaderColor(context),
-                  fontSize: AppTokens.fontSizeMd,
-                ),
-              ),
-              TextButton(
-                onPressed: () => context.go(AppRoutes.register),
-                child: const Text(
-                  AppStrings.register,
-                  style: TextStyle(
-                    color: Color(0xFFEB8A00),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          const LoginFooter(),
         ],
       ),
     );

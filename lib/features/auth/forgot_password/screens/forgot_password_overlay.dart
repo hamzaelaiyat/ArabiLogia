@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:arabilogia/features/auth/widgets/glass_container.dart';
+import 'package:arabilogia/features/auth/widgets/gradient_action_button.dart';
+import 'package:arabilogia/features/auth/forgot_password/widgets/forgot_password_header.dart';
+import 'package:arabilogia/features/auth/forgot_password/widgets/error_banner.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
@@ -216,32 +219,7 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
-            const SizedBox(height: AppTokens.spacing12),
-            Image.asset(
-              'assets/images/logo-removedbg.png',
-              height: 80,
-              fit: BoxFit.contain,
-            ),
-            const SizedBox(height: AppTokens.spacing12),
-            Text(
-              AppStrings.forgotPassword,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.authHeaderColor(context),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppTokens.spacing8),
-            Text(
-              _isSubmitted
-                  ? 'تم إرسال رمز إعادة التعيين المكون من 6 إلى 8 أرقام إلى بريدك الإلكتروني'
-                  : 'أدخل بريدك الإلكتروني لإرسال رمز إعادة التعيين المكون من 6 إلى 8 أرقام',
-              style: TextStyle(
-                color: AppColors.authTextColor(context),
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            ForgotPasswordHeader(isSubmitted: _isSubmitted),
             const SizedBox(height: AppTokens.spacing24),
             if (!_isSubmitted) ...[
               TextFormField(
@@ -263,7 +241,14 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                 },
               ),
               const SizedBox(height: AppTokens.spacing20),
-              _buildActionButton(context, 'إرسال الرمز'),
+              Consumer<AuthProvider>(
+                builder: (context, auth, _) => GradientActionButton(
+                  label: 'إرسال الرمز',
+                  isLoading: auth.state.isLoading,
+                  errorText: auth.state.error,
+                  onPressed: _handleReset,
+                ),
+              ),
             ] else ...[
               TextFormField(
                 controller: _otpController,
@@ -281,24 +266,7 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                 },
               ),
               const SizedBox(height: AppTokens.spacing16),
-              if (_errorMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(AppTokens.spacing12),
-                  margin: const EdgeInsets.only(bottom: AppTokens.spacing12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD32F2F).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppTokens.radiusMd),
-                    border: Border.all(color: const Color(0xFFD32F2F)),
-                  ),
-                  child: Text(
-                    _errorMessage!,
-                    style: const TextStyle(
-                      color: Color(0xFFD32F2F),
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+              ErrorBanner(message: _errorMessage),
               TextFormField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -325,7 +293,14 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                 },
               ),
               const SizedBox(height: AppTokens.spacing20),
-              _buildActionButton(context, 'تغيير كلمة المرور'),
+              Consumer<AuthProvider>(
+                builder: (context, auth, _) => GradientActionButton(
+                  label: 'تغيير كلمة المرور',
+                  isLoading: auth.state.isLoading,
+                  errorText: auth.state.error,
+                  onPressed: _handleVerifyAndReset,
+                ),
+              ),
               const SizedBox(height: AppTokens.spacing12),
               TextButton(
                 onPressed: () => setState(() => _isSubmitted = false),
@@ -341,74 +316,4 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
     );
   }
 
-  Widget _buildActionButton(BuildContext context, String label) {
-    return Consumer<AuthProvider>(
-      builder: (context, auth, child) {
-        return Column(
-          children: [
-            Container(
-              width: double.infinity,
-              height: AppTokens.isMobile(context)
-                  ? AppTokens.buttonHeightLg
-                  : AppTokens.buttonHeightMd,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFEB8A00), Color(0xFFFFA726)],
-                ),
-                borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFEB8A00).withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ElevatedButton(
-                onPressed: auth.state.isLoading
-                    ? null
-                    : (_isSubmitted ? _handleVerifyAndReset : _handleReset),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-                  ),
-                ),
-                child: auth.state.isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        label,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
-            ),
-            if (auth.state.error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: AppTokens.spacing8),
-                child: Text(
-                  auth.state.error!,
-                  style: const TextStyle(
-                    color: Color(0xFFD32F2F),
-                    fontWeight: FontWeight.bold,
-                    fontSize: AppTokens.fontSizeSm,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
 }

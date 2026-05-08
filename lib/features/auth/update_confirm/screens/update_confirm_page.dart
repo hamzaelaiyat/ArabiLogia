@@ -6,6 +6,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:arabilogia/core/services/update_service.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/features/auth/update_confirm/widgets/update_header.dart';
+import 'package:arabilogia/features/auth/update_confirm/widgets/release_notes_card.dart';
+import 'package:arabilogia/features/auth/update_confirm/widgets/mandatory_update_banner.dart';
+import 'package:arabilogia/features/auth/update_confirm/widgets/download_progress_section.dart';
+import 'package:arabilogia/features/auth/update_confirm/widgets/update_action_buttons.dart';
 
 class UpdateConfirmPage extends StatefulWidget {
   final AppUpdate update;
@@ -46,168 +51,38 @@ class _UpdateConfirmPageState extends State<UpdateConfirmPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEB8A00).withAlpha(25),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Icon(
-                Icons.system_update,
-                size: 50,
-                color: Color(0xFFEB8A00),
-              ),
-            ),
-            const SizedBox(height: AppTokens.spacing24),
-
-            Text(
-              'إصدار جديد: ${widget.update.version}',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: AppTokens.spacing8),
-
-            Text(
-              'حجم التحديث: ${_formatFileSize(widget.update.fileSize)}',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            UpdateHeader(
+              version: widget.update.version,
+              fileSize: widget.update.fileSize,
             ),
             const SizedBox(height: AppTokens.spacing24),
 
             if (widget.update.releaseNotes.isNotEmpty) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppTokens.spacing16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.withAlpha(50)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.new_releases_outlined,
-                          size: 20,
-                          color: Color(0xFFEB8A00),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'ما الجديد؟',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppTokens.spacing12),
-                    Text(
-                      widget.update.releaseNotes,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                        height: 1.5,
-                      ),
-                      maxLines: 10,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
+              ReleaseNotesCard(releaseNotes: widget.update.releaseNotes),
               const SizedBox(height: AppTokens.spacing24),
             ],
 
             if (widget.update.isMandatory)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppTokens.spacing16),
-                decoration: BoxDecoration(
-                  color: Colors.red.withAlpha(25),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.warning_amber, color: Colors.red),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'هذا التحديث إلزامي لإصلاح مشاكل أمنية مهمة',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const MandatoryUpdateBanner(),
 
             const SizedBox(height: AppTokens.spacing32),
 
-            if (_isDownloading) ...[
-              LinearProgressIndicator(value: _downloadProgress),
-              const SizedBox(height: AppTokens.spacing12),
-              Text(_status, style: TextStyle(color: Colors.grey[600])),
-              const SizedBox(height: AppTokens.spacing24),
-            ],
-
-            if (!_isDownloading) ...[
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _startUpdate,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEB8A00),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'تحديث الآن',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
+            if (_isDownloading)
+              DownloadProgressSection(
+                progress: _downloadProgress,
+                status: _status,
               ),
-              const SizedBox(height: AppTokens.spacing12),
 
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: _remindLater,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: Color(0xFFEB8A00)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'ذكرني لاحقاً',
-                    style: TextStyle(color: Color(0xFFEB8A00), fontSize: 14),
-                  ),
-                ),
+            if (!_isDownloading)
+              UpdateActionButtons(
+                onUpdateNow: _startUpdate,
+                onRemindLater: _remindLater,
+                onSkip: _skipUpdate,
               ),
-              const SizedBox(height: AppTokens.spacing12),
-
-              TextButton(
-                onPressed: _skipUpdate,
-                child: Text(
-                  'تخطي هذه النسخة',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                ),
-              ),
-            ],
           ],
         ),
       ),
     );
-  }
-
-  String _formatFileSize(int bytes) {
-    final mb = bytes / (1024 * 1024);
-    return '${mb.toStringAsFixed(1)} MB';
   }
 
   Future<void> _startUpdate() async {
