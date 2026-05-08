@@ -41,7 +41,7 @@ class GradeMetadata {
   }
 
   static const _defaultGrades = [
-    GradeMetadata(id: 1, name: 'الأول الثانوية', sortOrder: 1),
+    GradeMetadata(id: 1, name: 'الأول الباكالوري', sortOrder: 1),
     GradeMetadata(id: 2, name: 'الثاني الثانوية', sortOrder: 2),
     GradeMetadata(id: 3, name: 'الثالث الثانوية', sortOrder: 3),
   ];

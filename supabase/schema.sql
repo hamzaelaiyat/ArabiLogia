@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     is_public BOOLEAN DEFAULT true,
     hide_avatar BOOLEAN DEFAULT false,
+    hide_name BOOLEAN DEFAULT false,
+    random_name TEXT,
     role TEXT DEFAULT 'student' CHECK (role IN ('student', 'teacher', 'admin')),
     grade_updated_at TIMESTAMPTZ DEFAULT (NOW() - INTERVAL '4 days')
 );
@@ -148,3 +150,65 @@ CREATE POLICY "Teachers can view all exam results" ON public.exam_results
 -- Create index for faster queries by exam_id
 CREATE INDEX IF NOT EXISTS idx_exam_results_exam_id ON public.exam_results(exam_id);
 CREATE INDEX IF NOT EXISTS idx_exam_results_user_id ON public.exam_results(user_id);
+
+-- ============================================
+-- Reports Table (for bug/issue reporting)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.reports (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    issue TEXT NOT NULL,
+    whatsapp TEXT NOT NULL,
+    phone TEXT,
+    screenshots TEXT,
+    videos TEXT,
+    app_version TEXT,
+    platform TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    device_info TEXT,
+    steps_to_reproduce TEXT,
+    status TEXT DEFAULT 'new' CHECK (status IN ('new', 'in_progress', 'resolved', 'closed')),
+    attachment_urls TEXT[] DEFAULT '{}'
+);
+
+-- Enable RLS
+ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+
+-- Users can insert their own reports
+DROP POLICY IF EXISTS "Users can insert own reports" ON public.reports;
+CREATE POLICY "Users can insert own reports" ON public.reports
+    FOR INSERT WITH CHECK (
+        auth.uid() = user_id 
+        OR (auth.uid() IS NULL AND user_id IS NULL)
+    );
+
+-- Users can view their own reports
+DROP POLICY IF EXISTS "Users can view own reports" ON public.reports;
+CREATE POLICY "Users can view own reports" ON public.reports
+    FOR SELECT USING (auth.uid() = user_id);
+
+-- Admins can view all reports
+DROP POLICY IF EXISTS "Admins can view all reports" ON public.reports;
+CREATE POLICY "Admins can view all reports" ON public.reports
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role IN ('admin')
+        )
+    );
+
+-- Add indexes for faster queries
+CREATE INDEX IF NOT EXISTS idx_reports_user_id ON public.reports(user_id);
+CREATE INDEX IF NOT EXISTS idx_reports_created_at ON public.reports(created_at);
+
+-- SECURITY DEFINER function to check if a random name already exists (bypasses RLS)
+CREATE OR REPLACE FUNCTION public.check_random_name_exists(name TEXT)
+RETURNS BOOLEAN
+SECURITY DEFINER
+LANGUAGE sql
+AS $$
+  SELECT EXISTS (SELECT 1 FROM public.profiles WHERE random_name = name);
+$$;

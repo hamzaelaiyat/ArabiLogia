@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
-import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/widgets/native_ad_widget.dart';
+import 'package:arabilogia/core/widgets/glass_app_bar.dart';
+import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/exam_card.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/exam_empty_state.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/exam_error_state.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/core/services/potato_mode_service.dart';
 import 'package:go_router/go_router.dart';
@@ -110,8 +113,8 @@ class _ExamsScreenState extends State<ExamsScreen>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('الامتحانات'),
+        appBar: GlassAppBar(
+          title: const ResponsiveAppBarTitle('الامتحانات'),
           bottom: potato.blurEffectsEnabled
               ? TabBar(
                   controller: _tabController,
@@ -175,51 +178,11 @@ class _ExamsScreenState extends State<ExamsScreen>
     }
 
     if (error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.error.withValues(alpha: 0.7),
-            ),
-            const SizedBox(height: 16),
-            Text(error, style: TextStyle(color: AppColors.error)),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: _fetchExams,
-              child: const Text('إعادة المحاولة'),
-            ),
-          ],
-        ),
-      );
+      return ExamErrorState(message: error, onRetry: _fetchExams);
     }
 
     if (exams.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.quiz_outlined,
-              size: 64,
-              color: AppColors.mutedColor(context).withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'لا توجد امتحانات متاحة حالياً',
-              style: TextStyle(color: AppColors.mutedColor(context)),
-            ),
-            Text(
-              'ترقبونا قريباً!',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.mutedColor(context).withValues(alpha: 0.7),
-              ),
-            ),
-          ],
-        ),
-      );
+      return const ExamEmptyState();
     }
 
     final potato = context.watch<PotatoModeProvider>();
@@ -268,123 +231,25 @@ class _ExamsScreenState extends State<ExamsScreen>
         final exam = displayExams[actualExamIndex];
         return AnimatedWrapper(
           addAnimation: true,
-          child: _buildExamCard(context, exam, tabIndex),
+          child: ExamCard(
+            exam: exam,
+            isLocked: exam['locked'] == true,
+            isCompleted: exam['completed'] == true,
+            onTap: () async {
+              final currentSubject = _subjects[tabIndex];
+              await context.pushNamed(
+                'exam-detail',
+                pathParameters: {'id': exam['id']},
+                extra: {
+                  'subjectId': currentSubject.id,
+                  'subjectName': currentSubject.name,
+                },
+              );
+              if (mounted) _fetchExams();
+            },
+          ),
         );
       },
-    );
-  }
-
-  Widget _buildExamCard(
-    BuildContext context,
-    Map<String, dynamic> exam,
-    int tabIndex,
-  ) {
-    final isLocked = exam['locked'] == true;
-    final isCompleted = exam['completed'] == true;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppTokens.spacing8),
-      child: Card(
-        child: InkWell(
-          onTap: isLocked
-              ? null
-              : () async {
-                  final currentSubject = _subjects[tabIndex];
-                  await context.pushNamed(
-                    'exam-detail',
-                    pathParameters: {'id': exam['id']},
-                    extra: {
-                      'subjectId': currentSubject.id,
-                      'subjectName': currentSubject.name,
-                    },
-                  );
-                  if (mounted) _fetchExams();
-                },
-          borderRadius: AppTokens.radius2xlAll,
-          child: Padding(
-            padding: const EdgeInsets.all(AppTokens.spacing12),
-            child: Row(
-              children: [
-                // Icon removed as requested, keeping space for alignment
-                const SizedBox(width: AppTokens.spacing12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              exam['title'] as String,
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(
-                                    color: isLocked
-                                        ? AppColors.mutedColor(context)
-                                        : null,
-                                  ),
-                            ),
-                          ),
-                          // Orange badge removed
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.help_outline,
-                            size: 14,
-                            color: AppColors.mutedColor(context),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${exam['questions']} سؤال',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          const SizedBox(width: 12),
-                          Icon(
-                            Icons.timer_outlined,
-                            size: 14,
-                            color: AppColors.mutedColor(context),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${exam['duration']} دقيقة',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (isCompleted)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.1),
-                      borderRadius: AppTokens.radiusSmAll,
-                    ),
-                    child: Text(
-                      '${exam['score']}%',
-                      style: TextStyle(
-                        color: AppColors.success,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  )
-                else if (!isLocked)
-                  Icon(
-                    Icons.chevron_left,
-                    color: AppColors.mutedColor(context),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

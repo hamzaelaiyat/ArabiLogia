@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 class QuestionTextStyle {
   final double fontSize; // 14 to 32
   final bool isBold;
+  final bool isItalic;
   final bool isUnderlined;
   final int colorIndex; // 0-9, index into predefined colors
 
   const QuestionTextStyle({
     this.fontSize = 18,
     this.isBold = false,
+    this.isItalic = false,
     this.isUnderlined = false,
     this.colorIndex = 0,
   });
@@ -68,12 +70,14 @@ class QuestionTextStyle {
   QuestionTextStyle copyWith({
     double? fontSize,
     bool? isBold,
+    bool? isItalic,
     bool? isUnderlined,
     int? colorIndex,
   }) {
     return QuestionTextStyle(
       fontSize: fontSize ?? this.fontSize,
       isBold: isBold ?? this.isBold,
+      isItalic: isItalic ?? this.isItalic,
       isUnderlined: isUnderlined ?? this.isUnderlined,
       colorIndex: colorIndex ?? this.colorIndex,
     );
@@ -83,6 +87,7 @@ class QuestionTextStyle {
     return {
       'fontSize': fontSize,
       'isBold': isBold,
+      'isItalic': isItalic,
       'isUnderlined': isUnderlined,
       'colorIndex': colorIndex,
     };
@@ -92,6 +97,7 @@ class QuestionTextStyle {
     return QuestionTextStyle(
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 18,
       isBold: json['isBold'] as bool? ?? false,
+      isItalic: json['isItalic'] as bool? ?? false,
       isUnderlined: json['isUnderlined'] as bool? ?? false,
       colorIndex: json['colorIndex'] as int? ?? 0,
     );

@@ -59,8 +59,8 @@ class AppTokens {
   static const double radiusMd = 12.0;
   static const double radiusLg = 16.0;
   static const double radiusXl = 20.0;
-  static const double radius2xl = 24.0;
-  static const double radius3xl = 32.0;
+  static const double radius2xl = 28.0;
+  static const double radius3xl = 36.0;
   static const double radiusFull = 999.0;
 
   static BorderRadius get radiusSmAll => BorderRadius.circular(radiusSm);
@@ -76,6 +76,38 @@ class AppTokens {
   static const double elevationMd = 2.0;
   static const double elevationLg = 4.0;
   static const double elevationXl = 8.0;
+
+  // macOS-inspired Shadows
+  static List<BoxShadow> get shadowOutside => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.08),
+          blurRadius: 20,
+          offset: const Offset(0, 4),
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 4,
+          offset: const Offset(0, 1),
+        ),
+      ];
+
+  static List<BoxShadow> get shadowInside => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 4,
+          spreadRadius: -1,
+          offset: const Offset(0, 2),
+        ),
+      ];
+
+  static List<BoxShadow> get shadowGlass => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.1),
+          blurRadius: 30,
+          spreadRadius: -5,
+          offset: const Offset(0, 10),
+        ),
+      ];
 
   static const Duration durationFast = Duration(milliseconds: 150);
   static const Duration durationMd = Duration(milliseconds: 300);

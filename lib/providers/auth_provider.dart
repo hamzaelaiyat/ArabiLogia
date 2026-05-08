@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:arabilogia/core/config/supabase_config.dart';
+import 'package:arabilogia/core/utils/auth_error_mapper.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 
 class AuthState {
@@ -96,7 +97,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('SignIn AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -158,7 +159,7 @@ class AuthProvider extends ChangeNotifier {
           debugPrint('SignUp AuthError: ${signUpError}');
           _state = _state.copyWith(
             isLoading: false,
-            error: _getArabicError(signUpError.toString()),
+            error: getArabicAuthError(signUpError.toString()),
           );
           notifyListeners();
           return false;
@@ -168,7 +169,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('SignIn check AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -217,7 +218,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('VerifyEmail AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -246,7 +247,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('ResetPassword AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -288,7 +289,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('VerifyResetCode AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -317,7 +318,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('UpdatePassword AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -339,6 +340,8 @@ class AuthProvider extends ChangeNotifier {
     int? grade,
     bool? isPublic,
     bool? hideAvatar,
+    bool? hideName,
+    String? randomName,
     Map<String, bool>? notifications,
   }) async {
     try {
@@ -393,6 +396,16 @@ class AuthProvider extends ChangeNotifier {
         data['hide_avatar'] = hideAvatar;
         profileUpdate['hide_avatar'] = hideAvatar;
       }
+      if (hideName != null) {
+        data['hide_name'] = hideName;
+        profileUpdate['hide_name'] = hideName;
+      }
+      if (randomName != null) {
+        data['random_name'] = randomName;
+        profileUpdate['random_name'] = randomName;
+      } else if (hideName == false && hideName != null) {
+        profileUpdate['random_name'] = null;
+      }
       if (notifications != null) {
         data['notifications'] = notifications;
       }
@@ -405,14 +418,16 @@ class AuthProvider extends ChangeNotifier {
             .eq('id', _auth.currentUser!.id);
       }
 
-      // 2. Update Auth Metadata
+      // 2. Update Auth Metadata (only non-null values)
+      data.removeWhere((_, v) => v == null);
       final response = await _auth.updateUser(UserAttributes(data: data));
 
+      debugPrint('updateProfile SUCCESS: data=$data');
       _state = _state.copyWith(isLoading: false, user: response.user);
       notifyListeners();
       return true;
     } on PostgrestException catch (e) {
-      debugPrint('Profile update DB error: ${e.message}');
+      debugPrint('updateProfile DB error: ${e.message}');
       String errorMsg = 'حدث خطأ في تحديث البيانات';
       if (e.message.contains('unique constraint') ||
           e.message.contains('username')) {
@@ -425,7 +440,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('UpdateProfile AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -454,7 +469,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('ResendOTP AuthError: ${e.message}');
       _state = _state.copyWith(
         isLoading: false,
-        error: _getArabicError(e.message),
+        error: getArabicAuthError(e.message),
       );
       notifyListeners();
       return false;
@@ -496,20 +511,5 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       return _state.user?.userMetadata?['role'] as String?;
     }
-  }
-
-  String _getArabicError(String message) {
-    if (message.contains('Invalid login credentials')) {
-      return 'بيانات الدخول غير صحيحة';
-    } else if (message.contains('Email not confirmed')) {
-      return 'يرجى تأكيد البريد الإلكتروني';
-    } else if (message.contains('User already registered')) {
-      return 'البريد الإلكتروني مستخدم بالفعل';
-    } else if (message.contains('Password should be at least')) {
-      return 'كلمة المرور ضعيفة جداً';
-    } else if (message.contains('Invalid email')) {
-      return 'البريد الإلكتروني غير صالح';
-    }
-    return message;
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' show ChangeNotifier;
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/dashboard/exams/models/question_style.dart';
+import 'package:arabilogia/providers/teacher_exam_defaults_provider.dart';
 
 class ExamEditorState extends ChangeNotifier {
   String examId;
@@ -64,18 +65,19 @@ class ExamEditorState extends ChangeNotifier {
     );
   }
 
-  factory ExamEditorState.empty() {
+  factory ExamEditorState.empty({TeacherExamDefaults? defaults}) {
     final defaultCategoryId = CategoryMetadata.categories.isNotEmpty
         ? CategoryMetadata.categories.first.id
         : 'nahw';
+    final d = defaults ?? const TeacherExamDefaults();
 
     return ExamEditorState(
       examId: 'exam_${DateTime.now().millisecondsSinceEpoch}',
-      title: '',
+      title: d.defaultTitle,
       selectedCategoryId: defaultCategoryId,
-      selectedGrade: 1,
-      durationMinutes: 30,
-      durationEnabled: true,
+      selectedGrade: d.defaultGrade,
+      durationMinutes: d.defaultDurationMinutes,
+      durationEnabled: d.defaultDurationEnabled,
       questions: [],
       questionSettings: [],
       isPublished: false,
