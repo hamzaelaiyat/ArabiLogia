@@ -15,7 +15,7 @@ import 'package:provider/provider.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_timer.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/question_passage.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/question_option_tile.dart';
-import 'package:arabilogia/features/dashboard/exams/widgets/exam_bottom_bar.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/exam_navigation_bar.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exit_confirmation_dialog.dart';
 
 class ExamInteractionScreen extends StatefulWidget {
@@ -380,7 +380,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
                 ),
               ),
 
-              ExamBottomBar(
+              ExamNavigationBar(
                 currentQuestionIndex: _currentQuestionIndex,
                 totalQuestions: _exam!.questions.length,
                 onPrevious: _currentQuestionIndex > 0

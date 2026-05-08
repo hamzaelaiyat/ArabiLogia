@@ -51,7 +51,7 @@ class _ExamFormFieldsState extends State<ExamFormFields> {
       children: [
         _label('عنوان الامتحان'),
         TextFormField(
-          initialValue: title,
+          initialValue: widget.title,
           decoration: _decoration(
             'أدخل عنوان الامتحان...',
             Icons.title,
@@ -101,7 +101,7 @@ class _ExamFormFieldsState extends State<ExamFormFields> {
   Widget _buildCategoryDropdown(BuildContext context, bool isDark) {
     final categories = CategoryMetadata.categories;
     return DropdownButtonFormField<String>(
-      value: selectedCategoryId,
+      value: widget.selectedCategoryId,
       decoration: _decoration('اختر الفرع', Icons.category_outlined, isDark),
       dropdownColor: isDark ? AppColors.bgDark : Colors.white,
       items: categories
@@ -116,7 +116,7 @@ class _ExamFormFieldsState extends State<ExamFormFields> {
   Widget _buildGradeDropdown(BuildContext context, bool isDark) {
     final grades = GradeMetadata.grades;
     return DropdownButtonFormField<int>(
-      value: selectedGrade,
+      value: widget.selectedGrade,
       decoration: _decoration('اختر الصف', Icons.school_outlined, isDark),
       dropdownColor: isDark ? AppColors.bgDark : Colors.white,
       items: grades
@@ -136,16 +136,16 @@ class _ExamFormFieldsState extends State<ExamFormFields> {
           children: [
             _label('تفعيل المؤقت'),
             PotatoSwitch(
-              value: durationEnabled,
+              value: widget.durationEnabled,
               activeTrackColor: AppColors.primary,
               onChanged: widget.onDurationToggle,
             ),
           ],
         ),
-        if (durationEnabled) ...[
+        if (widget.durationEnabled) ...[
           const SizedBox(height: AppTokens.spacing12),
           TextFormField(
-            initialValue: durationMinutes.toString(),
+             initialValue: widget.durationMinutes.toString(),
             keyboardType: TextInputType.number,
             decoration: _decoration(
               'المدة بالدقائق',
