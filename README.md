@@ -106,7 +106,7 @@ lib/
 
 ## Version
 
-Current version: **0.0.33******
+Current version: **2.7.8b**
 
 ## License
 

@@ -1,7 +1,7 @@
 name: arabilogia
 description: "منصة عربيلوجيا - منصة لغة عربية للثانوية العامة"
 publish_to: 'none'
-version: 0.0.49
+version: 2.7.8b+1
 
 environment:
   sdk: ^3.11.4

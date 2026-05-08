@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g., v0.0.49)'
+        description: 'Version (e.g., v2.7.8b)'
         required: true
         type: string
 
@@ -28,15 +28,20 @@ jobs:
       - name: Update version files
         run: |
           VERSION=${{ github.event.inputs.version }}
+          # Strip leading 'v' and trailing letter suffix for pubspec (e.g. v2.7.8b -> 2.7.8b+1)
+          PUBSPEC_VERSION=$(echo "$VERSION" | sed 's/^v//;s/[a-zA-Z]$//' | sed 's/$/+1/')
           # Update pubspec.yaml
-          sed -i "s/^version:.*/version: ${VERSION#v}/" pubspec.yaml
+          sed -i "s/^version:.*/version: $PUBSPEC_VERSION/" pubspec.yaml
 
           # Update legal_content.dart
           DATE=$(date "+%B %d, %Y")
-          sed -i "s/'الإصدار الحالي: v[0-9.]* | تاريخ الإصدار: [^}]*'/'الإصدار الحالي: $VERSION | تاريخ الإصدار: $DATE'/" lib/core/constants/legal_content.dart
+          sed -i "s/'الإصدار الحالي: v[0-9.b]* | تاريخ الإصدار: [^}]*'/'الإصدار الحالي: $VERSION | تاريخ الإصدار: $DATE'/" lib/core/constants/legal_content.dart
 
           # Update dashboard_shell.dart
-          sed -i "s/'v[0-9.]*'/'v${VERSION#v}'/" lib/features/dashboard/screens/dashboard_shell.dart
+          sed -i "s/'v[0-9.b]*'/'${VERSION#v}'/" lib/features/dashboard/screens/dashboard_shell.dart
+
+          # Update dashboard_sidebar.dart
+          sed -i "s/'v[0-9.b]*'/'${VERSION#v}'/" lib/features/dashboard/widgets/dashboard_sidebar.dart
 
       - name: Commit and tag
         run: |
