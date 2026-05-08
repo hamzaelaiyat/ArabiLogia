@@ -55,7 +55,7 @@ Significant effort was spent decomposing monolithic files into modular, maintain
 ---
 
 ## 📦 Maintenance & Chore
-- **Version Bump**: Released `v0.0.48b`.
+- **Version Bump**: Released `v2.7.8b`.
 - **Documentation**: 
     - Full Arabic translation for `README.md`.
     - Revised title and branding with a new logo.

@@ -207,7 +207,7 @@ main() {
     FLUTTER=$(find_flutter) || { echo "Flutter not found"; exit 1; }
     echo "Using Flutter: $FLUTTER"
 
-    [ -f "pubspec.yaml" ] && VERSION=$(grep -m1 "^version:" pubspec.yaml | awk '{print $2}' | sed 's/+.*//')
+    [ -f "pubspec.yaml" ] && VERSION=$(grep -m1 "^version:" pubspec.yaml | awk '{print $2}' | sed 's/+.*//;s/-b$/b/')
     VERSION=${VERSION:-"0.0.1"}
 
     if [ "$AUTO_BUMP" = "yes" ]; then

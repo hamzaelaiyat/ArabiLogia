@@ -28,20 +28,23 @@ jobs:
       - name: Update version files
         run: |
           VERSION=${{ github.event.inputs.version }}
-          # Strip leading 'v' and trailing letter suffix for pubspec (e.g. v2.7.8b -> 2.7.8b+1)
-          PUBSPEC_VERSION=$(echo "$VERSION" | sed 's/^v//;s/[a-zA-Z]$//' | sed 's/$/+1/')
+          # Convert hyphenated semver to display form (e.g. 2.7.8-b -> 2.7.8b)
+          DISPLAY_VERSION=$(echo "$VERSION" | sed 's/^-b$//;s/-b/b/')
+          # Strip leading 'v' and convert for pubspec (e.g. v2.7.8b -> 2.7.8-b+1)
+          PUBSPEC_VERSION=$(echo "$VERSION" | sed 's/^v//;s/b$/-b/')
+          PUBSPEC_VERSION="${PUBSPEC_VERSION}+1"
           # Update pubspec.yaml
           sed -i "s/^version:.*/version: $PUBSPEC_VERSION/" pubspec.yaml
 
           # Update legal_content.dart
           DATE=$(date "+%B %d, %Y")
-          sed -i "s/'الإصدار الحالي: v[0-9.b]* | تاريخ الإصدار: [^}]*'/'الإصدار الحالي: $VERSION | تاريخ الإصدار: $DATE'/" lib/core/constants/legal_content.dart
+          sed -i "s/'الإصدار الحالي: v[0-9.b-]* | تاريخ الإصدار: [^}]*'/'الإصدار الحالي: v$DISPLAY_VERSION | تاريخ الإصدار: $DATE'/" lib/core/constants/legal_content.dart
 
           # Update dashboard_shell.dart
-          sed -i "s/'v[0-9.b]*'/'${VERSION#v}'/" lib/features/dashboard/screens/dashboard_shell.dart
+          sed -i "s/'v[0-9.b-]*'/'v${DISPLAY_VERSION#v}'/" lib/features/dashboard/screens/dashboard_shell.dart
 
           # Update dashboard_sidebar.dart
-          sed -i "s/'v[0-9.b]*'/'${VERSION#v}'/" lib/features/dashboard/widgets/dashboard_sidebar.dart
+          sed -i "s/'v[0-9.b-]*'/'v${DISPLAY_VERSION#v}'/" lib/features/dashboard/widgets/dashboard_sidebar.dart
 
       - name: Commit and tag
         run: |
