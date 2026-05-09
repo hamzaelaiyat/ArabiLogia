@@ -212,18 +212,18 @@ class UpdateService {
         .trim();
   }
 
-  /// Extract version from tag
+  /// Extract numeric version from tag (strips leading v and suffix)
   static String _extractVersion(String tag) {
     String version = tag.replaceFirst(RegExp(r'^v'), '').trim();
-    version = version.replaceAll(RegExp(r'[bba-zB-Z].*$'), '');
+    version = version.replaceAll(RegExp(r'[^0-9.].*$'), '');
     return version;
   }
 
   /// Compare versions
   static bool _isVersionNewer(String newVersion, String currentVersion) {
-    String cleanNew = newVersion.replaceAll(RegExp(r'[bba-zB-Z].*$'), '');
+    String cleanNew = newVersion.replaceAll(RegExp(r'[^0-9.].*$'), '');
     String cleanCurrent = currentVersion.replaceAll(
-      RegExp(r'[bba-zB-Z].*$'),
+      RegExp(r'[^0-9.].*$'),
       '',
     );
 
