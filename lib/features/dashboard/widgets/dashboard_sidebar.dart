@@ -145,7 +145,7 @@ class DashboardSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(AppTokens.spacing8),
             child: Text(
-              'v2.7.8b',
+              'v2.7.9b',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppColors.mutedColor(context),
               ),

@@ -95,7 +95,7 @@ class LegalContent {
   static const List<Map<String, String>> aboutSections = [
     {
       'title': 'الإصدار',
-      'content': 'الإصدار الحالي: v2.7.8b | تاريخ الإصدار: May 09, 2026',
+      'content': 'الإصدار الحالي: v2.7.9b | تاريخ الإصدار: May 09, 2026',
     },
     {
       'title': 'رؤيتنا',
