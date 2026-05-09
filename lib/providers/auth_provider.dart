@@ -393,15 +393,12 @@ class AuthProvider extends ChangeNotifier {
         profileUpdate['is_public'] = isPublic;
       }
       if (hideAvatar != null) {
-        data['hide_avatar'] = hideAvatar;
         profileUpdate['hide_avatar'] = hideAvatar;
       }
       if (hideName != null) {
-        data['hide_name'] = hideName;
         profileUpdate['hide_name'] = hideName;
       }
       if (randomName != null) {
-        data['random_name'] = randomName;
         profileUpdate['random_name'] = randomName;
       } else if (hideName == false && hideName != null) {
         profileUpdate['random_name'] = null;
