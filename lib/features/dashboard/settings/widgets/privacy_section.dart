@@ -5,6 +5,7 @@ import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/core/utils/anonymous_name_generator.dart';
+import 'package:arabilogia/core/utils/auth_error_mapper.dart';
 
 class PrivacySection extends StatefulWidget {
   const PrivacySection({super.key});
@@ -17,6 +18,7 @@ class _PrivacySectionState extends State<PrivacySection> {
   bool _hideAvatar = false;
   bool _hideName = false;
   bool _isLoading = true;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -51,25 +53,47 @@ class _PrivacySectionState extends State<PrivacySection> {
     bool? hideName,
     String? randomName,
   }) async {
-    if (!mounted) return;
-    final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.updateProfile(
-      hideAvatar: hideAvatar,
-      hideName: hideName,
-      randomName: randomName,
-    );
-    if (!mounted) return;
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(hideName == true ? 'سيظهر اسم عشوائي في لوحة الصدارة' : 'تم الحفظ'),
-          duration: const Duration(seconds: 2),
-        ),
+    if (!mounted || _isSaving) return;
+    setState(() => _isSaving = true);
+
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final success = await authProvider.updateProfile(
+        hideAvatar: hideAvatar,
+        hideName: hideName,
+        randomName: randomName,
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('فشل الحفظ، حاول مرة أخرى')),
-      );
+
+      if (!mounted) return;
+
+      if (success) {
+        // Re-fetch from DB to confirm save took effect
+        await _loadProfile();
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(hideName == true ? 'سيظهر اسم عشوائي في لوحة الصدارة' : 'تم الحفظ'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        // Rollback local state — error message is shown by authProvider
+        await _loadProfile();
+      }
+    } catch (e) {
+      debugPrint('PrivacySection save error: $e');
+      if (mounted) {
+        await _loadProfile();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(getArabicDbError(e.toString())),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -99,6 +123,7 @@ class _PrivacySectionState extends State<PrivacySection> {
                       icon: Icons.no_photography_outlined,
                       title: 'إخفاء صورتي في لوحة الصدارة',
                       value: _hideAvatar,
+                      enabled: !_isSaving,
                       onChanged: (value) async {
                         setState(() {
                           _hideAvatar = value;
@@ -119,6 +144,7 @@ class _PrivacySectionState extends State<PrivacySection> {
                         title: 'إخفاء حسابي في لوحة الصدارة',
                         subtitle: 'سيظهر اسم عشوائي بدلاً من اسمك الحقيقي',
                         value: _hideName,
+                        enabled: !_isSaving,
                         onChanged: (value) async {
                           if (value) {
                             try {
@@ -150,43 +176,51 @@ class _PrivacySectionState extends State<PrivacySection> {
     required String title,
     String? subtitle,
     required bool value,
+    bool enabled = true,
     required ValueChanged<bool> onChanged,
   }) {
-    return InkWell(
-      onTap: () => onChanged(!value),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, size: 22, color: AppColors.primary),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: AppTokens.fontSizeMd,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: AppTokens.fontSizeSm,
-                        color: AppColors.mutedColor(context),
+    final tileOpacity = enabled ? 1.0 : 0.5;
+    return Opacity(
+      opacity: tileOpacity,
+      child: AbsorbPointer(
+        absorbing: !enabled,
+        child: InkWell(
+          onTap: () => onChanged(!value),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon, size: 22, color: AppColors.primary),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: AppTokens.fontSizeMd,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
-                ],
-              ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: AppTokens.fontSizeSm,
+                            color: AppColors.mutedColor(context),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                _CustomSwitch(value: value, onChanged: onChanged),
+              ],
             ),
-            const SizedBox(width: 16),
-            _CustomSwitch(value: value, onChanged: onChanged),
-          ],
+          ),
         ),
       ),
     );

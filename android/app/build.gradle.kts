@@ -39,6 +39,16 @@ android {
             )
         }
     }
+
+    applicationVariants.all {
+        outputs.all {
+            val abi = (this as com.android.build.gradle.internal.api.ApkVariantOutput)
+                .filters
+                .find { it.filterType == com.android.build.OutputFile.ABI }
+                ?.identifier
+            outputFileName = "arabilogia-${abi ?: "universal"}-release.apk"
+        }
+    }
 }
 
 flutter {

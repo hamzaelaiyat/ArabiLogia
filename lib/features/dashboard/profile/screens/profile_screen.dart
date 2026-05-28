@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
+import 'package:arabilogia/core/utils/auth_error_mapper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
@@ -12,8 +14,7 @@ import 'package:arabilogia/features/dashboard/profile/widgets/profile_stats_grid
 import 'package:arabilogia/features/dashboard/profile/widgets/profile_info_section.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:path/path.dart' as p;
+import 'package:image/image.dart' as img;
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 
@@ -77,12 +78,23 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
   }
 
   Future<void> _pickAndUploadImage() async {
+    final authProvider = context.read<AuthProvider>();
+
+    if (!authProvider.canUploadAvatar) {
+      if (mounted) {
+        final msg = authProvider.hasBadTag
+            ? 'تم حظر رفع الصور بشكل دائم'
+            : 'محظور مؤقتاً. يرجى المحاولة لاحقاً';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
+      return;
+    }
+
     final picker = ImagePicker();
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 75,
     );
 
     if (image == null) return;
@@ -90,33 +102,89 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     setState(() => _isUploading = true);
 
     try {
-      final supabase = Supabase.instance.client;
-      final user = supabase.auth.currentUser;
-      if (user == null) return;
-
       final file = File(image.path);
-      final extension = p.extension(image.path);
-      final fileName =
-          '${user.id}_${DateTime.now().millisecondsSinceEpoch}$extension';
-      final path = fileName;
+      final originalBytes = await file.readAsBytes();
 
-      await supabase.storage.from('avatars').upload(path, file);
+      // Validate file size (50KB limit — enforced server-side too)
+      if (originalBytes.length > 50 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('حجم الصورة كبير جداً (الحد الأقصى 50 كيلوبايت)'),
+            ),
+          );
+        }
+        return;
+      }
 
-      final publicUrl = supabase.storage.from('avatars').getPublicUrl(path);
+      // Resize to 100x100
+      final decoded = img.decodeImage(originalBytes);
+      if (decoded == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('غير قادر على قراءة الصورة')),
+          );
+        }
+        return;
+      }
+      final resized = img.copyResize(decoded, width: 100, height: 100);
+      final resizedBytes = Uint8List.fromList(img.encodeJpg(resized, quality: 85));
 
-      final authProvider = context.read<AuthProvider>();
-      await authProvider.updateProfile(avatarUrl: publicUrl);
+      // Upload via Edge Function
+      final result = await authProvider.uploadAvatar(resizedBytes);
 
-      if (mounted) {
+      if (!mounted) return;
+
+      final status = result['status'] as String?;
+      final code = result['code'] as String?;
+
+      if (status == 'accepted') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تم تحديث الصورة الشخصية بنجاح')),
+        );
+      } else if (status == 'rejected') {
+        final count = result['violationCount'] as int? ?? 0;
+        final msg = count == 1
+            ? 'إنذار: الصورة غير مناسبة. المخالفة التالية تؤدي إلى حظر 30 دقيقة'
+            : count == 2
+                ? 'تم حظر رفع الصور لمدة 30 دقيقة بسبب المخالفة'
+                : 'تم حظر رفع الصور بشكل دائم بسبب المخالفات المتكررة';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      } else if (code == 'PERMANENT_BLOCKED') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم حظر رفع الصور بشكل دائم')),
+        );
+      } else if (code == 'TEMPORARILY_BLOCKED') {
+        final msg = result['error'] as String? ?? 'محظور مؤقتاً';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      } else if (code == 'SCAN_FAILED') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فحص الصورة، حاول مرة أخرى')),
+        );
+      } else if (code == 'INVALID_FILE') {
+        final msg = result['error'] as String? ?? 'الملف غير صالح';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      } else if (code == 'NETWORK_ERROR') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر الاتصال بالخادم، تحقق من اتصالك بالإنترنت')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('حدث خطأ في رفع الصورة')),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في رفع الصورة: $e')));
+        final errorMsg = getArabicStorageError(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg)),
+        );
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -190,7 +258,11 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     final user = authProvider.state.user;
     final fullName = user?.userMetadata?['full_name'] ?? 'طالب عربيلوجيا';
     final username = user?.userMetadata?['username'] ?? 'user';
-    final avatarUrl = user?.userMetadata?['avatar_url'];
+    final rawAvatarUrl = user?.userMetadata?['avatar_url'] as String?;
+    final avatarUpdatedAt = user?.userMetadata?['avatar_updated_at'] as String?;
+    final avatarUrl = rawAvatarUrl != null && avatarUpdatedAt != null
+        ? '$rawAvatarUrl?v=${DateTime.parse(avatarUpdatedAt).millisecondsSinceEpoch}'
+        : rawAvatarUrl;
     final email = user?.email ?? '---';
     final grade = user?.userMetadata?['grade'];
     final gradeText = _getGradeText(grade);
@@ -257,6 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                     avatarUrl: avatarUrl,
                     isUploading: _isUploading,
                     shadowsEnabled: potato.shadowsEnabled,
+                    canUpload: authProvider.canUploadAvatar,
                     onPickImage: _pickAndUploadImage,
                   ),
                 ),

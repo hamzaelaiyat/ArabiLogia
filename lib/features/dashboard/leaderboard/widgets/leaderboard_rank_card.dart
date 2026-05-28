@@ -22,10 +22,18 @@ class LeaderboardRankCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isBadged = leader['has_bad_tag'] == true;
+
+    final rawAvatarUrl = leader['avatar_url'] as String?;
+    final avatarUpdatedAt = leader['avatar_updated_at'] as String?;
+    final avatarUrl = rawAvatarUrl != null && avatarUpdatedAt != null
+        ? '$rawAvatarUrl?v=${DateTime.parse(avatarUpdatedAt).millisecondsSinceEpoch}'
+        : rawAvatarUrl;
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppTokens.spacing8),
       child: Card(
-        color: isMe ? AppColors.primary.withValues(alpha: 0.08) : null,
+        color: null,
         shape: isMe
             ? RoundedRectangleBorder(
                 side: BorderSide(
@@ -63,10 +71,10 @@ class LeaderboardRankCard extends StatelessWidget {
               const SizedBox(width: AppTokens.spacing8),
               CircleAvatar(
                 backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                backgroundImage: leader['avatar_url'] != null
-                    ? NetworkImage(leader['avatar_url'])
+                backgroundImage: avatarUrl != null
+                    ? NetworkImage(avatarUrl)
                     : null,
-                child: leader['avatar_url'] == null
+                child: avatarUrl == null
                     ? Center(
                         child: Text(
                           avatarLetters,
@@ -86,15 +94,39 @@ class LeaderboardRankCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      leader['full_name'] ?? '',
-                      style: (isMe
-                              ? Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  )
-                              : null) ??
-                          Theme.of(context).textTheme.titleSmall,
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            leader['full_name'] ?? '',
+                            style: (isBadged
+                                    ? TextStyle(
+                                        decoration: TextDecoration.lineThrough,
+                                        color: Colors.red,
+                                        decorationColor: Colors.red,
+                                      )
+                                    : isMe
+                                        ? Theme.of(context).textTheme.titleSmall?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            )
+                                        : null) ??
+                                Theme.of(context).textTheme.titleSmall,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isBadged) ...[
+                          const SizedBox(width: 6),
+                          Tooltip(
+                            message: 'مخالف - تم حظر رفع الصور',
+                            child: Icon(
+                              Icons.warning_amber_rounded,
+                              size: 16,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     Text(
                       gradeName,

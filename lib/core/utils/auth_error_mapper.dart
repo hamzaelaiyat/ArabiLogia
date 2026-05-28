@@ -12,3 +12,34 @@ String getArabicAuthError(String message) {
   }
   return message;
 }
+
+String getArabicStorageError(Object error) {
+  final msg = error.toString();
+  if (msg.contains('bucket') || msg.contains('Bucket')) {
+    return 'خطأ في رفع الملف: تأكد من إعدادات التخزين';
+  } else if (msg.contains('permission') || msg.contains('denied') || msg.contains('unauthorized')) {
+    return 'خطأ في الصلاحيات: حسابك لا يملك صلاحية كافية';
+  } else if (msg.contains('size') || msg.contains('too large') || msg.contains('large')) {
+    return 'حجم الملف كبير جداً (الحد الأقصى 5 ميجابايت)';
+  } else if (msg.contains('timeout') || msg.contains('timed out')) {
+    return 'انتهت مهلة الاتصال، حاول مرة أخرى';
+  } else if (msg.contains('network') || msg.contains('Connection')) {
+    return 'خطأ في الاتصال، تحقق من اتصالك بالإنترنت';
+  }
+  return 'حدث خطأ في رفع الملف';
+}
+
+String getArabicDbError(String message) {
+  if (message.contains('42703')) {
+    return 'خطأ في قاعدة البيانات: الحقل غير موجود';
+  } else if (message.contains('42501') || message.contains('permission denied') || message.contains('policy')) {
+    return 'خطأ في الصلاحيات: حسابك لا يملك صلاحية كافية';
+  } else if (message.contains('42P01')) {
+    return 'خطأ في قاعدة البيانات: الجدول غير موجود';
+  } else if (message.contains('unique constraint') || message.contains('username')) {
+    return 'اسم المستخدم هذا مستخدم بالفعل، اختر اسماً آخر';
+  } else if (message.contains('duplicate key')) {
+    return 'البيانات موجودة مسبقاً';
+  }
+  return 'حدث خطأ في تحديث البيانات';
+}

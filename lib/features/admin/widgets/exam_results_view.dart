@@ -68,6 +68,11 @@ class _ExamResultsViewState extends State<ExamResultsView> {
                 .where((profile) => !participantIds.contains(profile['id']))
                 .toList();
 
+            debugPrint(
+              '_subscribeToParticipants: ${participants.length} participants, '
+              '${nonParticipants.length} non-participants',
+            );
+
             setState(() {
               _participants = participants;
               _nonParticipants = nonParticipants;
@@ -75,7 +80,7 @@ class _ExamResultsViewState extends State<ExamResultsView> {
             });
           },
           onError: (error) {
-            debugPrint('Error in participants stream subscription: $error');
+            debugPrint('_subscribeToParticipants error for exam $examId: $error');
             if (mounted) {
               setState(() => _isDetailLoading = false);
             }
@@ -109,6 +114,11 @@ class _ExamResultsViewState extends State<ExamResultsView> {
 
     final participants = await _scoreRepository.getExamParticipants(examId);
     final allInGrade = await _scoreRepository.getGradeProfiles(_selectedGrade);
+
+    debugPrint(
+      '_loadExamDetails: exam=$examId, participants=${participants.length}, '
+      'profilesInGrade=${allInGrade.length}',
+    );
 
     final participantIds = participants.map((p) => p['user_id']).toSet();
     final nonParticipants = allInGrade
