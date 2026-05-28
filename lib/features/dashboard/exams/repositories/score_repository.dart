@@ -32,10 +32,11 @@ class ScoreRepository {
             .eq('status', 'completed')
             .order('created_at', ascending: false);
         if (!isCancelled && !controller.isClosed) {
+          debugPrint('Poll exam $examId: ${response.length} participants');
           controller.add(List<Map<String, dynamic>>.from(response));
         }
       } catch (e) {
-        debugPrint('Poll error for exam $examId: $e');
+        debugPrint('streamExamParticipants poll error for exam $examId: $e');
       }
     }
 
@@ -349,30 +350,32 @@ class ScoreRepository {
           .eq('status', 'completed')
           .order('created_at', ascending: false);
       debugPrint(
-        'getExamParticipants: Got ${response.length} results: $response',
+        'getExamParticipants: Got ${response.length} participants for exam $examId',
       );
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      debugPrint('Error fetching exam participants: $e');
+      debugPrint('getExamParticipants error for exam $examId: $e');
       return [];
     }
   }
 
   Future<List<Map<String, dynamic>>> getGradeProfiles(int grade) async {
     try {
+      final dbGrade = mapUiGradeToDbGrade(grade);
+      debugPrint('getGradeProfiles: UI grade=$grade -> DB grade=$dbGrade');
       var query = _supabase
           .from('profiles')
           .select('id, full_name, username, grade');
 
-      final dbGrade = mapUiGradeToDbGrade(grade);
       if (dbGrade != 0) {
         query = query.eq('grade', dbGrade);
       }
 
       final response = await query.order('full_name');
+      debugPrint('getGradeProfiles: Got ${response.length} profiles for grade=$dbGrade');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      debugPrint('Error fetching grade profiles: $e');
+      debugPrint('getGradeProfiles error for grade=$grade: $e');
       return [];
     }
   }

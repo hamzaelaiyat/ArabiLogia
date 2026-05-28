@@ -19,6 +19,8 @@ class SupabaseConfig {
     }
   }
 
+  static String get edgeFunctionUrl => '$supabaseUrl/functions/v1/mod-avatars';
+
   static bool get isConfigured =>
       supabaseUrl != 'https://placeholder.supabase.co' &&
       supabaseAnonKey != 'placeholder';

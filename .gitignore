@@ -77,3 +77,4 @@ app.*.map.json
 /android/app/release
 build/
 android/build/
+Orchis-theme/

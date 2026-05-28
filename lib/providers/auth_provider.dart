@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:arabilogia/core/config/supabase_config.dart';
 import 'package:arabilogia/core/utils/auth_error_mapper.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
@@ -42,6 +45,15 @@ class AuthProvider extends ChangeNotifier {
   AuthState _state = const AuthState();
   AuthState get state => _state;
 
+  int _imageViolationCount = 0;
+  DateTime? _imageBlockedUntil;
+  bool _hasBadTag = false;
+
+  bool get canUploadAvatar => !_hasBadTag && (_imageBlockedUntil == null || _imageBlockedUntil!.isBefore(DateTime.now()));
+  int get imageViolationCount => _imageViolationCount;
+  DateTime? get imageBlockedUntil => _imageBlockedUntil;
+  bool get hasBadTag => _hasBadTag;
+
   AuthProvider() {
     try {
       _auth = Supabase.instance.client.auth;
@@ -61,12 +73,19 @@ class AuthProvider extends ChangeNotifier {
       session: _auth.currentSession,
     );
 
+    if (_auth.currentSession != null) {
+      loadViolationState();
+    }
+
     _auth.onAuthStateChange.listen((event) {
       _state = _state.copyWith(
         isAuthenticated: event.session != null,
         user: event.session?.user,
         session: event.session,
       );
+      if (event.session != null) {
+        loadViolationState();
+      }
       notifyListeners();
     });
   }
@@ -90,6 +109,9 @@ class AuthProvider extends ChangeNotifier {
 
       // Sync scores immediately after successful authentication
       await ScoreRepository().syncScoresWithSupabase();
+
+      // Sync role from auth metadata to profiles table if needed
+      await _syncRoleToProfiles();
 
       notifyListeners();
       return true;
@@ -283,6 +305,8 @@ class AuthProvider extends ChangeNotifier {
       // Sync scores immediately after successful authentication
       await ScoreRepository().syncScoresWithSupabase();
 
+      await _syncRoleToProfiles();
+
       notifyListeners();
       return true;
     } on AuthException catch (e) {
@@ -358,6 +382,7 @@ class AuthProvider extends ChangeNotifier {
       }
       if (avatarUrl != null) {
         data['avatar_url'] = avatarUrl;
+        data['avatar_updated_at'] = DateTime.now().toIso8601String();
         profileUpdate['avatar_url'] = avatarUrl;
       }
       if (grade != null) {
@@ -424,12 +449,8 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } on PostgrestException catch (e) {
-      debugPrint('updateProfile DB error: ${e.message}');
-      String errorMsg = 'حدث خطأ في تحديث البيانات';
-      if (e.message.contains('unique constraint') ||
-          e.message.contains('username')) {
-        errorMsg = 'اسم المستخدم هذا مستخدم بالفعل، اختر اسماً آخر';
-      }
+      debugPrint('updateProfile DB error: ${e.message} (code: ${e.code})');
+      final errorMsg = getArabicDbError('${e.code} ${e.message}');
       _state = _state.copyWith(isLoading: false, error: errorMsg);
       notifyListeners();
       return false;
@@ -478,6 +499,83 @@ class AuthProvider extends ChangeNotifier {
       );
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<void> refreshUser() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        // Re-fetch user from Supabase auth to get latest metadata
+        final response = await _auth.getUser();
+        final updatedUser = response.user ?? user;
+        _state = _state.copyWith(user: updatedUser);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('refreshUser error: $e');
+    }
+  }
+
+  Future<void> _syncRoleToProfiles() async {
+    try {
+      await Supabase.instance.client.rpc('sync_user_role_to_profiles');
+    } catch (e) {
+      debugPrint('Role sync error (non-fatal): $e');
+    }
+  }
+
+  Future<void> loadViolationState() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('image_violation_count, image_blocked_until, has_bad_tag')
+          .eq('id', user.id)
+          .single();
+      _imageViolationCount = profile['image_violation_count'] as int? ?? 0;
+      _imageBlockedUntil = profile['image_blocked_until'] != null
+          ? DateTime.parse(profile['image_blocked_until'] as String)
+          : null;
+      _hasBadTag = profile['has_bad_tag'] as bool? ?? false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('loadViolationState error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> uploadAvatar(Uint8List bytes) async {
+    final session = _auth.currentSession;
+    if (session == null) {
+      return {'error': 'غير مصرح به', 'code': 'UNAUTHORIZED'};
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse(SupabaseConfig.edgeFunctionUrl),
+        headers: {
+          'Authorization': 'Bearer ${session.accessToken}',
+          'Content-Type': 'image/jpeg',
+        },
+        body: bytes,
+      );
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200 && data['status'] == 'accepted') {
+        await updateProfile(avatarUrl: data['avatarUrl'] as String?);
+        await loadViolationState();
+      } else if (response.statusCode == 200 && data['status'] == 'rejected') {
+        await loadViolationState();
+      }
+
+      return data;
+    } on http.ClientException {
+      return {'error': 'تعذر الاتصال بالخادم', 'code': 'NETWORK_ERROR'};
+    } catch (e) {
+      debugPrint('uploadAvatar error: $e');
+      return {'error': 'حدث خطأ في رفع الصورة', 'code': 'UPLOAD_ERROR'};
     }
   }
 

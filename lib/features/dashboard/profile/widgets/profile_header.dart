@@ -11,6 +11,7 @@ class ProfileHeader extends StatelessWidget {
     this.avatarUrl,
     required this.isUploading,
     required this.shadowsEnabled,
+    this.canUpload = true,
     required this.onPickImage,
   });
 
@@ -20,6 +21,7 @@ class ProfileHeader extends StatelessWidget {
   final String? avatarUrl;
   final bool isUploading;
   final bool shadowsEnabled;
+  final bool canUpload;
   final VoidCallback onPickImage;
 
   @override
@@ -31,6 +33,7 @@ class ProfileHeader extends StatelessWidget {
           name: name,
           isUploading: isUploading,
           shadowsEnabled: shadowsEnabled,
+          canUpload: canUpload,
           onPickImage: onPickImage,
         ),
         const SizedBox(height: AppTokens.spacing16),
@@ -73,6 +76,7 @@ class _AvatarSection extends StatelessWidget {
     required this.name,
     required this.isUploading,
     required this.shadowsEnabled,
+    this.canUpload = true,
     required this.onPickImage,
   });
 
@@ -80,6 +84,7 @@ class _AvatarSection extends StatelessWidget {
   final String name;
   final bool isUploading;
   final bool shadowsEnabled;
+  final bool canUpload;
   final VoidCallback onPickImage;
 
   @override
@@ -87,12 +92,12 @@ class _AvatarSection extends StatelessWidget {
     return Stack(
       children: [
         GestureDetector(
-          onTap: onPickImage,
+          onTap: canUpload ? onPickImage : null,
           child: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.2),
+                color: AppColors.primary.withValues(alpha: canUpload ? 0.2 : 0.08),
                 width: 4,
               ),
               boxShadow: shadowsEnabled
@@ -116,7 +121,7 @@ class _AvatarSection extends StatelessWidget {
                       name.isNotEmpty ? name[0] : '؟',
                       style: Theme.of(context).textTheme.headlineLarge
                           ?.copyWith(
-                            color: AppColors.primary,
+                            color: canUpload ? AppColors.primary : AppColors.mutedColor(context),
                             fontWeight: FontWeight.bold,
                           ),
                     )
@@ -128,26 +133,27 @@ class _AvatarSection extends StatelessWidget {
           const Positioned.fill(
             child: Center(child: CircularProgressIndicator()),
           ),
-        Positioned(
-          bottom: 4,
-          right: 4,
-          child: GestureDetector(
-            onTap: onPickImage,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-              child: const Icon(
-                Icons.camera_alt,
-                size: 16,
-                color: Colors.white,
+        if (canUpload)
+          Positioned(
+            bottom: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: onPickImage,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: const Icon(
+                  Icons.camera_alt,
+                  size: 16,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
