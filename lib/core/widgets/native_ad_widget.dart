@@ -50,7 +50,9 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
 
     final nativeAd = NativeAd(
       adUnitId: _adUnitId,
-      factoryId: 'adFactoryExample',
+      nativeTemplateStyle: NativeTemplateStyle(
+        templateType: TemplateType.medium,
+      ),
       listener: adLoader,
       request: request,
     );
@@ -161,7 +163,9 @@ class _SimpleNativeAdWidgetState extends State<SimpleNativeAdWidget> {
 
     final nativeAd = NativeAd(
       adUnitId: _adUnitId,
-      factoryId: 'adFactoryExample',
+      nativeTemplateStyle: NativeTemplateStyle(
+        templateType: TemplateType.medium,
+      ),
       listener: adLoader,
       request: request,
     );

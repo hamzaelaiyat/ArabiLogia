@@ -41,7 +41,7 @@ class StatsRowWidget extends StatelessWidget {
           'المكافأة',
           '+$speedBonus',
           Icons.bolt,
-          color: Colors.orange,
+          color: AppColors.warning,
         ),
       ],
     );
@@ -71,7 +71,7 @@ class StatsRowWidget extends StatelessWidget {
             Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
             Text(
               label,
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
+              style: TextStyle(fontSize: 10, color: AppColors.mutedColor(context)),
             ),
           ],
         ),

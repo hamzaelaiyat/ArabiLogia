@@ -1,1 +1,16 @@
-{"projectId":"prj_RdKk5LiqvCKXnTXp9cOS5dOZczgD","orgId":"team_pWDqJOjno9DxHLxSjqBdbU6w","projectName":"arabilogia"}
+{
+  "projectId": "prj_RdKk5LiqvCKXnTXp9cOS5dOZczgD",
+  "orgId": "team_pWDqJOjno9DxHLxSjqBdbU6w",
+  "projectName": "arabilogia",
+  "settings": {
+    "createdAt": 1777297161552,
+    "framework": null,
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}
