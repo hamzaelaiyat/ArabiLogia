@@ -19,6 +19,7 @@ migrate_working_dir/
 
 # AI/Assistant artifacts
 AGENT.md
+AGENTS.md
 CLAUDE.md
 .claude/
 .impeccable.md

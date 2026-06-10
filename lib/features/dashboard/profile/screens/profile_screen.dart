@@ -105,19 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       final file = File(image.path);
       final originalBytes = await file.readAsBytes();
 
-      // Validate file size (50KB limit — enforced server-side too)
-      if (originalBytes.length > 50 * 1024) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('حجم الصورة كبير جداً (الحد الأقصى 50 كيلوبايت)'),
-            ),
-          );
-        }
-        return;
-      }
-
-      // Resize to 100x100
+      // Decode and resize to 100x100 before size validation
       final decoded = img.decodeImage(originalBytes);
       if (decoded == null) {
         if (mounted) {
@@ -129,6 +117,18 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       }
       final resized = img.copyResize(decoded, width: 100, height: 100);
       final resizedBytes = Uint8List.fromList(img.encodeJpg(resized, quality: 85));
+
+      // Validate file size after resize (50KB limit — enforced server-side too)
+      if (resizedBytes.length > 50 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('حجم الصورة كبير جداً (الحد الأقصى 50 كيلوبايت)'),
+            ),
+          );
+        }
+        return;
+      }
 
       // Upload via Edge Function
       final result = await authProvider.uploadAvatar(resizedBytes);

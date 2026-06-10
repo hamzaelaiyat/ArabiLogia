@@ -15,8 +15,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     defaultConfig {
@@ -37,16 +39,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-        }
-    }
-
-    applicationVariants.all {
-        outputs.all {
-            val abi = (this as com.android.build.gradle.internal.api.ApkVariantOutput)
-                .filters
-                .find { it.filterType == com.android.build.OutputFile.ABI }
-                ?.identifier
-            outputFileName = "arabilogia-${abi ?: "universal"}-release.apk"
         }
     }
 }

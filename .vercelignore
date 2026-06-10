@@ -1,0 +1,14 @@
+build/
+.dart_tool/
+.flutter-plugins*
+.cache/
+.git/
+node_modules/
+android/
+ios/
+linux/
+macos/
+windows/
+appimagetool-x86_64.AppImage
+Orchis-theme/
+flutter_writable/

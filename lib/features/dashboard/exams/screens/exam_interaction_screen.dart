@@ -200,9 +200,9 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
       extra: {
         'exam': _exam,
         'userAnswers': _selectedAnswers,
-        'score': finalScore.toInt(),
-        'accuracy': accuracy.toInt(),
-        'speedBonus': speedBonus.toInt(),
+        'score': finalScore.round(),
+        'accuracy': accuracy.round(),
+        'speedBonus': speedBonus.round(),
         'correctCount': correctCount,
         'isFirstAttempt': _isFirstAttempt,
       },

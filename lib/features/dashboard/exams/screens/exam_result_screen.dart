@@ -1,21 +1,20 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/score_summary_widget.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/stats_row_widget.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/question_review_widget.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/action_buttons_widget.dart';
-import 'package:arabilogia/features/dashboard/exams/widgets/result_share_card.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
-import 'dart:ui' as ui;
-import 'dart:typed_data';
-import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 
 class ExamResultScreen extends StatefulWidget {
@@ -43,41 +42,127 @@ class ExamResultScreen extends StatefulWidget {
 }
 
 class _ExamResultScreenState extends State<ExamResultScreen> {
-  final GlobalKey _shareKey = GlobalKey();
   bool _isSharing = false;
+
+  String _escapeHtml(String text) {
+    return text
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+  }
+
+  String _generateResultHtml({
+    required String studentName,
+    required String gradeText,
+  }) {
+    final isPassed = widget.score >= 50;
+    final passText = isPassed ? '✅ تم الاجتياز' : '❌ لم يتم الاجتياز';
+    return '''
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>نتيجة الاختبار - عربيلوجيا</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#f5f5f5;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px;direction:rtl}
+.card{background:#191B1D;border-radius:24px;padding:40px 32px;max-width:420px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08)}
+.logo{width:60px;height:60px;margin:0 auto 12px;background:#EB8A00;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;font-weight:bold;line-height:1}
+.brand-text h1{color:#EB8A00;font-size:20px;font-weight:bold;margin:0}
+.brand-text p{color:rgba(255,255,255,0.6);font-size:11px;margin:4px 0 0}
+.achievement{color:#fff;font-size:18px;margin:20px 0 4px;font-weight:bold}
+.exam-title{color:#EB8A00;font-size:22px;font-weight:bold;margin:0 0 28px;line-height:1.3}
+.score-wrap{width:130px;height:130px;border-radius:50%;background:conic-gradient(#EB8A00 ${widget.score}%,rgba(255,255,255,0.08) ${widget.score}%);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 24px;position:relative}
+.score-wrap::before{content:'';position:absolute;inset:5px;border-radius:50%;background:#191B1D}
+.score-number{font-size:34px;font-weight:bold;color:#fff;position:relative;z-index:1;line-height:1}
+.score-label{font-size:10px;color:rgba(255,255,255,0.7);position:relative;z-index:1;margin-top:2px}
+.stats{background:rgba(255,255,255,0.04);border-radius:14px;padding:16px 20px;display:flex;justify-content:space-around;margin-bottom:24px;border:1px solid rgba(255,255,255,0.08)}
+.stat{text-align:center}
+.stat-value{color:#EB8A00;font-size:18px;font-weight:bold}
+.stat-label{color:rgba(255,255,255,0.5);font-size:11px;margin-top:2px}
+.stat-divider{width:1px;background:rgba(255,255,255,0.15);margin:0 8px}
+.info{margin-bottom:8px}
+.student-name{color:#fff;font-size:16px;font-weight:500}
+.grade-text{color:rgba(255,255,255,0.5);font-size:12px;margin-top:2px}
+.badge{display:inline-block;padding:6px 16px;border-radius:20px;font-size:13px;font-weight:600;margin-top:16px;${isPassed ? 'background:#34C75920;color:#34C759;border:1px solid #34C75940' : 'background:#FF3B3020;color:#FF3B30;border:1px solid #FF3B3040'}}
+.footer{color:rgba(255,255,255,0.25);font-size:10px;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="logo">ع</div>
+<div class="brand-text"><h1>عربيلوجيا</h1><p>مجموعة وليد قطب</p></div>
+<div class="achievement">لقد أتممت الاختبار بنجاح!</div>
+<div class="exam-title">${_escapeHtml(widget.exam.title)}</div>
+<div class="score-wrap"><div class="score-number">${widget.score}%</div><div class="score-label">الدرجة النهائية</div></div>
+<div class="stats">
+<div class="stat"><div class="stat-value">${widget.accuracy}%</div><div class="stat-label">الدقة</div></div>
+<div class="stat-divider"></div>
+<div class="stat"><div class="stat-value">+${widget.speedBonus}</div><div class="stat-label">مكافأة السرعة</div></div>
+<div class="stat-divider"></div>
+<div class="stat"><div class="stat-value">${widget.correctCount}</div><div class="stat-label">الإجابات الصحيحة</div></div>
+</div>
+<div class="info"><div class="student-name">${_escapeHtml(studentName)}</div><div class="grade-text">$gradeText</div></div>
+<div class="badge">$passText</div>
+<div class="footer">عربيلوجيا — مجموع وليد قطب</div>
+</div>
+</body>
+</html>''';
+  }
 
   Future<void> _shareResult() async {
     if (_isSharing) return;
     setState(() => _isSharing = true);
 
     try {
-      RenderRepaintBoundary? boundary =
-          _shareKey.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
+      final authProvider = context.read<AuthProvider>();
+      final userMetadata = authProvider.state.user?.userMetadata;
+      final studentName =
+          userMetadata?['full_name'] ??
+          userMetadata?['username'] ??
+          'طالب عربيلوجيا';
+      final gradeRaw = userMetadata?['grade'];
+      final gradeText = _getGradeText(gradeRaw);
 
-      if (boundary == null) return;
-
-      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      ByteData? byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png,
+      final html = _generateResultHtml(
+        studentName: studentName,
+        gradeText: gradeText,
       );
-      if (byteData == null) {
-        debugPrint('Failed to convert image to byte data');
-        return;
+      final subject = 'نتيجتي في اختبار ${widget.exam.title} - عربيلوجيا';
+
+      if (kIsWeb) {
+        final isDesktopWeb = switch (defaultTargetPlatform) {
+          TargetPlatform.android || TargetPlatform.iOS => false,
+          _ => true,
+        };
+
+        if (isDesktopWeb) {
+          final encoded = base64Encode(utf8.encode(html));
+          await launchUrl(
+            Uri.parse('data:text/html;base64,$encoded'),
+            mode: LaunchMode.platformDefault,
+          );
+        } else {
+          await Share.share(html, subject: subject);
+        }
+      } else if (Platform.isAndroid) {
+        await Share.share(html, subject: subject);
+      } else if (Platform.isLinux) {
+        final dir = await getTemporaryDirectory();
+        final file = File(
+          '${dir.path}/exam_result_${widget.exam.id}.html',
+        );
+        await file.writeAsString(html);
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          subject: subject,
+        );
+      } else {
+        await Share.share(html, subject: subject);
       }
-      Uint8List pngBytes = byteData.buffer.asUint8List();
-
-      final directory = await getTemporaryDirectory();
-      final imagePath = await File(
-        '${directory.path}/score_share.png',
-      ).create();
-      await imagePath.writeAsBytes(pngBytes);
-
-      await Share.shareXFiles(
-        [XFile(imagePath.path)],
-        text:
-            'لقد حصلت على ${widget.score}% في اختبار ${widget.exam.title} على تطبيق عربيلوجيا! 🎉',
-      );
     } catch (e) {
       debugPrint('Error sharing: $e');
     } finally {
@@ -88,15 +173,6 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
   @override
   Widget build(BuildContext context) {
     final isPassed = widget.score >= 50;
-    final authProvider = context.read<AuthProvider>();
-    final userMetadata = authProvider.state.user?.userMetadata;
-    final studentName =
-        userMetadata?['full_name'] ??
-        userMetadata?['username'] ??
-        'طالب عربيلوجيا';
-    final gradeRaw = userMetadata?['grade'];
-    final gradeText = _getGradeText(gradeRaw);
-
     final wrongAnswerIndices = [];
     for (int i = 0; i < widget.exam.questions.length; i++) {
       final question = widget.exam.questions[i];
@@ -205,32 +281,14 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                     onHomePressed: () => context.goNamed('home'),
                     onRetakePressed: () => context.pushReplacementNamed(
                       'exam-interaction',
-                      pathParameters: {
-                        'id': widget.exam.id,
+                      pathParameters: {'id': widget.exam.id},
+                      extra: {
                         'subjectId': widget.exam.subjectId,
                         'subjectName': widget.exam.subject,
                       },
                     ),
                   ),
-
-                  // Share Card (Hidden for capture)
-                  Offstage(
-                    offstage: true,
-                    child: RepaintBoundary(
-                      key: _shareKey,
-                      child: ResultShareCard(
-                        studentName: studentName,
-                        examTitle: widget.exam.title,
-                        subject: widget.exam.subject,
-                        score: widget.score,
-                        accuracy: widget.accuracy,
-                        speedBonus: widget.speedBonus,
-                        grade: gradeText,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ],),
         ),
       ),
     );

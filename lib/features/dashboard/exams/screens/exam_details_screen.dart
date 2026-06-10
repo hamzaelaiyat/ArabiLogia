@@ -84,7 +84,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                 onPressed: () => Navigator.pop(context, true),
                 style: TextButton.styleFrom(
                   backgroundColor: category.color,
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
                 child: const Text('متابعة'),
               ),
@@ -177,7 +177,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                         child: Icon(
                           category.icon,
                           size: 80,
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5),
                         ),
                       ),
                     ),
