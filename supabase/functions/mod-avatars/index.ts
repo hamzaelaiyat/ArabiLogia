@@ -5,7 +5,7 @@ const MAGIC_BYTES: Record<string, number[]> = {
   'image/png': [0x89, 0x50, 0x4E, 0x47],
 };
 
-function isUnsafe(nudity: Record<string, unknown>): boolean {
+function isUnsafe(nudity: Record<string, unknown>, offensive: Record<string, unknown>): boolean {
   const sa = (nudity.sexual_activity as number) ?? 0;
   const sd = (nudity.sexual_display as number) ?? 0;
   const erotica = (nudity.erotica as number) ?? 0;
@@ -14,7 +14,14 @@ function isUnsafe(nudity: Record<string, unknown>): boolean {
   const sdThreshold = parseFloat(Deno.env.get('SE_SD_THRESHOLD') ?? '0.3');
   const eroticaThreshold = parseFloat(Deno.env.get('SE_EROTICA_THRESHOLD') ?? '0.5');
 
-  return sa >= saThreshold || sd >= sdThreshold || erotica >= eroticaThreshold;
+  const isNudityUnsafe = sa >= saThreshold || sd >= sdThreshold || erotica >= eroticaThreshold;
+
+  const middleFinger = (offensive.middle_finger as number) ?? 0;
+  const offensiveThreshold = parseFloat(Deno.env.get('SE_OFFENSIVE_THRESHOLD') ?? '0.3');
+
+  const isOffensiveUnsafe = middleFinger >= offensiveThreshold;
+
+  return isNudityUnsafe || isOffensiveUnsafe;
 }
 
 Deno.serve(async (req: Request) => {
@@ -78,7 +85,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('image_violation_count, image_blocked_until, has_bad_tag')
+      .select('image_violation_count, image_blocked_until, has_bad_tag, last_violation_at')
       .eq('id', userId)
       .single();
 
@@ -102,51 +109,100 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const seApiUser = Deno.env.get('SE_API_USER');
-    const seApiSecret = Deno.env.get('SE_API_SECRET');
-    if (!seApiUser || !seApiSecret) {
+    // Reset violation count if last violation was more than 7 days ago
+    let violationCount = profile.image_violation_count ?? 0;
+    if (profile.last_violation_at) {
+      const lastViolation = new Date(profile.last_violation_at).getTime();
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      if (lastViolation < sevenDaysAgo) {
+        violationCount = 0;
+      }
+    }
+
+    // Collect all available Sightengine API key pairs (SE_API_USER, SE_API_SECRET, SE_API_USER2, SE_API_SECRET2, ...)
+    const apiKeys: Array<{ user: string; secret: string }> = [];
+    let index = 1;
+    while (true) {
+      const user = index === 1 ? Deno.env.get('SE_API_USER') : Deno.env.get(`SE_API_USER${index}`);
+      const secret = index === 1 ? Deno.env.get('SE_API_SECRET') : Deno.env.get(`SE_API_SECRET${index}`);
+      if (user && secret) {
+        apiKeys.push({ user, secret });
+        index++;
+      } else {
+        break;
+      }
+    }
+
+    if (apiKeys.length === 0) {
       return json({ error: 'خدمة الفحص غير مهيأة', code: 'SCAN_FAILED' }, 503);
     }
 
-    // Call Sightengine via multipart form upload
-    const formData = new FormData();
-    formData.append('media', new Blob([bytes], { type: reqContentType }), `avatar.${reqContentType === 'image/png' ? 'png' : 'jpg'}`);
-    formData.append('models', 'nudity-2.1');
-    formData.append('api_user', seApiUser);
-    formData.append('api_secret', seApiSecret);
+    // Try each API key pair until one succeeds
+    let seData: Record<string, unknown> | null = null;
+    let lastError: string | null = null;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    for (const { user: seApiUser, secret: seApiSecret } of apiKeys) {
+      const formData = new FormData();
+      formData.append('media', new Blob([bytes], { type: reqContentType }), `avatar.${reqContentType === 'image/png' ? 'png' : 'jpg'}`);
+      formData.append('models', 'nudity-2.1,offensive');
+      formData.append('api_user', seApiUser);
+      formData.append('api_secret', seApiSecret);
 
-    let seResponse: Response;
-    try {
-      seResponse = await fetch('https://api.sightengine.com/1.0/check.json', {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal,
-      });
-    } catch {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+      let seResponse: Response;
+      try {
+        seResponse = await fetch('https://api.sightengine.com/1.0/check.json', {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        });
+      } catch (e) {
+        clearTimeout(timeoutId);
+        lastError = 'تعذر الاتصال بخدمة الفحص';
+        continue;
+      }
       clearTimeout(timeoutId);
-      return json({ error: 'تعذر فحص الصورة، حاول مرة أخرى', code: 'SCAN_FAILED' }, 503);
+
+      if (!seResponse.ok) {
+        const errorText = await seResponse.text().catch(() => '');
+        // Fallback on rate limit (429) or server errors (5xx)
+        if (seResponse.status === 429 || seResponse.status >= 500) {
+          lastError = `خطأ في خدمة الفحص (${seResponse.status}): ${errorText}`;
+          continue;
+        }
+        // For other errors (400, 401, 403), don't retry with other keys
+        return json({ error: 'تعذر فحص الصورة، حاول مرة أخرى', code: 'SCAN_FAILED' }, 503);
+      }
+
+      try {
+        seData = await seResponse.json();
+        break; // Success
+      } catch {
+        lastError = 'رد غير صالح من خدمة الفحص';
+        continue;
+      }
     }
-    clearTimeout(timeoutId);
 
-    if (!seResponse.ok) {
-      return json({ error: 'تعذر فحص الصورة، حاول مرة أخرى', code: 'SCAN_FAILED' }, 503);
+    if (!seData) {
+      return json({ error: lastError ?? 'تعذر فحص الصورة، حاول مرة أخرى', code: 'SCAN_FAILED' }, 503);
     }
 
-    const seData = await seResponse.json();
-    const nudity = seData.nudity ?? {};
+    const nudity = (seData.nudity as Record<string, unknown>) ?? {};
+    const offensive = (seData.offensive as Record<string, unknown>) ?? {};
 
-    if (isUnsafe(nudity)) {
-      const newCount = (profile.image_violation_count ?? 0) + 1;
+    if (isUnsafe(nudity, offensive)) {
+      const newCount = violationCount + 1;
       const blockDurationMinutes = parseInt(Deno.env.get('BLOCK_DURATION_MINUTES') ?? '30');
       const placeholderUrl = Deno.env.get('PLACEHOLDER_URL') ?? '';
+      const now = new Date().toISOString();
 
       const updateData: Record<string, unknown> = {
         image_violation_count: newCount,
         avatar_url: placeholderUrl,
-        avatar_updated_at: new Date().toISOString(),
+        avatar_updated_at: now,
+        last_violation_at: now,
       };
 
       if (newCount === 2) {

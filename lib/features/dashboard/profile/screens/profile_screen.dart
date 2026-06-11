@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:io' show Platform, File;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
@@ -14,7 +14,9 @@ import 'package:arabilogia/features/dashboard/profile/widgets/profile_stats_grid
 import 'package:arabilogia/features/dashboard/profile/widgets/profile_info_section.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 
@@ -99,10 +101,79 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
 
     if (image == null) return;
 
+    String imagePath = image.path;
+
+    // Platform-specific cropping: use image_cropper for Android/iOS/Web, auto-center-crop for desktop
+    final isDesktop = Platform.isLinux || Platform.isWindows || Platform.isMacOS;
+    if (!isDesktop) {
+      // Crop to 1:1 aspect ratio using native cropper
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        compressFormat: ImageCompressFormat.jpg,
+        compressQuality: 90,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'اقتصاص الصورة',
+            toolbarColor: Colors.white,
+            toolbarWidgetColor: Colors.black,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+          ),
+          IOSUiSettings(
+            title: 'اقتصاص الصورة',
+            aspectRatioLockEnabled: true,
+          ),
+          WebUiSettings(
+            context: context,
+            presentStyle: WebPresentStyle.dialog,
+            size: const CropperSize(width: 520, height: 520),
+            initialAspectRatio: 1,
+            checkOrientation: true,
+            rotatable: true,
+            scalable: true,
+            zoomable: true,
+          ),
+        ],
+      );
+
+      if (croppedFile == null) return;
+      imagePath = croppedFile.path;
+    } else {
+      // Desktop: auto center-crop to 1:1
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('جاري تجهيز الصورة...')),
+        );
+      }
+      final file = File(image.path);
+      final originalBytes = await file.readAsBytes();
+      final decoded = img.decodeImage(originalBytes);
+      if (decoded == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('غير قادر على قراءة الصورة')),
+          );
+        }
+        return;
+      }
+      // Center crop to 1:1
+      final size = decoded.width < decoded.height ? decoded.width : decoded.height;
+      final x = (decoded.width - size) ~/ 2;
+      final y = (decoded.height - size) ~/ 2;
+      final cropped = img.copyCrop(decoded, x: x, y: y, width: size, height: size);
+      final croppedBytes = Uint8List.fromList(img.encodeJpg(cropped, quality: 90));
+      // Save to temp file
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/cropped_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await tempFile.writeAsBytes(croppedBytes);
+      imagePath = tempFile.path;
+    }
+
     setState(() => _isUploading = true);
 
     try {
-      final file = File(image.path);
+      final file = File(imagePath);
       final originalBytes = await file.readAsBytes();
 
       // Decode and resize to 100x100 before size validation

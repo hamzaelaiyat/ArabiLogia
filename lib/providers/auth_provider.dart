@@ -531,7 +531,7 @@ class AuthProvider extends ChangeNotifier {
       if (user == null) return;
       final profile = await Supabase.instance.client
           .from('profiles')
-          .select('image_violation_count, image_blocked_until, has_bad_tag')
+          .select('image_violation_count, image_blocked_until, has_bad_tag, last_violation_at')
           .eq('id', user.id)
           .single();
       _imageViolationCount = profile['image_violation_count'] as int? ?? 0;
