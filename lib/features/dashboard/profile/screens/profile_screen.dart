@@ -1,6 +1,7 @@
 import 'dart:io' show Platform, File;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
@@ -262,6 +263,58 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     }
   }
 
+  Future<void> _removeAvatar() async {
+    final authProvider = context.read<AuthProvider>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('إزالة الصورة الشخصية'),
+          content: const Text('هل أنت متأكد من إزالة صورتك الشخصية؟'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('إزالة'),
+            ),
+          ],
+        ),
+      ),
+    ) ?? false;
+
+    if (!confirmed) return;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final success = await authProvider.removeAvatar();
+
+      if (!mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إزالة الصورة الشخصية بنجاح')),
+        );
+        authProvider.refreshUser();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authProvider.state.error ?? 'خطأ في إزالة الصورة')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
   void _showEditProfileDialog() {
     final authProvider = context.read<AuthProvider>();
     final user = authProvider.state.user;
@@ -401,6 +454,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                     isUploading: _isUploading,
                     canUpload: authProvider.canUploadAvatar,
                     onPickImage: _pickAndUploadImage,
+                    onRemoveAvatar: avatarUrl != null ? _removeAvatar : null,
                   ),
                 ),
                 const SizedBox(height: AppTokens.spacing32),

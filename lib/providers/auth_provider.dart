@@ -585,6 +585,51 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> removeAvatar() async {
+    try {
+      _state = _state.copyWith(isLoading: true, error: null);
+      notifyListeners();
+
+      // Update profiles table
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'avatar_url': null, 'avatar_updated_at': DateTime.now().toIso8601String()})
+          .eq('id', _authClient.currentUser!.id);
+
+      // Update auth metadata
+      final response = await _authClient.updateUser(UserAttributes(data: {
+        'avatar_url': null,
+        'avatar_updated_at': DateTime.now().toIso8601String(),
+      }));
+
+      _state = _state.copyWith(isLoading: false, user: response.user);
+      notifyListeners();
+      return true;
+    } on PostgrestException catch (e) {
+      debugPrint('removeAvatar DB error: ${e.message} (code: ${e.code})');
+      final errorMsg = getArabicDbError('${e.code} ${e.message}');
+      _state = _state.copyWith(isLoading: false, error: errorMsg);
+      notifyListeners();
+      return false;
+    } on AuthException catch (e) {
+      debugPrint('removeAvatar AuthError: ${e.message}');
+      _state = _state.copyWith(
+        isLoading: false,
+        error: getArabicAuthError(e.message),
+      );
+      notifyListeners();
+      return false;
+    } catch (e) {
+      debugPrint('removeAvatar UnexpectedError: $e');
+      _state = _state.copyWith(
+        isLoading: false,
+        error: 'حدث خطأ في إزالة الصورة',
+      );
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> signOut() async {
     await _authClient.signOut();
     _state = const AuthState();

@@ -12,6 +12,7 @@ class ProfileHeader extends StatelessWidget {
     required this.isUploading,
     this.canUpload = true,
     required this.onPickImage,
+    this.onRemoveAvatar,
   });
 
   final String name;
@@ -21,6 +22,7 @@ class ProfileHeader extends StatelessWidget {
   final bool isUploading;
   final bool canUpload;
   final VoidCallback onPickImage;
+  final VoidCallback? onRemoveAvatar;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +34,7 @@ class ProfileHeader extends StatelessWidget {
           isUploading: isUploading,
           canUpload: canUpload,
           onPickImage: onPickImage,
+          onRemoveAvatar: onRemoveAvatar,
         ),
         const SizedBox(height: AppTokens.spacing16),
         Text(
@@ -74,6 +77,7 @@ class _AvatarSection extends StatelessWidget {
     required this.isUploading,
     this.canUpload = true,
     required this.onPickImage,
+    this.onRemoveAvatar,
   });
 
   final String? avatarUrl;
@@ -81,6 +85,7 @@ class _AvatarSection extends StatelessWidget {
   final bool isUploading;
   final bool canUpload;
   final VoidCallback onPickImage;
+  final VoidCallback? onRemoveAvatar;
 
   @override
   Widget build(BuildContext context) {
@@ -135,6 +140,27 @@ class _AvatarSection extends StatelessWidget {
                 ),
                 child: const Icon(
                   Icons.camera_alt,
+                  size: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        if (avatarUrl != null && onRemoveAvatar != null && !isUploading)
+          Positioned(
+            bottom: 4,
+            left: 4,
+            child: GestureDetector(
+              onTap: onRemoveAvatar,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.error,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: const Icon(
+                  Icons.delete_outline,
                   size: 16,
                   color: Colors.white,
                 ),
