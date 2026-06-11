@@ -1,4 +1,10 @@
-build/
+build/android/
+build/ios/
+build/linux/
+build/macos/
+build/windows/
+build/host/
+build/unit_test_*/
 .dart_tool/
 .flutter-plugins*
 .cache/
