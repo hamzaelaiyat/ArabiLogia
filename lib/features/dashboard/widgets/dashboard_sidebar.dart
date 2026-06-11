@@ -38,13 +38,6 @@ class DashboardSidebar extends StatelessWidget {
             width: 1,
           ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(2, 0),
-          ),
-        ],
       ),
       child: Column(
         children: [

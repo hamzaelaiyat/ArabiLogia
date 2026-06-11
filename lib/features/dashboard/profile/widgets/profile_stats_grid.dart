@@ -8,13 +8,11 @@ class ProfileStatsGrid extends StatelessWidget {
     required this.examsCompleted,
     required this.avgScore,
     required this.totalScore,
-    required this.shadowsEnabled,
   });
 
   final dynamic examsCompleted;
   final dynamic avgScore;
   final dynamic totalScore;
-  final bool shadowsEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -23,15 +21,7 @@ class ProfileStatsGrid extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: AppTokens.radius2xlAll,
-        boxShadow: shadowsEnabled
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ]
-            : null,
+        boxShadow: null,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,

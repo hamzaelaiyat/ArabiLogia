@@ -10,7 +10,6 @@ class ProfileHeader extends StatelessWidget {
     required this.grade,
     this.avatarUrl,
     required this.isUploading,
-    required this.shadowsEnabled,
     this.canUpload = true,
     required this.onPickImage,
   });
@@ -20,7 +19,6 @@ class ProfileHeader extends StatelessWidget {
   final String grade;
   final String? avatarUrl;
   final bool isUploading;
-  final bool shadowsEnabled;
   final bool canUpload;
   final VoidCallback onPickImage;
 
@@ -32,7 +30,6 @@ class ProfileHeader extends StatelessWidget {
           avatarUrl: avatarUrl,
           name: name,
           isUploading: isUploading,
-          shadowsEnabled: shadowsEnabled,
           canUpload: canUpload,
           onPickImage: onPickImage,
         ),
@@ -75,7 +72,6 @@ class _AvatarSection extends StatelessWidget {
     required this.avatarUrl,
     required this.name,
     required this.isUploading,
-    required this.shadowsEnabled,
     this.canUpload = true,
     required this.onPickImage,
   });
@@ -83,7 +79,6 @@ class _AvatarSection extends StatelessWidget {
   final String? avatarUrl;
   final String name;
   final bool isUploading;
-  final bool shadowsEnabled;
   final bool canUpload;
   final VoidCallback onPickImage;
 
@@ -100,15 +95,7 @@ class _AvatarSection extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: canUpload ? 0.2 : 0.08),
                 width: 4,
               ),
-              boxShadow: shadowsEnabled
-                  ? [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ]
-                  : null,
+              boxShadow: null,
             ),
             child: CircleAvatar(
               radius: 60,

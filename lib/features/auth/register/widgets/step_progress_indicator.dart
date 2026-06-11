@@ -32,15 +32,7 @@ class StepProgressIndicator extends StatelessWidget {
             border: isCurrent
                 ? Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1)
                 : null,
-            boxShadow: isCurrent
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFFEB8A00).withValues(alpha: 0.4),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    )
-                  ]
-                : null,
+            boxShadow: null,
           ),
         );
       }),

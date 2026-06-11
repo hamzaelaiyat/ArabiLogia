@@ -27,19 +27,14 @@ class GradientActionButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFFEB8A00),
             borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFEB8A00).withValues(alpha: 0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: ElevatedButton(
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
+              elevation: 0,
               shadowColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppTokens.radiusFull),
               ),
