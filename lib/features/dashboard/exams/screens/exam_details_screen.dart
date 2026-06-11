@@ -164,14 +164,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                   flexibleSpace: FlexibleSpaceBar(
                     background: Container(
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            category.color,
-                            category.color.withValues(alpha: 0.7),
-                          ],
-                          begin: Alignment.topRight,
-                          end: Alignment.bottomLeft,
-                        ),
+                        color: category.color,
                       ),
                       child: Center(
                         child: Icon(

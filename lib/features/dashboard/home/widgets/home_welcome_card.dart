@@ -25,11 +25,7 @@ class HomeWelcomeCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppTokens.spacing16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryTo],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ),
+        color: AppColors.primary,
         borderRadius: AppTokens.radius2xlAll,
         boxShadow: [
           BoxShadow(

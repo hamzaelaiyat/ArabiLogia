@@ -139,16 +139,7 @@ class DashboardShell extends StatelessWidget {
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppColors.primary.withValues(alpha: 0.03),
-              AppColors.background(context),
-            ],
-          ),
-        ),
+        color: AppColors.background(context),
         child: Row(
           children: [
             DashboardSidebar(
