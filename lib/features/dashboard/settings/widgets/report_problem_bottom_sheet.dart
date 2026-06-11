@@ -289,7 +289,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
                 _buildTextField(
                   controller: _phoneController,
                   label: 'رقم الهاتف',
-                  hint: 'أدخل رقم الهاتف (اختياري)',
+                  hint: 'أدخل رقم الهاتف',
                   maxLines: 1,
                   keyboardType: TextInputType.phone,
                   optional: true,
@@ -297,7 +297,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
                 const SizedBox(height: AppTokens.spacing20),
                 _buildTextField(
                   controller: _stepsController,
-                  label: 'كيفية إعادة إنتاج المشكلة (اختياري)',
+                  label: 'كيفية إعادة إنتاج المشكلة',
                   hint: '1. افتح الإعدادات\n2. اضغط على زر X\n3. يظهر الخطأ...',
                   maxLines: 3,
                   optional: true,

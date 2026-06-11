@@ -23,9 +23,16 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  unawaited(dotenv.load(fileName: ".env"));
-  unawaited(AppVersion.preload());
+  await dotenv.load(fileName: ".env");
+  await AppVersion.preload();
   unawaited(_initializeMobileAds());
+
+  if (SupabaseConfig.isConfigured) {
+    await Supabase.initialize(
+      url: SupabaseConfig.supabaseUrl,
+      anonKey: SupabaseConfig.supabaseAnonKey,
+    );
+  }
 
   runApp(const ArabiLogiaApp());
 }
@@ -49,7 +56,6 @@ class ArabiLogiaApp extends StatefulWidget {
 
 class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
   StreamSubscription<AppUpdate?>? _updateSubscription;
-  bool _supabaseInitialized = false;
   bool _providersInitialized = false;
 
   @override
@@ -57,24 +63,6 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
     super.initState();
     _listenForUpdates();
     _checkWhatsNew();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeSupabase();
-    });
-  }
-
-  Future<void> _initializeSupabase() async {
-    if (SupabaseConfig.isConfigured && !_supabaseInitialized) {
-      try {
-        await Supabase.initialize(
-          url: SupabaseConfig.supabaseUrl,
-          anonKey: SupabaseConfig.supabaseAnonKey,
-        );
-        _supabaseInitialized = true;
-      } catch (e) {
-        debugPrint('Supabase initialization failed: $e');
-      }
-    }
   }
 
   Future<void> _initializeHeavyProviders(BuildContext context) async {
