@@ -29,44 +29,51 @@ class AuthTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = colorScheme.brightness == Brightness.dark;
+
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
-      style: TextStyle(color: AppColors.authTextColor(context)),
+      style: TextStyle(color: colorScheme.onSurface),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: AppColors.authLabelColor(context)),
+        prefixIcon: Icon(icon, color: colorScheme.onSurface.withValues(alpha: 0.7)),
         suffixIcon: isPassword
             ? IconButton(
                 icon: Icon(
                   obscureText
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
-                  color: AppColors.authLabelColor(context),
+                  color: colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
                 onPressed: onToggleVisibility,
               )
             : null,
         filled: true,
-        fillColor: AppColors.glassBackgroundColor(context),
+        fillColor: isDark ? AppColors.secondaryDark : Colors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppTokens.spacing16,
           vertical: AppTokens.spacing12,
         ),
-        labelStyle: TextStyle(color: AppColors.authLabelColor(context)),
+        labelStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-          borderSide: BorderSide(color: AppColors.glassBorderColor(context)),
+          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-          borderSide: BorderSide(color: AppColors.glassBorderColor(context)),
+          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-          borderSide: const BorderSide(color: Colors.white, width: 2),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTokens.radiusFull),
+          borderSide: BorderSide(color: colorScheme.error, width: 2),
         ),
       ),
       validator: validator,

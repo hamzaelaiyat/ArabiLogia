@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
-import 'package:arabilogia/features/auth/widgets/glass_container.dart';
+import 'package:arabilogia/core/widgets/solid_container.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/core/constants/routes.dart';
@@ -134,28 +134,35 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildForm(BuildContext context) {
     final isMobile = AppTokens.isMobile(context);
-    final cloudyInputDecoration = InputDecoration(
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = colorScheme.brightness == Brightness.dark;
+
+    final solidInputDecoration = InputDecoration(
       filled: true,
-      fillColor: AppColors.glassBackgroundColor(context),
+      fillColor: isDark ? AppColors.secondaryDark : Colors.white,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: AppTokens.spacing16,
         vertical: AppTokens.spacing12,
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-        borderSide: BorderSide(color: AppColors.glassBorderColor(context)),
+        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-        borderSide: BorderSide(color: AppColors.glassBorderColor(context)),
+        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-        borderSide: const BorderSide(color: Colors.white, width: 2),
+        borderSide: BorderSide(color: colorScheme.primary, width: 2),
       ),
-      labelStyle: TextStyle(color: AppColors.authLabelColor(context)),
-      prefixIconColor: AppColors.authLabelColor(context),
-      suffixIconColor: AppColors.authLabelColor(context),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTokens.radiusFull),
+        borderSide: BorderSide(color: colorScheme.error, width: 2),
+      ),
+      labelStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
+      prefixIconColor: colorScheme.onSurface.withValues(alpha: 0.7),
+      suffixIconColor: colorScheme.onSurface.withValues(alpha: 0.7),
     );
 
     final content = Form(
@@ -168,8 +175,8 @@ class _LoginScreenState extends State<LoginScreen> {
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            style: TextStyle(color: AppColors.authTextColor(context)),
-            decoration: cloudyInputDecoration.copyWith(
+            style: TextStyle(color: colorScheme.onSurface),
+            decoration: solidInputDecoration.copyWith(
               labelText: AppStrings.email,
               prefixIcon: const Icon(Icons.email_outlined),
             ),
@@ -187,8 +194,8 @@ class _LoginScreenState extends State<LoginScreen> {
           TextFormField(
             controller: _passwordController,
             obscureText: _obscurePassword,
-            style: TextStyle(color: AppColors.authTextColor(context)),
-            decoration: cloudyInputDecoration.copyWith(
+            style: TextStyle(color: colorScheme.onSurface),
+            decoration: solidInputDecoration.copyWith(
               labelText: AppStrings.password,
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
@@ -222,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Text(
                 AppStrings.forgotPassword,
                 style: TextStyle(
-                  color: AppColors.authSecondaryColor(context),
+                  color: colorScheme.onSurface.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -265,8 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
 
-    return GlassContainer(
-      isMobile: isMobile,
+    return SolidContainer(
       padding: const EdgeInsets.symmetric(
         horizontal: AppTokens.spacing24,
         vertical: AppTokens.spacing32,

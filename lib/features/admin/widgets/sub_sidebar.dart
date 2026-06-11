@@ -1,9 +1,7 @@
-import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
-import 'package:arabilogia/providers/potato_mode_provider.dart';
 
 class SubSidebar extends StatelessWidget {
   final int activeIndex;
@@ -23,30 +21,20 @@ class SubSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final potato = context.watch<PotatoModeProvider>();
+    final colorScheme = Theme.of(context).colorScheme;
     
     return Container(
       width: 64,
       decoration: BoxDecoration(
-        color: potato.blurEffectsEnabled
-            ? AppColors.glassBackgroundColor(context)
-            : (isDark ? AppColors.bgDark : const Color(0xFFF0F0F0)),
+        color: colorScheme.surface,
         border: Border(
           right: BorderSide(
-            color: AppColors.glassBorderColor(context),
+            color: colorScheme.outline.withValues(alpha: 0.12),
             width: 1,
           ),
         ),
       ),
-      child: potato.blurEffectsEnabled
-          ? ClipRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: _buildContent(),
-              ),
-            )
-          : _buildContent(),
+      child: _buildContent(),
     );
   }
 
@@ -120,37 +108,13 @@ class _SidebarIcon extends StatelessWidget {
     final iconColor = color ?? (isActive 
         ? AppColors.primary 
         : AppColors.foreground(context).withValues(alpha: 0.6));
-    final potato = context.watch<PotatoModeProvider>();
-
-    if (potato.animationsEnabled) {
-      return Tooltip(
-        message: tooltip,
-        child: GestureDetector(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: AppTokens.durationFast,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isActive 
-                  ? AppColors.primary.withValues(alpha: 0.1) 
-                  : Colors.transparent,
-              borderRadius: AppTokens.radiusMdAll,
-            ),
-            child: Icon(
-              isActive ? (activeIcon ?? icon) : icon,
-              color: iconColor,
-              size: 24,
-            ),
-          ),
-        ),
-      );
-    }
 
     return Tooltip(
       message: tooltip,
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: AppTokens.durationFast,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isActive 

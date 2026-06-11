@@ -13,6 +13,7 @@ class DashboardSidebar extends StatelessWidget {
   final VoidCallback onAboutTap;
   final VoidCallback onTermsTap;
   final VoidCallback onPrivacyTap;
+  final String version;
 
   const DashboardSidebar({
     super.key,
@@ -24,6 +25,7 @@ class DashboardSidebar extends StatelessWidget {
     required this.onAboutTap,
     required this.onTermsTap,
     required this.onPrivacyTap,
+    required this.version,
   });
 
   @override
@@ -138,7 +140,7 @@ class DashboardSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(AppTokens.spacing8),
             child: Text(
-              'v2.7.9b',
+              version,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppColors.mutedColor(context),
               ),

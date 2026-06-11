@@ -124,15 +124,20 @@ class DeviceSpecDetector {
   static final Battery _battery = Battery();
 
   static DeviceSpec? _cachedSpec;
+  static AndroidDeviceInfo? _cachedAndroidInfo;
+  static IosDeviceInfo? _cachedIosInfo;
 
   static Future<DeviceSpec> detectDevice() async {
     if (_cachedSpec != null) return _cachedSpec!;
 
     try {
-      final ramGB = await _getRAM();
       final cpuCores = Platform.numberOfProcessors;
+
+      await _prefetchDeviceInfo();
+
+      final ramGB = _getRAM();
       final batteryPercent = await _getBattery();
-      final deviceType = await _getDeviceType();
+      final deviceType = _getDeviceType();
       final potatoLevel = _calculatePotatoLevel(
         ramGB,
         cpuCores,
@@ -160,12 +165,19 @@ class DeviceSpecDetector {
     }
   }
 
-  static Future<int> _getRAM() async {
+  static Future<void> _prefetchDeviceInfo() async {
+    if (Platform.isAndroid && _cachedAndroidInfo == null) {
+      _cachedAndroidInfo = await _deviceInfo.androidInfo;
+    } else if (Platform.isIOS && _cachedIosInfo == null) {
+      _cachedIosInfo = await _deviceInfo.iosInfo;
+    }
+  }
+
+  static int _getRAM() {
     final cpuCores = Platform.numberOfProcessors;
     try {
-      if (Platform.isAndroid) {
-        final info = await _deviceInfo.androidInfo;
-        return _estimateRamFromAndroid(info);
+      if (Platform.isAndroid && _cachedAndroidInfo != null) {
+        return _estimateRamFromAndroid(_cachedAndroidInfo!);
       } else if (Platform.isIOS) {
         return 4;
       } else if (Platform.isLinux) {
@@ -209,21 +221,24 @@ class DeviceSpecDetector {
 
   static Future<int> _getBattery() async {
     try {
-      final level = await _battery.batteryLevel;
+      final level = await _battery.batteryLevel
+          .timeout(const Duration(milliseconds: 300), onTimeout: () => 50);
       return level;
     } catch (_) {
       return 50;
     }
   }
 
-  static Future<DeviceType> _getDeviceType() async {
+  static DeviceType _getDeviceType() {
     try {
-      if (Platform.isAndroid) {
-        final info = await _deviceInfo.androidInfo;
-        return info.isPhysicalDevice ? DeviceType.phone : DeviceType.desktop;
-      } else if (Platform.isIOS) {
-        final info = await _deviceInfo.iosInfo;
-        return info.isPhysicalDevice ? DeviceType.phone : DeviceType.desktop;
+      if (Platform.isAndroid && _cachedAndroidInfo != null) {
+        return _cachedAndroidInfo!.isPhysicalDevice
+            ? DeviceType.phone
+            : DeviceType.desktop;
+      } else if (Platform.isIOS && _cachedIosInfo != null) {
+        return _cachedIosInfo!.isPhysicalDevice
+            ? DeviceType.phone
+            : DeviceType.desktop;
       }
     } catch (_) {}
     return DeviceType.desktop;

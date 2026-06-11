@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
-import 'package:arabilogia/features/auth/widgets/glass_container.dart';
 import 'package:arabilogia/features/auth/widgets/gradient_action_button.dart';
 import 'package:arabilogia/features/auth/forgot_password/widgets/forgot_password_header.dart';
 import 'package:arabilogia/features/auth/forgot_password/widgets/error_banner.dart';
@@ -18,10 +17,13 @@ class ForgotPasswordOverlay extends StatefulWidget {
     if (isMobile) {
       return showModalBottomSheet(
         context: context,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Theme.of(context).bottomSheetTheme.modalBackgroundColor,
         barrierColor: Colors.black.withValues(alpha: 0.5),
         isScrollControlled: true,
         enableDrag: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
         builder: (context) => const ForgotPasswordOverlay(),
       );
     }
@@ -29,7 +31,13 @@ class ForgotPasswordOverlay extends StatefulWidget {
     return showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
-      builder: (context) => const ForgotPasswordOverlay(),
+      builder: (context) => Dialog(
+        backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: const ForgotPasswordOverlay(),
+      ),
     );
   }
 
@@ -139,25 +147,22 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
 
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(AppTokens.spacing8),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 450),
-          child: _buildContent(context, false),
-        ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 450),
+        child: _buildContent(context, false),
       ),
     );
   }
 
   Widget _buildDragHandle(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 12),
         width: 40,
         height: 4,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.3),
+          color: colorScheme.onSurface.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(2),
         ),
       ),
@@ -165,42 +170,53 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
   }
 
   Widget _buildContent(BuildContext context, bool isMobile) {
-    final cloudyInputDecoration = InputDecoration(
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = colorScheme.brightness == Brightness.dark;
+
+    final solidInputDecoration = InputDecoration(
       filled: true,
-      fillColor: AppColors.glassBackgroundColor(context),
+      fillColor: isDark ? AppColors.secondaryDark : Colors.white,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: AppTokens.spacing16,
         vertical: AppTokens.spacing12,
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-        borderSide: BorderSide(color: AppColors.glassBorderColor(context)),
+        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-        borderSide: BorderSide(color: AppColors.glassBorderColor(context)),
+        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-        borderSide: const BorderSide(color: Colors.white, width: 2),
+        borderSide: BorderSide(color: colorScheme.primary, width: 2),
       ),
-      labelStyle: TextStyle(color: AppColors.authLabelColor(context)),
-      prefixIconColor: AppColors.authLabelColor(context),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTokens.radiusFull),
+        borderSide: BorderSide(color: colorScheme.error, width: 2),
+      ),
+      labelStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
+      prefixIconColor: colorScheme.onSurface.withValues(alpha: 0.7),
     );
 
-    return GlassContainer(
-      isMobile: isMobile,
+    return Container(
       padding: EdgeInsets.fromLTRB(
         AppTokens.spacing24,
         isMobile ? 0 : AppTokens.spacing12,
         AppTokens.spacing24,
         AppTokens.spacing32,
       ),
-      borderRadius: isMobile
-          ? const BorderRadius.vertical(top: Radius.circular(32))
-          : BorderRadius.circular(24),
-      blur: 50.0,
-      opacity: 0.6,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: isMobile
+            ? const BorderRadius.vertical(top: Radius.circular(32))
+            : BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.12),
+          width: 1,
+        ),
+      ),
       child: Form(
         key: _formKey,
         child: Column(
@@ -226,7 +242,7 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 style: TextStyle(color: AppColors.authTextColor(context)),
-                decoration: cloudyInputDecoration.copyWith(
+                decoration: solidInputDecoration.copyWith(
                   labelText: AppStrings.email,
                   prefixIcon: const Icon(Icons.email_outlined),
                 ),
@@ -254,7 +270,7 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                 controller: _otpController,
                 keyboardType: TextInputType.number,
                 style: TextStyle(color: AppColors.authTextColor(context)),
-                decoration: cloudyInputDecoration.copyWith(
+                decoration: solidInputDecoration.copyWith(
                   labelText: 'رمز التفعيل',
                   prefixIcon: const Icon(Icons.vpn_key_outlined),
                 ),
@@ -271,7 +287,7 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 style: TextStyle(color: AppColors.authTextColor(context)),
-                decoration: cloudyInputDecoration.copyWith(
+                decoration: solidInputDecoration.copyWith(
                   labelText: 'كلمة المرور الجديدة',
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(

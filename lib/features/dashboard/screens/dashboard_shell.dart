@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
+import 'package:arabilogia/core/constants/app_version.dart';
 import 'package:arabilogia/features/legal/widgets/legal_bottom_sheet.dart';
 import 'package:arabilogia/features/dashboard/widgets/dashboard_bottom_nav_bar.dart';
 import 'package:arabilogia/features/dashboard/widgets/dashboard_sidebar.dart';
@@ -136,6 +137,7 @@ class DashboardShell extends StatelessWidget {
 
   Widget _buildDesktopLayout(BuildContext context, int selectedIndex) {
     final auth = context.watch<AuthProvider>();
+    final version = AppVersion.displayVersion;
 
     return Scaffold(
       body: Container(
@@ -151,6 +153,7 @@ class DashboardShell extends StatelessWidget {
               onAboutTap: () => LegalBottomSheet.showAbout(context),
               onTermsTap: () => LegalBottomSheet.showTerms(context),
               onPrivacyTap: () => LegalBottomSheet.showPrivacy(context),
+              version: version,
             ),
             const VerticalDivider(thickness: 1, width: 1),
             Expanded(child: child),

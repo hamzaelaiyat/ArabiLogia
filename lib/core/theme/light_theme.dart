@@ -194,6 +194,30 @@ class LightTheme {
       ),
       shape: RoundedRectangleBorder(borderRadius: AppTokens.radiusLgAll),
     ),
+
+    dialogTheme: DialogThemeData(
+      backgroundColor: Colors.white,
+      elevation: AppTokens.elevationLg,
+      shape: RoundedRectangleBorder(borderRadius: AppTokens.radius2xlAll),
+      titleTextStyle: GoogleFonts.rubik(
+        fontSize: AppTokens.fontSizeXl,
+        fontWeight: FontWeight.w600,
+        color: AppColors.fgLight,
+      ),
+      contentTextStyle: GoogleFonts.rubik(
+        fontSize: AppTokens.fontSizeMd,
+        color: AppColors.mutedLight,
+      ),
+    ),
+
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: Colors.white,
+      elevation: AppTokens.elevationLg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      modalBackgroundColor: Colors.white,
+    ),
   );
 
   static TextTheme _buildTextTheme(Brightness brightness) {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
-import 'package:arabilogia/features/auth/widgets/glass_container.dart';
+import 'package:arabilogia/core/widgets/solid_container.dart';
 import 'package:arabilogia/features/auth/register/widgets/account_step_form.dart';
 import 'package:arabilogia/features/auth/register/widgets/profile_step_form.dart';
 import 'package:arabilogia/features/auth/register/widgets/grade_step_form.dart';
@@ -292,8 +292,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
     }
 
-    return GlassContainer(
-      isMobile: isMobile,
+    return SolidContainer(
       padding: const EdgeInsets.symmetric(
         horizontal: AppTokens.spacing24,
         vertical: AppTokens.spacing32,

@@ -12,10 +12,12 @@ class ThemeProvider extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
 
   ThemeProvider() {
-    _loadTheme();
+    // Lazy initialization - _loadTheme() will be called explicitly if needed
+    // For now, we use system default immediately and load preference in background
+    _loadThemeInBackground();
   }
 
-  Future<void> _loadTheme() async {
+  Future<void> _loadThemeInBackground() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final themeIndex = prefs.getInt(_themeKey);

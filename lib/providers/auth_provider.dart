@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -40,7 +41,7 @@ class AuthState {
 }
 
 class AuthProvider extends ChangeNotifier {
-  late final GoTrueClient _auth;
+  GoTrueClient? _auth;
 
   AuthState _state = const AuthState();
   AuthState get state => _state;
@@ -54,40 +55,44 @@ class AuthProvider extends ChangeNotifier {
   DateTime? get imageBlockedUntil => _imageBlockedUntil;
   bool get hasBadTag => _hasBadTag;
 
-  AuthProvider() {
-    try {
-      _auth = Supabase.instance.client.auth;
-    } catch (e) {
-      // Fallback for when Supabase is not initialized yet
-      debugPrint('Supabase not initialized: $e');
-    }
-    if (SupabaseConfig.isConfigured) {
-      _init();
-    }
+  GoTrueClient get _authClient {
+    _auth ??= Supabase.instance.client.auth;
+    return _auth!;
   }
 
-  void _init() {
-    _state = _state.copyWith(
-      isAuthenticated: _auth.currentSession != null,
-      user: _auth.currentUser,
-      session: _auth.currentSession,
-    );
+  AuthProvider() {
+    // Don't initialize here - wait for Supabase to be ready
+  }
 
-    if (_auth.currentSession != null) {
-      loadViolationState();
-    }
+  Future<void> initializeAfterSupabase() async {
+    if (!SupabaseConfig.isConfigured) return;
 
-    _auth.onAuthStateChange.listen((event) {
+    try {
+      _auth = Supabase.instance.client.auth;
       _state = _state.copyWith(
-        isAuthenticated: event.session != null,
-        user: event.session?.user,
-        session: event.session,
+        isAuthenticated: _auth!.currentSession != null,
+        user: _auth!.currentUser,
+        session: _auth!.currentSession,
       );
-      if (event.session != null) {
-        loadViolationState();
+
+      if (_auth!.currentSession != null) {
+        await loadViolationState();
       }
-      notifyListeners();
-    });
+
+      _auth!.onAuthStateChange.listen((event) {
+        _state = _state.copyWith(
+          isAuthenticated: event.session != null,
+          user: event.session?.user,
+          session: event.session,
+        );
+        if (event.session != null) {
+          loadViolationState();
+        }
+        notifyListeners();
+      });
+    } catch (e) {
+      debugPrint('AuthProvider initialization failed: $e');
+    }
   }
 
   Future<bool> signIn(String email, String password) async {
@@ -95,7 +100,7 @@ class AuthProvider extends ChangeNotifier {
       _state = _state.copyWith(isLoading: true, error: null);
       notifyListeners();
 
-      final response = await _auth.signInWithPassword(
+      final response = await _authClient.signInWithPassword(
         email: email,
         password: password,
       );
@@ -107,11 +112,11 @@ class AuthProvider extends ChangeNotifier {
         session: response.session,
       );
 
-      // Sync scores immediately after successful authentication
-      await ScoreRepository().syncScoresWithSupabase();
+      // Sync scores immediately after successful authentication (fire-and-forget)
+      unawaited(ScoreRepository().syncScoresWithSupabase());
 
-      // Sync role from auth metadata to profiles table if needed
-      await _syncRoleToProfiles();
+      // Sync role from auth metadata to profiles table if needed (fire-and-forget)
+      unawaited(_syncRoleToProfiles());
 
       notifyListeners();
       return true;
@@ -145,7 +150,7 @@ class AuthProvider extends ChangeNotifier {
       _state = _state.copyWith(isLoading: true, error: null);
       notifyListeners();
 
-      final signInResponse = await _auth.signInWithPassword(
+      final signInResponse = await _authClient.signInWithPassword(
         email: email,
         password: password,
       );
@@ -165,7 +170,7 @@ class AuthProvider extends ChangeNotifier {
     } on AuthException catch (e) {
       if (e.message.contains('Invalid login credentials')) {
         try {
-          final response = await _auth.signUp(
+          final response = await _authClient.signUp(
             email: email,
             password: password,
             data: {'full_name': fullName, 'username': username, 'grade': grade},
@@ -173,7 +178,7 @@ class AuthProvider extends ChangeNotifier {
 
           _state = _state.copyWith(isLoading: false, user: response.user);
 
-          await ScoreRepository().syncScoresWithSupabase();
+          unawaited(ScoreRepository().syncScoresWithSupabase());
 
           notifyListeners();
           return true;
@@ -215,13 +220,13 @@ class AuthProvider extends ChangeNotifier {
       // configured with the generic email verification type.
       AuthResponse response;
       try {
-        response = await _auth.verifyOTP(
+        response = await _authClient.verifyOTP(
           type: OtpType.signup,
           token: token,
           email: email,
         );
       } on AuthException {
-        response = await _auth.verifyOTP(
+        response = await _authClient.verifyOTP(
           type: OtpType.email,
           token: token,
           email: email,
@@ -260,7 +265,7 @@ class AuthProvider extends ChangeNotifier {
       _state = _state.copyWith(isLoading: true, error: null);
       notifyListeners();
 
-      await _auth.resetPasswordForEmail(email);
+      await _authClient.resetPasswordForEmail(email);
 
       _state = _state.copyWith(isLoading: false);
       notifyListeners();
@@ -289,7 +294,7 @@ class AuthProvider extends ChangeNotifier {
       _state = _state.copyWith(isLoading: true, error: null);
       notifyListeners();
 
-      final response = await _auth.verifyOTP(
+      final response = await _authClient.verifyOTP(
         type: OtpType.recovery,
         token: token,
         email: email,
@@ -302,10 +307,11 @@ class AuthProvider extends ChangeNotifier {
         session: response.session,
       );
 
-      // Sync scores immediately after successful authentication
-      await ScoreRepository().syncScoresWithSupabase();
+      // Sync scores immediately after successful authentication (fire-and-forget)
+      unawaited(ScoreRepository().syncScoresWithSupabase());
 
-      await _syncRoleToProfiles();
+      // Sync role from auth metadata to profiles table if needed (fire-and-forget)
+      unawaited(_syncRoleToProfiles());
 
       notifyListeners();
       return true;
@@ -333,7 +339,7 @@ class AuthProvider extends ChangeNotifier {
       _state = _state.copyWith(isLoading: true, error: null);
       notifyListeners();
 
-      await _auth.updateUser(UserAttributes(password: newPassword));
+      await _authClient.updateUser(UserAttributes(password: newPassword));
 
       _state = _state.copyWith(isLoading: false);
       notifyListeners();
@@ -390,7 +396,7 @@ class AuthProvider extends ChangeNotifier {
         final profile = await Supabase.instance.client
             .from('profiles')
             .select('grade_updated_at, grade')
-            .eq('id', _auth.currentUser!.id)
+            .eq('id', _authClient.currentUser!.id)
             .single();
 
         final lastUpdate = DateTime.parse(profile['grade_updated_at']);
@@ -437,12 +443,12 @@ class AuthProvider extends ChangeNotifier {
         await Supabase.instance.client
             .from('profiles')
             .update(profileUpdate)
-            .eq('id', _auth.currentUser!.id);
+            .eq('id', _authClient.currentUser!.id);
       }
 
       // 2. Update Auth Metadata (only non-null values)
       data.removeWhere((_, v) => v == null);
-      final response = await _auth.updateUser(UserAttributes(data: data));
+      final response = await _authClient.updateUser(UserAttributes(data: data));
 
       debugPrint('updateProfile SUCCESS: data=$data');
       _state = _state.copyWith(isLoading: false, user: response.user);
@@ -478,7 +484,7 @@ class AuthProvider extends ChangeNotifier {
       _state = _state.copyWith(isLoading: true, error: null);
       notifyListeners();
 
-      await _auth.resend(type: type, email: email);
+      await _authClient.resend(type: type, email: email);
 
       _state = _state.copyWith(isLoading: false);
       notifyListeners();
@@ -504,10 +510,10 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> refreshUser() async {
     try {
-      final user = _auth.currentUser;
+      final user = _authClient.currentUser;
       if (user != null) {
         // Re-fetch user from Supabase auth to get latest metadata
-        final response = await _auth.getUser();
+        final response = await _authClient.getUser();
         final updatedUser = response.user ?? user;
         _state = _state.copyWith(user: updatedUser);
         notifyListeners();
@@ -527,7 +533,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> loadViolationState() async {
     try {
-      final user = _auth.currentUser;
+      final user = _authClient.currentUser;
       if (user == null) return;
       final profile = await Supabase.instance.client
           .from('profiles')
@@ -546,7 +552,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> uploadAvatar(Uint8List bytes) async {
-    final session = _auth.currentSession;
+    final session = _authClient.currentSession;
     if (session == null) {
       return {'error': 'غير مصرح به', 'code': 'UNAUTHORIZED'};
     }
@@ -580,7 +586,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _auth.signOut();
+    await _authClient.signOut();
     _state = const AuthState();
     notifyListeners();
   }

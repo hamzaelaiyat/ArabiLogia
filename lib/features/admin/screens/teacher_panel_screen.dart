@@ -4,7 +4,7 @@ import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
-import 'package:arabilogia/features/auth/widgets/glass_container.dart';
+import 'package:arabilogia/core/widgets/solid_container.dart';
 import 'package:arabilogia/features/admin/widgets/exam_results_view.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
@@ -106,8 +106,7 @@ class _TeacherPanelScreenState extends State<TeacherPanelScreen> {
               bottom:
                   AppTokens.spacing16 + MediaQuery.of(context).padding.bottom,
             ),
-            child: GlassContainer(
-              isMobile: isMobile,
+            child: SolidContainer(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -126,9 +125,7 @@ class _TeacherPanelScreenState extends State<TeacherPanelScreen> {
                     decoration: InputDecoration(
                       labelText: 'اختر القسم',
                       filled: true,
-                      fillColor: AppColors.glassBackgroundColor(
-                        context,
-                      ).withOpacity(0.05),
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppTokens.radiusMd),
                       ),
@@ -156,9 +153,7 @@ class _TeacherPanelScreenState extends State<TeacherPanelScreen> {
                     decoration: InputDecoration(
                       labelText: 'الصف المستهدف',
                       filled: true,
-                      fillColor: AppColors.glassBackgroundColor(
-                        context,
-                      ).withOpacity(0.05),
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppTokens.radiusMd),
                       ),

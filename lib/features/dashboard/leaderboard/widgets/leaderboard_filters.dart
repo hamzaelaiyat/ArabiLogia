@@ -63,6 +63,7 @@ class LeaderboardFilters extends StatelessWidget {
         }
       },
       selectedColor: AppColors.chipSelectedColor(context),
+      side: isSelected ? BorderSide.none : null,
     );
   }
 
@@ -77,6 +78,7 @@ class LeaderboardFilters extends StatelessWidget {
         }
       },
       selectedColor: AppColors.chipSelectedColor(context),
+      side: isSelected ? BorderSide.none : null,
     );
   }
 }

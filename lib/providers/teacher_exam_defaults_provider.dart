@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class TeacherExamDefaults {
   final String defaultTitle;
@@ -77,14 +78,16 @@ class TeacherExamDefaultsProvider extends ChangeNotifier {
   TeacherExamDefaults get defaults => _defaults;
   bool get isLoaded => _isLoaded;
 
+  TeacherExamDefaultsProvider() {
+    // Lazy initialization - loadDefaults() will be called explicitly after app starts
+  }
+
   Future<void> loadDefaults() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonStr = prefs.getString(_storageKey);
     if (jsonStr != null) {
       try {
-        final json = Map<String, dynamic>.from(
-          (await Future.value(_parseJson(jsonStr))) as Map,
-        );
+        final json = jsonDecode(jsonStr) as Map<String, dynamic>;
         _defaults = TeacherExamDefaults.fromJson(json);
       } catch (e) {
         _defaults = const TeacherExamDefaults();
@@ -94,42 +97,9 @@ class TeacherExamDefaultsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  dynamic _parseJson(String json) {
-    try {
-      return Map<String, dynamic>.from(
-        json.split(',').fold<Map<String, dynamic>>(
-          {},
-          (map, pair) {
-            final parts = pair.split(':');
-            if (parts.length == 2) {
-              final key = parts[0].trim().replaceAll('"', '').replaceAll('{', '').replaceAll('}', '');
-              final value = parts[1].trim().replaceAll('"', '');
-              if (key.isNotEmpty) {
-                if (value == 'true') {
-                  map[key] = true;
-                } else if (value == 'false') {
-                  map[key] = false;
-                } else if (int.tryParse(value) != null) {
-                  map[key] = int.parse(value);
-                } else if (double.tryParse(value) != null) {
-                  map[key] = double.parse(value);
-                } else {
-                  map[key] = value;
-                }
-              }
-            }
-            return map;
-          },
-        ),
-      );
-    } catch (e) {
-      return {};
-    }
-  }
-
   Future<void> _saveDefaults() async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonStr = _defaults.toJson().toString();
+    final jsonStr = jsonEncode(_defaults.toJson());
     await prefs.setString(_storageKey, jsonStr);
   }
 

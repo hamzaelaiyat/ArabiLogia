@@ -34,18 +34,24 @@ class LegalBottomSheet extends StatelessWidget {
     if (isMobile) {
       showModalBottomSheet(
         context: context,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Theme.of(context).bottomSheetTheme.modalBackgroundColor,
         barrierColor: Colors.black.withValues(alpha: 0.5),
         isScrollControlled: true,
         enableDrag: true,
         useRootNavigator: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
         builder: (context) => LegalBottomSheet(title: title, sections: sections),
       );
     } else {
       showDialog(
         context: context,
         builder: (context) => Dialog(
-          backgroundColor: Colors.transparent,
+          backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(32),
+          ),
           child: LegalBottomSheet(
             title: title,
             sections: sections,

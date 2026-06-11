@@ -193,6 +193,30 @@ class DarkTheme {
       ),
       shape: RoundedRectangleBorder(borderRadius: AppTokens.radiusLgAll),
     ),
+
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.secondaryDark,
+      elevation: AppTokens.elevationLg,
+      shape: RoundedRectangleBorder(borderRadius: AppTokens.radius2xlAll),
+      titleTextStyle: GoogleFonts.rubik(
+        fontSize: AppTokens.fontSizeXl,
+        fontWeight: FontWeight.w600,
+        color: AppColors.fgDark,
+      ),
+      contentTextStyle: GoogleFonts.rubik(
+        fontSize: AppTokens.fontSizeMd,
+        color: AppColors.mutedDark,
+      ),
+    ),
+
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: AppColors.secondaryDark,
+      elevation: AppTokens.elevationLg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      modalBackgroundColor: AppColors.secondaryDark,
+    ),
   );
 
   static TextTheme _buildTextTheme() {

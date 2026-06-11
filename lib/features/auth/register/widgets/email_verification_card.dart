@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/auth/widgets/auth_text_field.dart';
-import 'package:arabilogia/features/auth/widgets/glass_container.dart';
+import 'package:arabilogia/core/widgets/solid_container.dart';
 
 String normalizeOtp(String input) {
   final buffer = StringBuffer();
@@ -62,10 +62,7 @@ class _EmailVerificationCardState extends State<EmailVerificationCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = AppTokens.isMobile(context);
-
-    return GlassContainer(
-      isMobile: isMobile,
+    return SolidContainer(
       padding: const EdgeInsets.symmetric(
         horizontal: AppTokens.spacing24,
         vertical: AppTokens.spacing32,

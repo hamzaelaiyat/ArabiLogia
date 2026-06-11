@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:arabilogia/core/theme/app_theme.dart';
 import 'package:arabilogia/core/config/supabase_config.dart';
+import 'package:arabilogia/core/constants/app_version.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
 import 'package:arabilogia/core/services/update_service.dart';
 import 'package:arabilogia/features/auth/update_confirm/screens/update_confirm_page.dart';
@@ -22,20 +23,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    debugPrint("Warning: Could not load .env file: $e");
-  }
+  unawaited(dotenv.load(fileName: ".env"));
+  unawaited(AppVersion.preload());
+  unawaited(_initializeMobileAds());
 
-  if (SupabaseConfig.isConfigured) {
-    await Supabase.initialize(
-      url: SupabaseConfig.supabaseUrl,
-      anonKey: SupabaseConfig.supabaseAnonKey,
-    );
-  }
+  runApp(const ArabiLogiaApp());
+}
 
-  // Initialize Google Mobile Ads only on mobile platforms
+Future<void> _initializeMobileAds() async {
   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
     try {
       await MobileAds.instance.initialize();
@@ -43,8 +38,6 @@ void main() async {
       debugPrint('MobileAds initialization failed: $e');
     }
   }
-
-  runApp(const ArabiLogiaApp());
 }
 
 class ArabiLogiaApp extends StatefulWidget {
@@ -56,19 +49,52 @@ class ArabiLogiaApp extends StatefulWidget {
 
 class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
   StreamSubscription<AppUpdate?>? _updateSubscription;
+  bool _supabaseInitialized = false;
+  bool _providersInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _listenForUpdates();
     _checkWhatsNew();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeSupabase();
+    });
+  }
+
+  Future<void> _initializeSupabase() async {
+    if (SupabaseConfig.isConfigured && !_supabaseInitialized) {
+      try {
+        await Supabase.initialize(
+          url: SupabaseConfig.supabaseUrl,
+          anonKey: SupabaseConfig.supabaseAnonKey,
+        );
+        _supabaseInitialized = true;
+      } catch (e) {
+        debugPrint('Supabase initialization failed: $e');
+      }
+    }
+  }
+
+  Future<void> _initializeHeavyProviders(BuildContext context) async {
+    if (_providersInitialized) return;
+    _providersInitialized = true;
+
+    final authProvider = context.read<AuthProvider>();
+    final potatoProvider = context.read<PotatoModeProvider>();
+    final teacherDefaultsProvider = context.read<TeacherExamDefaultsProvider>();
+
+    await Future.wait([
+      authProvider.initializeAfterSupabase(),
+      potatoProvider.initialize(),
+      teacherDefaultsProvider.loadDefaults(),
+    ]);
   }
 
   Future<void> _checkWhatsNew() async {
-    // Disabled: Don't show WhatsNew popup
     return;
   }
-
 
   void _listenForUpdates() {
     _updateSubscription = UpdateService.updateStream.listen((update) {
@@ -79,8 +105,6 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
   }
 
   void _showUpdateDialog(AppUpdate update) {
-    // Use the navigator to show the update page
-    // We need to find the current navigator context
     final context = AppRouter.router.routerDelegate.navigatorKey.currentContext;
     if (context != null) {
       Navigator.of(context).push(
@@ -101,29 +125,39 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ExamProvider()),
         ChangeNotifierProvider(
-          create: (_) => PotatoModeProvider()..initialize(),
+          create: (_) => ThemeProvider(),
+          lazy: true,
         ),
         ChangeNotifierProvider(
-          create: (_) => TeacherExamDefaultsProvider()..loadDefaults(),
+          create: (_) => AuthProvider(),
+          lazy: true,
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ExamProvider(),
+          lazy: true,
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PotatoModeProvider(),
+          lazy: true,
+        ),
+        ChangeNotifierProvider(
+          create: (_) => TeacherExamDefaultsProvider(),
+          lazy: true,
         ),
       ],
-      child: Builder(
-        builder: (context) {
-          // Check for updates in background after app starts
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            // Only check on Android/Windows/Linux
-            if (Theme.of(context).platform == TargetPlatform.android ||
-                Theme.of(context).platform == TargetPlatform.windows ||
-                Theme.of(context).platform == TargetPlatform.linux) {
-              UpdateService.checkForUpdatesInBackground();
-            }
-          });
+          child: Builder(
+            builder: (context) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _initializeHeavyProviders(context);
+                if (Theme.of(context).platform == TargetPlatform.android ||
+                    Theme.of(context).platform == TargetPlatform.windows ||
+                    Theme.of(context).platform == TargetPlatform.linux) {
+                  UpdateService.checkForUpdatesInBackground();
+                }
+              });
 
-          return Consumer<ThemeProvider>(
+              return Consumer<ThemeProvider>(
             builder: (context, themeProvider, child) {
               return MaterialApp.router(
                 title: 'عربيلوجيا',

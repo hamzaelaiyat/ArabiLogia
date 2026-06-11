@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:arabilogia/core/constants/routes.dart';
-import 'package:arabilogia/core/widgets/glass_bottom_sheet.dart';
+import 'package:arabilogia/core/widgets/solid_bottom_sheet.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
 
 class LogoutButton extends StatelessWidget {
@@ -12,7 +12,7 @@ class LogoutButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
       onPressed: () {
-        GlassBottomSheet.show(
+        SolidBottomSheet.show(
           context: context,
           title: 'تسجيل الخروج',
           message: 'هل أنت متأكد من تسجيل الخروج؟',

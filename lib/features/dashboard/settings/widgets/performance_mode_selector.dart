@@ -59,13 +59,8 @@ class PerformanceModeSelector extends StatelessWidget {
                       selectedColor: _getPotatoColor(
                         level,
                       ).withValues(alpha: 0.3),
-                      avatar: isSelected
-                          ? Icon(
-                              Icons.check,
-                              size: 18,
-                              color: _getPotatoColor(level),
-                            )
-                          : null,
+                      checkmarkColor: _getPotatoColor(level),
+                      side: isSelected ? BorderSide.none : null,
                     );
                   }).toList(),
                 ),
