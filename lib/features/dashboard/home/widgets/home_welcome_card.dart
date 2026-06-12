@@ -19,7 +19,7 @@ class HomeWelcomeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final subTitle = rank > 0
         ? _getMotivationalMessages(rank)[DateTime.now().minute % _getMotivationalMessages(rank).length]
-        : 'استعد للتفوق في $gradeText - امتحانات اللغة العربية';
+        : 'طريقك إلى التفوق في اللغة العربية يبدأ هنا';
 
     return Container(
       width: double.infinity,
@@ -40,6 +40,7 @@ class HomeWelcomeCard extends StatelessWidget {
                   children: [
                     AnimatedWrapper(
                       addAnimation: true,
+                      delay: Duration.zero,
                       child: Text(
                         'مرحباً بك، $name',
                         style: Theme.of(context).textTheme.headlineSmall
@@ -52,6 +53,7 @@ class HomeWelcomeCard extends StatelessWidget {
                     const SizedBox(height: AppTokens.spacing4),
                     AnimatedWrapper(
                       addAnimation: true,
+                      delay: const Duration(milliseconds: 80),
                       child: Text(
                         subTitle,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(

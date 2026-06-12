@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/core/utils/anonymous_name_generator.dart';
 import 'package:arabilogia/core/utils/auth_error_mapper.dart';
@@ -235,6 +236,10 @@ class _CustomSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
+    final switchDur = potato.animationsEnabled
+        ? AppTokens.durationSm
+        : Duration.zero;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const activeColor = AppColors.primary;
     final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
@@ -242,7 +247,7 @@ class _CustomSwitch extends StatelessWidget {
     return GestureDetector(
       onTap: onChanged != null ? () => onChanged!(!value) : null,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: switchDur,
         width: 50,
         height: 28,
         decoration: BoxDecoration(
@@ -252,7 +257,7 @@ class _CustomSwitch extends StatelessWidget {
         child: Stack(
           children: [
             AnimatedPositioned(
-              duration: const Duration(milliseconds: 200),
+              duration: switchDur,
               left: value ? 26 : 4,
               top: 4,
               child: Container(

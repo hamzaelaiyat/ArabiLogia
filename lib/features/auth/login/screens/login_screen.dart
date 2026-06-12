@@ -5,7 +5,6 @@ import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
-import 'package:arabilogia/features/auth/widgets/theme_toggle_button.dart';
 import 'package:arabilogia/features/auth/forgot_password/screens/forgot_password_overlay.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -107,11 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     : _buildMobileLayout(context),
               ),
             ),
-            const Positioned(
-              top: 0,
-              left: 0,
-              child: SafeArea(child: ThemeToggleButton()),
-            ),
+
           ],
         ),
       ),

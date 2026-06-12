@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 
 class ExamResultsFilter extends StatelessWidget {
   final int selectedGrade;
@@ -91,10 +94,14 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
+    final filterDuration = potato.animationsEnabled
+        ? AppTokens.durationSm
+        : Duration.zero;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: filterDuration,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected

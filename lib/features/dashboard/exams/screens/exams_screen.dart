@@ -231,6 +231,7 @@ class _ExamsScreenState extends State<ExamsScreen>
         final exam = displayExams[actualExamIndex];
         return AnimatedWrapper(
           addAnimation: true,
+          delay: Duration(milliseconds: actualExamIndex * 60),
           child: ExamCard(
             exam: exam,
             isLocked: exam['locked'] == true,

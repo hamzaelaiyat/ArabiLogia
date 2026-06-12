@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 
 class ExamSettingsTimerToggle extends StatelessWidget {
   final bool value;
@@ -16,10 +18,14 @@ class ExamSettingsTimerToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
+    final toggleDuration = potato.animationsEnabled
+        ? AppTokens.durationFast
+        : Duration.zero;
     return GestureDetector(
       onTap: () => onChanged(!value),
       child: AnimatedContainer(
-        duration: AppTokens.durationFast,
+        duration: toggleDuration,
         width: 56,
         height: 32,
         decoration: BoxDecoration(
@@ -31,7 +37,7 @@ class ExamSettingsTimerToggle extends StatelessWidget {
         child: Stack(
           children: [
             AnimatedPositioned(
-              duration: AppTokens.durationFast,
+              duration: toggleDuration,
               left: value ? 28 : 4,
               top: 4,
               child: Container(

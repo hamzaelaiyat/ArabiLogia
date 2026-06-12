@@ -446,6 +446,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
             child: Column(
               children: [
                 AnimatedWrapper(
+                  delay: Duration.zero,
                   child: ProfileHeader(
                     name: fullName,
                     username: username,
@@ -459,6 +460,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                 ),
                 const SizedBox(height: AppTokens.spacing32),
                 AnimatedWrapper(
+                  delay: const Duration(milliseconds: 80),
                   child: ProfileStatsGrid(
                     examsCompleted: examsCompleted,
                     avgScore: avgScore,
@@ -467,6 +469,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                 ),
                 const SizedBox(height: AppTokens.spacing32),
                 AnimatedWrapper(
+                  delay: const Duration(milliseconds: 160),
                   child: ProfileInfoSection(
                     email: email,
                     registrationDate: createdAt,

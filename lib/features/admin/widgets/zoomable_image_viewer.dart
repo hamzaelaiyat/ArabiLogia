@@ -27,7 +27,7 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> with SingleTi
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: AppTokens.durationSm,
     );
   }
 
@@ -62,7 +62,7 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> with SingleTi
       end: targetMatrix,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeOutCubic,
+      curve: AppTokens.curveDefault,
     ));
     
     _animation!.addListener(() {

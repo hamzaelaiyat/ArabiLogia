@@ -146,33 +146,70 @@ class _LazyLoadWrapperState extends State<LazyLoadWrapper> {
   }
 }
 
-class AnimatedWrapper extends StatelessWidget {
+class AnimatedWrapper extends StatefulWidget {
   final Widget child;
   final Duration? duration;
-  final Curve curve;
   final bool addAnimation;
+  final Duration delay;
 
   const AnimatedWrapper({
     super.key,
     required this.child,
     this.duration,
-    this.curve = Curves.easeInOut,
     this.addAnimation = true,
+    this.delay = Duration.zero,
   });
+
+  @override
+  State<AnimatedWrapper> createState() => _AnimatedWrapperState();
+}
+
+class _AnimatedWrapperState extends State<AnimatedWrapper>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.duration ?? const Duration(milliseconds: 400),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.12),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticOut,
+    ));
+    _startAnimation();
+  }
+
+  void _startAnimation() {
+    if (widget.delay > Duration.zero) {
+      Future.delayed(widget.delay, _controller.forward);
+    } else {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<PotatoModeProvider>(
       builder: (context, potato, _) {
-        if (!addAnimation || !potato.animationsEnabled) {
-          return child;
+        if (!widget.addAnimation || !potato.animationsEnabled) {
+          return widget.child;
         }
-
-        return AnimatedOpacity(
-          duration: duration ?? potato.animationDuration,
-          curve: curve,
-          opacity: 1.0,
-          child: child,
+        return SlideTransition(
+          position: _slideAnimation,
+          child: widget.child,
         );
       },
     );

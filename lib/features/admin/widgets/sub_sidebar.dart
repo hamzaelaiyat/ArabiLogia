@@ -1,7 +1,9 @@
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 
 class SubSidebar extends StatelessWidget {
   final int activeIndex;
@@ -105,6 +107,10 @@ class _SidebarIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
+    final sideDuration = potato.animationsEnabled
+        ? AppTokens.durationFast
+        : Duration.zero;
     final iconColor = color ?? (isActive 
         ? AppColors.primary 
         : AppColors.foreground(context).withValues(alpha: 0.6));
@@ -114,7 +120,7 @@ class _SidebarIcon extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: AppTokens.durationFast,
+          duration: sideDuration,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isActive 

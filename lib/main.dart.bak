@@ -78,10 +78,6 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
       potatoProvider.initialize(),
       teacherDefaultsProvider.loadDefaults(),
     ]);
-
-    if (mounted) {
-      AppRouter.router.refresh();
-    }
   }
 
   Future<void> _checkWhatsNew() async {

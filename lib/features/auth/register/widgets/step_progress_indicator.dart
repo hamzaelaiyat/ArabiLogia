@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 
 class StepProgressIndicator extends StatelessWidget {
   final int currentStep;
@@ -14,13 +16,18 @@ class StepProgressIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
+    final duration = potato.animationsEnabled
+        ? AppTokens.durationMd
+        : Duration.zero;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(totalSteps, (index) {
         final isActive = index <= currentStep;
         final isCurrent = index == currentStep;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+          duration: duration,
           margin: const EdgeInsets.symmetric(horizontal: AppTokens.spacing4),
           height: 6,
           width: isCurrent ? 24 : 12,

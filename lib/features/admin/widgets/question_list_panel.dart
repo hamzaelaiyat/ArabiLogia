@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/models/question_style.dart';
@@ -6,6 +7,7 @@ import 'package:arabilogia/features/admin/widgets/question_card.dart';
 import 'package:arabilogia/features/admin/widgets/question_list_header.dart';
 import 'package:arabilogia/features/admin/widgets/question_list_empty.dart';
 import 'package:arabilogia/features/admin/widgets/question_list_add_button.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 
 class QuestionListPanel extends StatelessWidget {
   final List<Question> questions;
@@ -41,6 +43,10 @@ class QuestionListPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
+    final animDuration = potato.animationsEnabled
+        ? AppTokens.durationMd
+        : Duration.zero;
     return Container(
       color: Colors.transparent,
       child: Column(
@@ -53,15 +59,15 @@ class QuestionListPanel extends StatelessWidget {
             child: questions.isEmpty
                 ? QuestionListEmpty(onAddQuestion: onAddQuestion)
                 : onReorderQuestions != null
-                    ? _buildReorderableList()
-                    : _buildRegularList(),
+                    ? _buildReorderableList(animDuration)
+                    : _buildRegularList(animDuration),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildReorderableList() {
+  Widget _buildReorderableList([Duration animDuration = AppTokens.durationMd]) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
@@ -106,20 +112,10 @@ class QuestionListPanel extends StatelessWidget {
                     child: QuestionListAddButton(onPressed: onAddQuestion),
                   );
                 }
-                return TweenAnimationBuilder<double>(
+                return _FlipInWidget(
                   key: ValueKey(questions[index].id),
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: AppTokens.durationMd,
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, child) {
-                    return Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
-                      child: Opacity(
-                        opacity: value,
-                        child: child,
-                      ),
-                    );
-                  },
+                  index: index,
+                  duration: animDuration,
                   child: Padding(
                     padding: EdgeInsets.only(
                       bottom: isMobile ? AppTokens.spacing8 : AppTokens.spacing24,
@@ -149,7 +145,7 @@ class QuestionListPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildRegularList() {
+  Widget _buildRegularList([Duration animDuration = AppTokens.durationMd]) {
     return ListView.builder(
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? AppTokens.spacing12 : AppTokens.spacing32,
@@ -167,20 +163,10 @@ class QuestionListPanel extends StatelessWidget {
             child: QuestionListAddButton(onPressed: onAddQuestion),
           );
         }
-        return TweenAnimationBuilder<double>(
+        return _FlipInWidget(
           key: ValueKey(questions[index].id),
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: AppTokens.durationMd,
-          curve: Curves.easeOutCubic,
-          builder: (context, value, child) {
-            return Transform.translate(
-              offset: Offset(0, 20 * (1 - value)),
-              child: Opacity(
-                opacity: value,
-                child: child,
-              ),
-            );
-          },
+          index: index,
+          duration: animDuration,
           child: Padding(
             padding: EdgeInsets.only(
               bottom: isMobile ? AppTokens.spacing8 : AppTokens.spacing32,
@@ -205,5 +191,63 @@ class QuestionListPanel extends StatelessWidget {
       },
     );
   }
+}
 
+class _FlipInWidget extends StatefulWidget {
+  final int index;
+  final Duration duration;
+  final Widget child;
+
+  const _FlipInWidget({
+    super.key,
+    required this.index,
+    required this.duration,
+    required this.child,
+  });
+
+  @override
+  State<_FlipInWidget> createState() => _FlipInWidgetState();
+}
+
+class _FlipInWidgetState extends State<_FlipInWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
+    if (widget.duration > Duration.zero) {
+      Future.delayed(Duration(milliseconds: widget.index * 60), _controller.forward);
+    } else {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        final value = _animation.value;
+        final angle = (1.0 - value) * 1.5708;
+        return Transform(
+          alignment: Alignment.centerRight,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.001)
+            ..rotateY(angle),
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
+  }
 }

@@ -110,8 +110,12 @@ class AppTokens {
       ];
 
   static const Duration durationFast = Duration(milliseconds: 150);
+  static const Duration durationSm = Duration(milliseconds: 200);
   static const Duration durationMd = Duration(milliseconds: 300);
   static const Duration durationSlow = Duration(milliseconds: 500);
+
+  static const Curve curveDefault = Curves.easeOutCubic;
+  static const Curve curveInOut = Curves.easeInOutCubic;
 
   static EdgeInsets get paddingXs => const EdgeInsets.all(spacing2);
   static EdgeInsets get paddingSm => const EdgeInsets.all(spacing4);

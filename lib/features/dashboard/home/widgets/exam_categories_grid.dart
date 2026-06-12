@@ -22,6 +22,7 @@ class ExamCategoriesGrid extends StatelessWidget {
       children: [
         AnimatedWrapper(
           addAnimation: true,
+          delay: Duration.zero,
           child: Text(
             'الامتحانات',
             style: Theme.of(context).textTheme.titleMedium,

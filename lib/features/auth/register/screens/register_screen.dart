@@ -11,7 +11,7 @@ import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
-import 'package:arabilogia/features/auth/widgets/theme_toggle_button.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +25,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   int _currentStep = 0;
+  int _lastStep = 0;
   bool _isSuccess = false;
 
   final _emailController = TextEditingController();
@@ -51,11 +52,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _nextStep() {
     if (_currentStep == 0) {
       if (_formKey.currentState!.validate()) {
-        setState(() => _currentStep = 1);
+        setState(() { _lastStep = _currentStep; _currentStep = 1; });
       }
     } else if (_currentStep == 1) {
       if (_formKey.currentState!.validate()) {
-        setState(() => _currentStep = 2);
+        setState(() { _lastStep = _currentStep; _currentStep = 2; });
       }
     } else if (_currentStep == 2) {
       if (_formKey.currentState!.validate()) {
@@ -72,7 +73,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _previousStep() {
     if (_currentStep > 0) {
-      setState(() => _currentStep--);
+      setState(() { _lastStep = _currentStep; _currentStep--; });
     } else {
       context.go(AppRoutes.login);
     }
@@ -179,11 +180,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
             ),
-            const Positioned(
-              top: 0,
-              left: 0,
-              child: SafeArea(child: ThemeToggleButton()),
-            ),
+
           ],
         ),
       ),
@@ -215,24 +212,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SizedBox(height: AppTokens.spacing24),
           StepProgressIndicator(currentStep: _currentStep, totalSteps: 3),
           const SizedBox(height: AppTokens.spacing24),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.05, 0.0),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
+          Consumer<PotatoModeProvider>(
+            builder: (context, potato, _) {
+              final stepForward = _currentStep > _lastStep;
+              return AnimatedSwitcher(
+                duration: potato.animationsEnabled
+                    ? AppTokens.durationMd
+                    : Duration.zero,
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  if (!potato.animationsEnabled) return child;
+                  final beginAngle = stepForward ? -1.5708 : 1.5708;
+                  return AnimatedBuilder(
+                    animation: animation,
+                    builder: (context, _) {
+                      final value = Curves.easeOutCubic.transform(animation.value);
+                      final angle = beginAngle * (1.0 - value);
+                      return Transform(
+                        alignment: Alignment.center,
+                        transform: Matrix4.identity()
+                          ..setEntry(3, 2, 0.002)
+                          ..rotateY(angle),
+                        child: child,
+                      );
+                    },
+                  );
+                },
+                child: KeyedSubtree(
+                  key: ValueKey<int>(_currentStep),
+                  child: _buildStepContent(context),
                 ),
               );
             },
-            child: KeyedSubtree(
-              key: ValueKey<int>(_currentStep),
-              child: _buildStepContent(context),
-            ),
           ),
           const SizedBox(height: AppTokens.spacing24),
           RegistrationFooter(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 
 class PotatoSwitch extends StatelessWidget {
   final bool value;
@@ -26,6 +28,10 @@ class PotatoSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
+    final switchDuration = potato.animationsEnabled
+        ? AppTokens.durationFast
+        : Duration.zero;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeTrack = activeTrackColor ?? AppColors.primary;
     final inactiveTrack = inactiveTrackColor ?? (isDark ? Colors.grey.shade700 : Colors.grey.shade300);
@@ -42,7 +48,7 @@ class PotatoSwitch extends StatelessWidget {
         GestureDetector(
           onTap: onChanged != null ? () => onChanged!(!value) : null,
           child: AnimatedContainer(
-            duration: AppTokens.durationFast,
+            duration: switchDuration,
             width: w,
             height: h,
             decoration: BoxDecoration(
@@ -59,7 +65,7 @@ class PotatoSwitch extends StatelessWidget {
             child: Stack(
               children: [
                 AnimatedPositioned(
-                  duration: AppTokens.durationFast,
+                  duration: switchDuration,
                   left: value ? w - thumbSize - 4 : 4,
                   top: 4,
                   child: Container(
@@ -198,10 +204,14 @@ class _InlineSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
+    final switchDuration = potato.animationsEnabled
+        ? AppTokens.durationFast
+        : Duration.zero;
     return GestureDetector(
       onTap: onChanged != null ? () => onChanged!(!value) : null,
       child: AnimatedContainer(
-        duration: AppTokens.durationFast,
+        duration: switchDuration,
         width: 50,
         height: 28,
         decoration: BoxDecoration(
@@ -211,7 +221,7 @@ class _InlineSwitch extends StatelessWidget {
         child: Stack(
           children: [
             AnimatedPositioned(
-              duration: AppTokens.durationFast,
+              duration: switchDuration,
               left: value ? 26 : 4,
               top: 4,
               child: Container(

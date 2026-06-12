@@ -49,7 +49,7 @@ class InsetToggle extends StatelessWidget {
               if (animate)
                 AnimatedAlign(
                   duration: AppTokens.durationFast,
-                  curve: Curves.easeInOutCubic,
+                  curve: AppTokens.curveInOut,
                   alignment: value ? Alignment.centerLeft : Alignment.centerRight,
                   child: _slider(width, isDark, potato.shadowsEnabled),
                 )

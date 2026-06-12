@@ -46,6 +46,9 @@ class AuthProvider extends ChangeNotifier {
   AuthState _state = const AuthState();
   AuthState get state => _state;
 
+  String? _role;
+  String? get role => _role;
+
   int _imageViolationCount = 0;
   DateTime? _imageBlockedUntil;
   bool _hasBadTag = false;
@@ -76,7 +79,10 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (_auth!.currentSession != null) {
-        await loadViolationState();
+        await Future.wait([
+          loadViolationState(),
+          _loadRole(),
+        ]);
       }
 
       _auth!.onAuthStateChange.listen((event) {
@@ -87,11 +93,27 @@ class AuthProvider extends ChangeNotifier {
         );
         if (event.session != null) {
           loadViolationState();
+          _loadRole();
         }
         notifyListeners();
       });
     } catch (e) {
       debugPrint('AuthProvider initialization failed: $e');
+    }
+  }
+
+  Future<void> _loadRole() async {
+    try {
+      final user = _auth?.currentUser;
+      if (user == null) return;
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+      _role = response['role'] as String?;
+    } catch (e) {
+      _role = _state.user?.userMetadata?['role'] as String?;
     }
   }
 
@@ -633,16 +655,18 @@ class AuthProvider extends ChangeNotifier {
   Future<void> signOut() async {
     await _authClient.signOut();
     _state = const AuthState();
+    _role = null;
     notifyListeners();
   }
 
   bool get isTeacher {
-    final role = _state.user?.userMetadata?['role'] as String?;
+    final role = _state.user?.userMetadata?['role'] as String? ?? _role;
     return role == 'teacher' || role == 'admin';
   }
 
   bool get isAdmin {
-    return _state.user?.userMetadata?['role'] == 'admin';
+    final role = _state.user?.userMetadata?['role'] as String? ?? _role;
+    return role == 'admin';
   }
 
   Future<String?> getUserRole() async {

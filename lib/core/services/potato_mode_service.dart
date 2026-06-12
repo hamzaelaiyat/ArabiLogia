@@ -64,7 +64,7 @@ class PotatoModeConfig {
 
   static const potatoOff = PotatoModeConfig(
     level: PotatoLevel.off,
-    animationsEnabled: false,
+    animationsEnabled: true,
     transitionsEnabled: true,
     lazyLoadingEnabled: true,
     fancyUIAEnabled: true,

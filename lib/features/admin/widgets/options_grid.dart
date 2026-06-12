@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 
 class OptionsGrid extends StatelessWidget {
   final List<Option> options;
@@ -14,6 +16,10 @@ class OptionsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
+    final gridAnimDuration = potato.animationsEnabled
+        ? AppTokens.durationFast
+        : Duration.zero;
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -24,18 +30,18 @@ class OptionsGrid extends StatelessWidget {
         mainAxisSpacing: 16,
       ),
       itemCount: 4,
-      itemBuilder: (ctx, idx) => _buildOption(idx),
+      itemBuilder: (ctx, idx) => _buildOption(idx, gridAnimDuration),
     );
   }
 
-  Widget _buildOption(int idx) {
+  Widget _buildOption(int idx, Duration gridAnimDuration) {
     final opt = idx < options.length
         ? options[idx]
         : Option(id: 'o${idx + 1}', text: '', isCorrect: false);
     final isCorrect = opt.isCorrect;
     final correctIdx = options.indexWhere((o) => o.isCorrect);
     return AnimatedContainer(
-      duration: AppTokens.durationFast,
+      duration: gridAnimDuration,
       decoration: BoxDecoration(
         color: isCorrect
             ? Colors.green.withValues(alpha: 0.1)

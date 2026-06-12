@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 
 class QuestionOptionsEditor extends StatelessWidget {
   final List<TextEditingController> optionControllers;
@@ -120,6 +122,10 @@ class QuestionOptionsEditor extends StatelessWidget {
   }
 
   Widget _buildOptionRow(int optIndex, BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
+    final optionDuration = potato.animationsEnabled
+        ? AppTokens.durationSm
+        : Duration.zero;
     final labels = ['أ', 'ب', 'ج', 'د'];
     final label = optIndex < labels.length ? labels[optIndex] : '${optIndex + 1}';
     final option = options.length > optIndex ? options[optIndex] : null;
@@ -133,7 +139,7 @@ class QuestionOptionsEditor extends StatelessWidget {
           GestureDetector(
             onTap: () => onCorrectAnswerToggled(optIndex),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: optionDuration,
               width: 24,
               height: 24,
               decoration: BoxDecoration(

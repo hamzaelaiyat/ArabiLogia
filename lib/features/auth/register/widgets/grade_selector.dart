@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
+import 'package:arabilogia/providers/potato_mode_provider.dart';
 
 class GradeSelector extends StatelessWidget {
   final int? selectedGrade;
@@ -15,6 +17,10 @@ class GradeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final potato = context.watch<PotatoModeProvider>();
+    final animDuration = potato.animationsEnabled
+        ? AppTokens.durationSm
+        : Duration.zero;
     final List<Map<String, dynamic>> grades = [
       {
         'id': 10,
@@ -59,7 +65,7 @@ class GradeSelector extends StatelessWidget {
               onTap: () => onChanged(grade['id']),
               borderRadius: BorderRadius.circular(AppTokens.radiusFull),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: animDuration,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppTokens.spacing8,
                   vertical: AppTokens.spacing6,

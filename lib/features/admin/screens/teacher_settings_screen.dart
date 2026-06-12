@@ -336,6 +336,10 @@ class TeacherSettingsScreen extends StatelessWidget {
     required bool value,
     required Function(bool) onToggle,
   }) {
+    final potato = context.watch<PotatoModeProvider>();
+    final toggleDur = potato.animationsEnabled
+        ? AppTokens.durationFast
+        : Duration.zero;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: () => onToggle(!value),
@@ -367,7 +371,7 @@ class TeacherSettingsScreen extends StatelessWidget {
               child: Stack(
                 children: [
                   AnimatedPositioned(
-                    duration: const Duration(milliseconds: 150),
+                    duration: toggleDur,
                     left: value ? 26 : 4,
                     top: 4,
                     child: Container(

@@ -57,6 +57,18 @@ class ExamEditorMobileLayout extends StatelessWidget {
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: context.watch<PotatoModeProvider>().animationsEnabled ? AppTokens.durationFast : Duration.zero,
+                    transitionBuilder: (child, animation) {
+                      return ScaleTransition(
+                        scale: Tween<double>(
+                          begin: 0.9,
+                          end: 1.0,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                        )),
+                        child: child,
+                      );
+                    },
                     child: !state.isMobileSettingsMode
                         ? QuestionListPanel(
                             questions: state.questions,
