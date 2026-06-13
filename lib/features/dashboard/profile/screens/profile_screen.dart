@@ -106,69 +106,78 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
 
     // Platform-specific cropping: use image_cropper for Android/iOS/Web, auto-center-crop for desktop
     final isDesktop = Platform.isLinux || Platform.isWindows || Platform.isMacOS;
-    if (!isDesktop) {
-      // Crop to 1:1 aspect ratio using native cropper
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: image.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        compressFormat: ImageCompressFormat.jpg,
-        compressQuality: 90,
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'اقتصاص الصورة',
-            toolbarColor: Colors.white,
-            toolbarWidgetColor: Colors.black,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-          ),
-          IOSUiSettings(
-            title: 'اقتصاص الصورة',
-            aspectRatioLockEnabled: true,
-          ),
-          WebUiSettings(
-            context: context,
-            presentStyle: WebPresentStyle.dialog,
-            size: const CropperSize(width: 520, height: 520),
-            initialAspectRatio: 1,
-            checkOrientation: true,
-            rotatable: true,
-            scalable: true,
-            zoomable: true,
-          ),
-        ],
-      );
-
-      if (croppedFile == null) return;
-      imagePath = croppedFile.path;
-    } else {
-      // Desktop: auto center-crop to 1:1
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('جاري تجهيز الصورة...')),
+    try {
+      if (!isDesktop) {
+        // Crop to 1:1 aspect ratio using native cropper
+        final croppedFile = await ImageCropper().cropImage(
+          sourcePath: image.path,
+          aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+          compressFormat: ImageCompressFormat.jpg,
+          compressQuality: 90,
+          uiSettings: [
+            AndroidUiSettings(
+              toolbarTitle: 'اقتصاص الصورة',
+              toolbarColor: Colors.white,
+              toolbarWidgetColor: Colors.black,
+              initAspectRatio: CropAspectRatioPreset.square,
+              lockAspectRatio: true,
+            ),
+            IOSUiSettings(
+              title: 'اقتصاص الصورة',
+              aspectRatioLockEnabled: true,
+            ),
+            WebUiSettings(
+              context: context,
+              presentStyle: WebPresentStyle.dialog,
+              size: const CropperSize(width: 520, height: 520),
+              initialAspectRatio: 1,
+              checkOrientation: true,
+              rotatable: true,
+              scalable: true,
+              zoomable: true,
+            ),
+          ],
         );
-      }
-      final file = File(image.path);
-      final originalBytes = await file.readAsBytes();
-      final decoded = img.decodeImage(originalBytes);
-      if (decoded == null) {
+
+        if (croppedFile == null) return;
+        imagePath = croppedFile.path;
+      } else {
+        // Desktop: auto center-crop to 1:1
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('غير قادر على قراءة الصورة')),
+            const SnackBar(content: Text('جاري تجهيز الصورة...')),
           );
         }
-        return;
+        final file = File(image.path);
+        final originalBytes = await file.readAsBytes();
+        final decoded = img.decodeImage(originalBytes);
+        if (decoded == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('غير قادر على قراءة الصورة')),
+            );
+          }
+          return;
+        }
+        // Center crop to 1:1
+        final size = decoded.width < decoded.height ? decoded.width : decoded.height;
+        final x = (decoded.width - size) ~/ 2;
+        final y = (decoded.height - size) ~/ 2;
+        final cropped = img.copyCrop(decoded, x: x, y: y, width: size, height: size);
+        final croppedBytes = Uint8List.fromList(img.encodeJpg(cropped, quality: 90));
+        // Save to temp file
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File('${tempDir.path}/cropped_${DateTime.now().millisecondsSinceEpoch}.jpg');
+        await tempFile.writeAsBytes(croppedBytes);
+        imagePath = tempFile.path;
       }
-      // Center crop to 1:1
-      final size = decoded.width < decoded.height ? decoded.width : decoded.height;
-      final x = (decoded.width - size) ~/ 2;
-      final y = (decoded.height - size) ~/ 2;
-      final cropped = img.copyCrop(decoded, x: x, y: y, width: size, height: size);
-      final croppedBytes = Uint8List.fromList(img.encodeJpg(cropped, quality: 90));
-      // Save to temp file
-      final tempDir = await getTemporaryDirectory();
-      final tempFile = File('${tempDir.path}/cropped_${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await tempFile.writeAsBytes(croppedBytes);
-      imagePath = tempFile.path;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل اقتصاص الصورة: ${e.toString()}')),
+        );
+      }
+      return;
     }
 
     setState(() => _isUploading = true);

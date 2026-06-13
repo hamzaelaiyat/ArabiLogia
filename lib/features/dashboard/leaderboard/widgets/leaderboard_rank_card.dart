@@ -49,7 +49,7 @@ class LeaderboardRankCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppTokens.spacing8),
       child: Card(
         color: isMe ? AppColors.primary.withValues(alpha: 0.05) : null,
-        elevation: isMe ? AppTokens.elevationMd : AppTokens.elevationSm,
+        elevation: isMe ? AppTokens.elevationNone : AppTokens.elevationSm,
         shape: isMe
             ? RoundedRectangleBorder(
                 side: BorderSide(

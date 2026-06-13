@@ -25,6 +25,10 @@
 -dontwarn com.google.android.gms.ads.**
 -dontwarn com.google.ads.**
 
+# uCrop (image_cropper native library)
+-keep class com.yalantis.ucrop** { *; }
+-keep interface com.yalantis.ucrop** { *; }
+
 # General Android rules
 -keepattributes *Annotation*
 -keepattributes SourceFile,LineNumberTable
