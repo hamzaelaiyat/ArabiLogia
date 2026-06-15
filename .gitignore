@@ -19,6 +19,30 @@ node_modules/
 .env.local
 .env.*.local
 
+# Private features (not open source)
+lib/features/admin/
+lib/features/legal/
+lib/features/reusables/
+
+# Backend & infrastructure
+supabase/
+scripts/
+deploy.sh
+docs/
+release_notes*.md
+
+# Vercel
+.vercel/
+vercel.json
+.vercelignore
+
+# Node (used by supabase functions)
+package.json
+package-lock.json
+
+# Flutter metadata
+.metadata
+
 # AI/Assistant artifacts
 AGENT.md
 AGENTS.md
