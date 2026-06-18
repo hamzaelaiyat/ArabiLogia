@@ -1,21 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
-import 'package:arabilogia/core/theme/app_tokens.dart';
-import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
+import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_session.dart';
-import 'package:arabilogia/features/dashboard/exams/models/question_style.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/services/exam_session_service.dart';
 import 'package:arabilogia/providers/exam_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:arabilogia/features/dashboard/exams/utils/score_calculator.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/exam_interaction_body.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_timer.dart';
-import 'package:arabilogia/features/dashboard/exams/widgets/question_passage.dart';
-import 'package:arabilogia/features/dashboard/exams/widgets/question_option_tile.dart';
-import 'package:arabilogia/features/dashboard/exams/widgets/exam_navigation_bar.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exit_confirmation_dialog.dart';
 
 class ExamInteractionScreen extends StatefulWidget {
@@ -46,7 +43,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
   bool _isSubmitting = false;
   bool _isFirstAttempt = true;
   bool _isRestoredSession = false;
-  bool _wasInBackground = false;
+  DateTime? _backgroundTimestamp;
 
   @override
   void initState() {
@@ -60,11 +57,11 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.paused) {
-      _wasInBackground = true;
+      _backgroundTimestamp = DateTime.now();
       _saveSession();
     } else if (state == AppLifecycleState.resumed) {
-      if (_wasInBackground && _exam != null) {
-        _checkTimeExpiredWhileAway();
+      if (_backgroundTimestamp != null && _exam != null) {
+        _deductBackgroundTime();
       }
     }
   }
@@ -84,12 +81,15 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     await _sessionService.saveSession(session);
   }
 
-  void _checkTimeExpiredWhileAway() {
-    final remaining = _timerNotifier.value;
-    if (remaining <= 0) {
+  void _deductBackgroundTime() {
+    final elapsed = DateTime.now().difference(_backgroundTimestamp!).inSeconds;
+    _backgroundTimestamp = null;
+    if (elapsed > 0) {
+      _timerNotifier.value = (_timerNotifier.value - elapsed).clamp(0, _timerNotifier.value);
+    }
+    if (_timerNotifier.value <= 0) {
       _submitExam();
     }
-    _wasInBackground = false;
   }
 
   Future<void> _loadExam() async {
@@ -150,30 +150,18 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 
-    int correctCount = 0;
-    final List<String> wrongAnswers = [];
-    for (int i = 0; i < _exam!.questions.length; i++) {
-      final question = _exam!.questions[i];
-      final selectedId = _selectedAnswers[i];
-      final correctOption = question.options.firstWhere((o) => o.isCorrect);
-      if (selectedId == correctOption.id) {
-        correctCount++;
-      } else {
-        wrongAnswers.add(question.id);
-      }
-    }
+    final scoreResult = calculateScore(
+      questions: _exam!.questions,
+      selectedAnswers: _selectedAnswers,
+      remainingSeconds: _timerNotifier.value,
+      totalDurationSeconds: (_exam!.durationMinutes ?? 30) * 60,
+    );
 
-    final totalCount = _exam!.questions.length;
-    final accuracy = (correctCount / totalCount) * 100;
-
-    double speedBonus = 0;
-    if (accuracy >= 60) {
-      final totalSeconds = (_exam!.durationMinutes ?? 30) * 60;
-      final remainingSeconds = _timerNotifier.value;
-      speedBonus = (remainingSeconds / totalSeconds) * 10;
-    }
-
-    final finalScore = (accuracy + speedBonus).clamp(0.0, 100.0);
+    final correctCount = scoreResult.correctCount;
+    final accuracy = scoreResult.accuracy;
+    final speedBonus = scoreResult.speedBonus;
+    final finalScore = scoreResult.finalScore;
+    final wrongAnswers = scoreResult.wrongAnswers;
 
     try {
       await _scoreRepository
@@ -181,12 +169,12 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
             examId: widget.examId,
             subject: widget.subjectName,
             score: finalScore,
+            points: correctCount,
             wrongAnswers: wrongAnswers,
             isCompleted: true,
           )
           .timeout(const Duration(seconds: 10));
     } catch (e) {
-      debugPrint('Score Submission Error: $e');
     }
 
     if (!mounted) return;
@@ -210,34 +198,15 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
   }
 
   Future<void> _submitAbandonedExam() async {
-    int answered = 0;
-    int correctCount = 0;
-    final List<String> wrongAnswers = [];
-
-    for (int i = 0; i < _exam!.questions.length; i++) {
-      if (_selectedAnswers.containsKey(i)) {
-        answered++;
-        final selectedOptionId = _selectedAnswers[i];
-        final correctOption = _exam!.questions[i].options.firstWhere(
-          (o) => o.isCorrect,
-        );
-        if (selectedOptionId == correctOption.id) {
-          correctCount++;
-        } else {
-          wrongAnswers.add(_exam!.questions[i].id);
-        }
-      }
-    }
-
-    final accuracy = _exam!.questions.isEmpty
-        ? 0.0
-        : ((correctCount / _exam!.questions.length) * 100);
-
-    final finalScore = accuracy.clamp(0.0, 100.0);
-
-    debugPrint(
-      'Submitting abandoned exam: answered $answered/${_exam!.questions.length}, score $finalScore',
+    final scoreResult = calculateScore(
+      questions: _exam!.questions,
+      selectedAnswers: _selectedAnswers,
     );
+
+    final correctCount = scoreResult.correctCount;
+    final accuracy = scoreResult.accuracy;
+    final finalScore = scoreResult.finalScore;
+    final wrongAnswers = scoreResult.wrongAnswers;
 
     try {
       await _scoreRepository
@@ -245,12 +214,12 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
             examId: widget.examId,
             subject: widget.subjectName,
             score: finalScore,
+            points: correctCount,
             wrongAnswers: wrongAnswers,
             isCompleted: false,
           )
           .timeout(const Duration(seconds: 10));
     } catch (e) {
-      debugPrint('Abandoned Score Submission Error: $e');
     }
   }
 
@@ -267,7 +236,6 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final currentQuestion = _exam!.questions[_currentQuestionIndex];
     final progress = (_currentQuestionIndex + 1) / _exam!.questions.length;
     final category = CategoryMetadata.getByName(_exam!.subject);
     final categoryColor = category?.color ?? AppColors.primary;
@@ -299,113 +267,36 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
               ExamTimer(timerNotifier: _timerNotifier, onTimerEnd: _submitExam),
             ],
           ),
-          body: Column(
-            children: [
-              LinearProgressIndicator(
-                value: progress,
-                backgroundColor: AppColors.surface(context),
-                valueColor: AlwaysStoppedAnimation<Color>(categoryColor),
-                minHeight: 6,
-              ),
-              Expanded(
-                child: Column(
-                  children: [
-                    if (currentQuestion.passage != null)
-                      Expanded(
-                        flex: 2,
-                        child: QuestionPassage(
-                          passage: currentQuestion.passage!,
-                          categoryColor: categoryColor,
-                        ),
-                      ),
-                    if (currentQuestion.passage != null)
-                      const SizedBox(height: AppTokens.spacing16),
-
-                    Expanded(
-                      flex: 3,
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'السؤال ${_currentQuestionIndex + 1} من ${_exam!.questions.length}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: AppColors.mutedColor(context),
-                                  ),
-                            ),
-                            const SizedBox(height: AppTokens.spacing8),
-                            RichText(
-                              text: TextSpan(
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                children: parseQuestionText(
-                                  currentQuestion.text,
-                                  isDark: Theme.of(context).brightness ==
-                                      Brightness.dark,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: AppTokens.spacing24),
-
-                            ...currentQuestion.options.map((option) {
-                              final isSelected =
-                                  _selectedAnswers[_currentQuestionIndex] ==
-                                      option.id;
-                              return QuestionOptionTile(
-                                option: option,
-                                isSelected: isSelected,
-                                categoryColor: categoryColor,
-                                onTap: () {
-                                  setState(() {
-                                    _selectedAnswers[_currentQuestionIndex] =
-                                        option.id;
-                                  });
-                                  _saveSession();
-                                },
-                              );
-                            }),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              ExamNavigationBar(
-                currentQuestionIndex: _currentQuestionIndex,
-                totalQuestions: _exam!.questions.length,
-                onPrevious: _currentQuestionIndex > 0
-                    ? () {
-                        setState(() {
-                          _currentQuestionIndex--;
-                        });
-                      }
-                    : null,
-                onNext: () {
-                  if (_currentQuestionIndex <
-                      _exam!.questions.length - 1) {
+          body: ExamInteractionBody(
+            exam: _exam!,
+            currentQuestionIndex: _currentQuestionIndex,
+            selectedAnswers: _selectedAnswers,
+            categoryColor: categoryColor,
+            progress: progress,
+            isSubmitting: _isSubmitting,
+            onOptionSelected: (index, optionId) {
+              setState(() {
+                _selectedAnswers[index] = optionId;
+              });
+            },
+            onSaveSession: _saveSession,
+            onPrevious: _currentQuestionIndex > 0
+                ? () {
                     setState(() {
-                      _currentQuestionIndex++;
+                      _currentQuestionIndex--;
                     });
-                  } else {
-                    if (!_isSubmitting) _submitExam();
                   }
-                },
-                isSubmitting: _isSubmitting,
-                hasSelectedAnswer:
-                    _selectedAnswers[_currentQuestionIndex] != null,
-                categoryColor: categoryColor,
-              ),
-            ],
+                : null,
+            onNext: () {
+              if (_currentQuestionIndex <
+                  _exam!.questions.length - 1) {
+                setState(() {
+                  _currentQuestionIndex++;
+                });
+              } else {
+                if (!_isSubmitting) _submitExam();
+              }
+            },
           ),
         ),
       ),

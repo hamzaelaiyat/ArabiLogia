@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AnonymousNameGenerator {
@@ -71,7 +70,6 @@ class AnonymousNameGenerator {
         final exists = await supabase.rpc('check_random_name_exists', params: {'name': name});
         if (exists == false) return name;
       } catch (e) {
-        debugPrint('AnonymousNameGenerator error: $e');
         rethrow;
       }
     }

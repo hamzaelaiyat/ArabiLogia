@@ -35,7 +35,7 @@ class ExamInstructionsSection extends StatelessWidget {
         _buildInstructionItem(context, 'تأكد من استقرار اتصال الإنترنت.'),
         _buildInstructionItem(
           context,
-          'لديك $durationMinutes دقيقة فقط لإنهاء الاختبار.',
+          'لديك ${durationMinutes ?? 30} دقيقة فقط لإنهاء الاختبار.',
         ),
         _buildInstructionItem(
           context,

@@ -269,17 +269,17 @@ class DarkTheme {
         fontWeight: FontWeight.w600,
         color: fg,
       ),
-      bodyLarge: GoogleFonts.rubik(
+      bodyLarge: GoogleFonts.getFont('Vazirmatn',
         fontSize: AppTokens.fontSizeLg,
         fontWeight: FontWeight.normal,
         color: fg,
       ),
-      bodyMedium: GoogleFonts.rubik(
+      bodyMedium: GoogleFonts.getFont('Vazirmatn',
         fontSize: AppTokens.fontSizeMd,
         fontWeight: FontWeight.normal,
         color: fg,
       ),
-      bodySmall: GoogleFonts.rubik(
+      bodySmall: GoogleFonts.getFont('Vazirmatn',
         fontSize: AppTokens.fontSizeXs,
         fontWeight: FontWeight.normal,
         color: muted,

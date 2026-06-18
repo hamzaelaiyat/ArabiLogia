@@ -9,6 +9,7 @@ import 'package:arabilogia/features/dashboard/exams/repositories/score_repositor
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_card.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_empty_state.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_error_state.dart';
+import 'package:arabilogia/core/widgets/skeletons.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/core/services/potato_mode_service.dart';
 import 'package:go_router/go_router.dart';
@@ -174,7 +175,10 @@ class _ExamsScreenState extends State<ExamsScreen>
     final error = _errorByTab[tabIndex];
 
     if (isLoading && exams.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return ListSkeleton(
+        itemCount: 6,
+        itemBuilder: () => const ExamCardSkeleton(),
+      );
     }
 
     if (error != null) {

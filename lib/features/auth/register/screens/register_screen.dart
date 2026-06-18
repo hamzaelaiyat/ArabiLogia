@@ -27,6 +27,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int _currentStep = 0;
   int _lastStep = 0;
   bool _isSuccess = false;
+  bool _showSuccess = false;
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -97,7 +98,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     if (success && mounted) {
-      setState(() => _isSuccess = true);
+      setState(() => _showSuccess = true);
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted) {
+        setState(() {
+          _showSuccess = false;
+          _isSuccess = true;
+        });
+      }
     }
   }
 
@@ -251,8 +259,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             isFirstStep: _currentStep == 0,
             isLastStep: _currentStep == 2,
             isLoading: authProvider.state.isLoading,
+            showSuccess: _showSuccess,
           ),
-          if (authProvider.state.error != null)
+          if (authProvider.state.error != null && authProvider.state.fieldErrors.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: AppTokens.spacing4),
               child: Text(
@@ -312,6 +321,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildStepContent(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final fieldErrors = authProvider.state.fieldErrors;
     switch (_currentStep) {
       case 0:
         return AccountStepForm(
@@ -324,11 +335,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               setState(() => _obscurePassword = !_obscurePassword),
           onToggleConfirmPasswordVisibility: () =>
               setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+          fieldErrors: fieldErrors,
         );
       case 1:
         return ProfileStepForm(
           fullNameController: _fullNameController,
           usernameController: _usernameController,
+          fieldErrors: fieldErrors,
         );
       case 2:
         return GradeStepForm(
@@ -337,6 +350,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           termsAccepted: _termsAccepted,
           onTermsChanged: (val) =>
               setState(() => _termsAccepted = val ?? false),
+          fieldErrors: fieldErrors,
         );
       default:
         return const SizedBox.shrink();

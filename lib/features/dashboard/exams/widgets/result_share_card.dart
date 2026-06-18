@@ -78,7 +78,7 @@ class ResultShareCard extends StatelessWidget {
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 10,
-                            fontFamily: 'Rubik',
+                            fontFamily: 'Vazirmatn',
                           ),
                         ),
                       ],
@@ -143,7 +143,7 @@ class ResultShareCard extends StatelessWidget {
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 10,
-                            fontFamily: 'Rubik',
+                            fontFamily: 'Vazirmatn',
                           ),
                         ),
                       ],
@@ -188,16 +188,15 @@ class ResultShareCard extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white54,
                     fontSize: 12,
-                    fontFamily: 'Rubik',
+                    fontFamily: 'Vazirmatn',
                   ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
+      );
+    }
+  );
+}
 
   Widget _buildMiniStat(String label, String value) {
     return Column(
@@ -216,7 +215,7 @@ class ResultShareCard extends StatelessWidget {
           style: const TextStyle(
             color: Colors.white54,
             fontSize: 10,
-            fontFamily: 'Rubik',
+            fontFamily: 'Vazirmatn',
           ),
         ),
       ],

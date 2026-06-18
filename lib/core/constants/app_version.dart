@@ -28,6 +28,8 @@ class AppVersion {
       _cachedBuildNumber = '1';
     }
 
+    _cachedVersion ??= '2.8.0-b';
+    _cachedBuildNumber ??= '1';
     return _cachedVersion!;
   }
 

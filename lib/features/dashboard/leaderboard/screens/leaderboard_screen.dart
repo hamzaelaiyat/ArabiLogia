@@ -6,6 +6,7 @@ import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
+import 'package:arabilogia/core/widgets/skeletons.dart';
 import 'package:provider/provider.dart';
 import '../widgets/leaderboard_empty_state.dart';
 import '../widgets/leaderboard_filters.dart';
@@ -104,7 +105,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             ),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? ListSkeleton(
+                      itemCount: 8,
+                      itemBuilder: () => const LeaderboardRowSkeleton(),
+                    )
                   : filteredLeaders.isEmpty
                   ? const LeaderboardEmptyState()
                   : PotatoModeWrapper(

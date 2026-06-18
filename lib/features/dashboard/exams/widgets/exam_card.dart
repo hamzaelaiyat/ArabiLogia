@@ -69,7 +69,7 @@ class ExamCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${exam['duration']} دقيقة',
+                            '${exam['duration'] ?? 30} دقيقة',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],

@@ -10,7 +10,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../widgets/login_header.dart';
 import '../widgets/login_button.dart';
-import '../widgets/login_error_banner.dart';
 import '../widgets/login_footer.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -25,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _showSuccess = false;
 
   @override
   void dispose() {
@@ -43,7 +43,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await authProvider.signIn(email, password);
 
     if (success && mounted) {
-      // After login, get the user role to determine redirect target
+      setState(() => _showSuccess = true);
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (!mounted) return;
+      setState(() => _showSuccess = false);
       final role = await authProvider.getUserRole();
       if (role == 'admin' || role == 'teacher') {
         context.go(AppRoutes.teacherPanel);
@@ -131,6 +134,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final isMobile = AppTokens.isMobile(context);
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = colorScheme.brightness == Brightness.dark;
+    final auth = context.watch<AuthProvider>();
+    final fieldErrors = auth.state.fieldErrors;
 
     final solidInputDecoration = InputDecoration(
       filled: true,
@@ -185,6 +190,30 @@ class _LoginScreenState extends State<LoginScreen> {
               return null;
             },
           ),
+          if (fieldErrors.containsKey('email')) ...[
+            const SizedBox(height: 4),
+            Text(
+              fieldErrors['email']!,
+              style: TextStyle(color: colorScheme.error, fontSize: 12),
+            ),
+            if (fieldErrors['email'] == 'يرجى تأكيد البريد الإلكتروني')
+              TextButton(
+                onPressed: () => _handleResendVerification(auth),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'إعادة إرسال رمز التفعيل',
+                  style: TextStyle(
+                    color: Color(0xFFEB8A00),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
           const SizedBox(height: AppTokens.spacing12),
           TextFormField(
             controller: _passwordController,
@@ -216,6 +245,14 @@ class _LoginScreenState extends State<LoginScreen> {
               return null;
             },
           ),
+          if (fieldErrors.containsKey('password'))
+            Padding(
+              padding: const EdgeInsets.only(top: 4, right: 16),
+              child: Text(
+                fieldErrors['password']!,
+                style: TextStyle(color: colorScheme.error, fontSize: 12),
+              ),
+            ),
           const SizedBox(height: AppTokens.spacing8),
           Align(
             alignment: Alignment.centerLeft,
@@ -231,26 +268,24 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: AppTokens.spacing20),
-          Consumer<AuthProvider>(
-            builder: (context, auth, child) {
-              return Column(
-                children: [
-                  LoginButton(
-                    isLoading: auth.state.isLoading,
-                    onPressed: _handleLogin,
-                  ),
-                  if (auth.state.error != null)
-                    LoginErrorBanner(
-                      error: auth.state.error!,
-                      onResendVerification: auth.state.error ==
-                              'يرجى تأكيد البريد الإلكتروني'
-                          ? () => _handleResendVerification(auth)
-                          : null,
-                    ),
-                ],
-              );
-            },
+          LoginButton(
+            isLoading: auth.state.isLoading,
+            showSuccess: _showSuccess,
+            onPressed: _handleLogin,
           ),
+          if (auth.state.error != null && fieldErrors.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: AppTokens.spacing8),
+              child: Text(
+                auth.state.error!,
+                style: const TextStyle(
+                  color: Color(0xFFD32F2F),
+                  fontWeight: FontWeight.bold,
+                  fontSize: AppTokens.fontSizeSm,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           const SizedBox(height: AppTokens.spacing12),
           const LoginFooter(),
         ],

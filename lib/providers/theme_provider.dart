@@ -76,6 +76,20 @@ class ThemeProvider extends ChangeNotifier {
     return _themeMode == ThemeMode.dark;
   }
 
+  void toggleTheme() {
+    switch (_themeMode) {
+      case ThemeMode.dark:
+        setThemeMode(ThemeModeOption.light);
+        break;
+      case ThemeMode.light:
+        setThemeMode(ThemeModeOption.dark);
+        break;
+      case ThemeMode.system:
+        setThemeMode(ThemeModeOption.dark);
+        break;
+    }
+  }
+
   Color backgroundColor(BuildContext context) => AppColors.background(context);
   Color foregroundColor(BuildContext context) => AppColors.foreground(context);
   Color surfaceColor(BuildContext context) => AppColors.surface(context);

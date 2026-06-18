@@ -12,6 +12,7 @@ class AccountStepForm extends StatelessWidget {
   final bool obscureConfirmPassword;
   final VoidCallback onTogglePasswordVisibility;
   final VoidCallback onToggleConfirmPasswordVisibility;
+  final Map<String, String> fieldErrors;
 
   const AccountStepForm({
     super.key,
@@ -22,10 +23,12 @@ class AccountStepForm extends StatelessWidget {
     required this.obscureConfirmPassword,
     required this.onTogglePasswordVisibility,
     required this.onToggleConfirmPasswordVisibility,
+    this.fieldErrors = const {},
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         const StepHeader(
@@ -48,6 +51,14 @@ class AccountStepForm extends StatelessWidget {
             return null;
           },
         ),
+        if (fieldErrors.containsKey('email'))
+          Padding(
+            padding: const EdgeInsets.only(top: 4, right: 16),
+            child: Text(
+              fieldErrors['email']!,
+              style: TextStyle(color: colorScheme.error, fontSize: 12),
+            ),
+          ),
         const SizedBox(height: AppTokens.spacing12),
         AuthTextField(
           controller: passwordController,
@@ -66,6 +77,14 @@ class AccountStepForm extends StatelessWidget {
             return null;
           },
         ),
+        if (fieldErrors.containsKey('password'))
+          Padding(
+            padding: const EdgeInsets.only(top: 4, right: 16),
+            child: Text(
+              fieldErrors['password']!,
+              style: TextStyle(color: colorScheme.error, fontSize: 12),
+            ),
+          ),
         const SizedBox(height: AppTokens.spacing12),
         AuthTextField(
           controller: confirmPasswordController,

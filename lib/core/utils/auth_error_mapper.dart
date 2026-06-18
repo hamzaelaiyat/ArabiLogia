@@ -29,6 +29,28 @@ String getArabicStorageError(Object error) {
   return 'حدث خطأ في رفع الملف';
 }
 
+class FieldError {
+  final String? field;
+  final String message;
+
+  const FieldError({this.field, required this.message});
+}
+
+FieldError getArabicAuthFieldError(String message) {
+  if (message.contains('Invalid login credentials')) {
+    return const FieldError(message: 'بيانات الدخول غير صحيحة');
+  } else if (message.contains('Email not confirmed')) {
+    return const FieldError(field: 'email', message: 'يرجى تأكيد البريد الإلكتروني');
+  } else if (message.contains('User already registered')) {
+    return const FieldError(field: 'email', message: 'البريد الإلكتروني مستخدم بالفعل');
+  } else if (message.contains('Password should be at least')) {
+    return const FieldError(field: 'password', message: 'كلمة المرور ضعيفة جداً');
+  } else if (message.contains('Invalid email')) {
+    return const FieldError(field: 'email', message: 'البريد الإلكتروني غير صالح');
+  }
+  return FieldError(message: message);
+}
+
 String getArabicDbError(String message) {
   if (message.contains('42703')) {
     return 'خطأ في قاعدة البيانات: الحقل غير موجود';

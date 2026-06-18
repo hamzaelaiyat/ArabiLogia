@@ -9,6 +9,7 @@ class GradeStepForm extends StatelessWidget {
   final ValueChanged<int?> onGradeChanged;
   final bool termsAccepted;
   final ValueChanged<bool?> onTermsChanged;
+  final Map<String, String> fieldErrors;
 
   const GradeStepForm({
     super.key,
@@ -16,10 +17,12 @@ class GradeStepForm extends StatelessWidget {
     required this.onGradeChanged,
     required this.termsAccepted,
     required this.onTermsChanged,
+    this.fieldErrors = const {},
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         const StepHeader(
@@ -36,6 +39,15 @@ class GradeStepForm extends StatelessWidget {
           value: termsAccepted,
           onChanged: onTermsChanged,
         ),
+        if (fieldErrors.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              fieldErrors.values.join('\n'),
+              style: TextStyle(color: colorScheme.error, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ),
       ],
     );
   }

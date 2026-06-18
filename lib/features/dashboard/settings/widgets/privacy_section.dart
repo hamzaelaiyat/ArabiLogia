@@ -44,7 +44,6 @@ class _PrivacySectionState extends State<PrivacySection> {
         });
       }
     } catch (e) {
-      debugPrint('PrivacySection load error: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -83,7 +82,6 @@ class _PrivacySectionState extends State<PrivacySection> {
         await _loadProfile();
       }
     } catch (e) {
-      debugPrint('PrivacySection save error: $e');
       if (mounted) {
         await _loadProfile();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -155,7 +153,6 @@ class _PrivacySectionState extends State<PrivacySection> {
                               setState(() => _hideName = true);
                               await _saveToDb(hideName: true, randomName: name);
                             } catch (e) {
-                              debugPrint('Name generation failed: $e');
                               setState(() => _hideName = false);
                             }
                           } else {
@@ -188,21 +185,30 @@ class _PrivacySectionState extends State<PrivacySection> {
         child: InkWell(
           onTap: () => onChanged(!value),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(icon, size: 22, color: AppColors.primary),
-                const SizedBox(width: 16),
+                Icon(icon, size: 20, color: AppColors.primary),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: AppTokens.fontSizeMd,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: const TextStyle(
+                                fontSize: AppTokens.fontSizeMd,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _CustomSwitch(value: value, onChanged: onChanged),
+                        ],
                       ),
                       if (subtitle != null) ...[
                         const SizedBox(height: 2),
@@ -217,8 +223,6 @@ class _PrivacySectionState extends State<PrivacySection> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
-                _CustomSwitch(value: value, onChanged: onChanged),
               ],
             ),
           ),

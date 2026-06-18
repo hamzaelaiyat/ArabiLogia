@@ -7,15 +7,18 @@ import 'package:arabilogia/features/auth/register/widgets/step_header.dart';
 class ProfileStepForm extends StatelessWidget {
   final TextEditingController fullNameController;
   final TextEditingController usernameController;
+  final Map<String, String> fieldErrors;
 
   const ProfileStepForm({
     super.key,
     required this.fullNameController,
     required this.usernameController,
+    this.fieldErrors = const {},
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         const StepHeader(title: 'البيانات الشخصية', icon: Icons.badge_outlined),
@@ -64,6 +67,14 @@ class ProfileStepForm extends StatelessWidget {
             return null;
           },
         ),
+        if (fieldErrors.containsKey('username'))
+          Padding(
+            padding: const EdgeInsets.only(top: 4, right: 16),
+            child: Text(
+              fieldErrors['username']!,
+              style: TextStyle(color: colorScheme.error, fontSize: 12),
+            ),
+          ),
       ],
     );
   }

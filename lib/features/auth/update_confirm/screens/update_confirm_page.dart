@@ -117,10 +117,8 @@ class _UpdateConfirmPageState extends State<UpdateConfirmPage> {
         _fallbackToBrowser();
       }
     } on PlatformException catch (e) {
-      debugPrint('DownloadManager error: ${e.message}');
       _fallbackToBrowser();
     } catch (e) {
-      debugPrint('Download error: $e');
       _fallbackToBrowser();
     }
   }
@@ -159,7 +157,6 @@ class _UpdateConfirmPageState extends State<UpdateConfirmPage> {
           }
         }
       } catch (e) {
-        debugPrint('Progress check error: $e');
       }
     });
   }
@@ -308,7 +305,6 @@ class _UpdateConfirmPageState extends State<UpdateConfirmPage> {
         widget.update.releaseNotes,
       );
     } catch (e) {
-      debugPrint('Windows download error: $e');
       setState(() => _status = 'فشل: $e');
       _showDownloadError(e.toString());
     }
@@ -333,10 +329,8 @@ class _UpdateConfirmPageState extends State<UpdateConfirmPage> {
         '',
         installerPath,
       ]);
-      debugPrint('Installer started: ${result.exitCode}');
       return result.exitCode == 0;
     } catch (e) {
-      debugPrint('Failed to run installer: $e');
       return false;
     }
   }
@@ -449,7 +443,6 @@ class _UpdateConfirmPageState extends State<UpdateConfirmPage> {
         widget.update.releaseNotes,
       );
     } catch (e) {
-      debugPrint('Linux download error: $e');
       setState(() => _status = 'فشل: $e');
       _showDownloadError(e.toString());
     }
@@ -482,7 +475,6 @@ class _UpdateConfirmPageState extends State<UpdateConfirmPage> {
     try {
       await Process.run('chmod', ['+x', appImagePath]);
     } catch (e) {
-      debugPrint('Failed to make AppImage executable: $e');
     }
   }
 

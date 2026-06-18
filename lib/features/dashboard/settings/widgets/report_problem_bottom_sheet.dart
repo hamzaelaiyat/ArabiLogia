@@ -97,7 +97,6 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
             supabase.storage.from('reports').getPublicUrl(fileName);
         uploadedUrls.add(publicUrl);
       } catch (e) {
-        debugPrint('Failed to upload attachment: $e');
       }
     }
 

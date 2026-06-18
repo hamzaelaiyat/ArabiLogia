@@ -28,7 +28,7 @@ class ExamStatsRow extends StatelessWidget {
         const SizedBox(width: AppTokens.spacing16),
         _buildStatItem(
           context,
-          '$durationMinutes',
+          '${durationMinutes ?? 30}',
           'دقيقة',
           Icons.timer_outlined,
         ),

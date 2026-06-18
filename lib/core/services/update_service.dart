@@ -67,7 +67,6 @@ class UpdateService {
     final now = DateTime.now().millisecondsSinceEpoch;
 
     if (now - lastCheck < _minCheckInterval.inMilliseconds) {
-      debugPrint('UpdateService: Skipping check - within cooldown');
       return;
     }
 
@@ -100,7 +99,6 @@ class UpdateService {
           .timeout(const Duration(seconds: 30));
 
       if (response.statusCode != 200) {
-        debugPrint('UpdateService: Failed to check - ${response.statusCode}');
         return;
       }
 
@@ -121,13 +119,11 @@ class UpdateService {
       final targetAsset = _findBestApk(assets, Platform.operatingSystem);
 
       if (targetAsset == null) {
-        debugPrint('UpdateService: No suitable APK found');
         return;
       }
 
       // Check if update is needed
       if (!_isVersionNewer(latestVersion, currentVersion)) {
-        debugPrint('UpdateService: App is up to date');
         _updateStreamController.add(null);
         return;
       }
@@ -135,7 +131,6 @@ class UpdateService {
       // Check if user skipped this version
       final skippedVersion = prefs.getString(_skippedVersionKey);
       if (skippedVersion == latestVersion && !isMandatory) {
-        debugPrint('UpdateService: User skipped version $latestVersion');
         _updateStreamController.add(null);
         return;
       }
@@ -154,9 +149,7 @@ class UpdateService {
 
       // Emit update to stream
       _updateStreamController.add(update);
-      debugPrint('UpdateService: Found update ${update.version}');
     } catch (e) {
-      debugPrint('UpdateService: Error checking for updates: $e');
       _updateStreamController.add(null);
     } finally {
       // Update last check time
@@ -317,8 +310,6 @@ class PlatformUpdateInstaller {
   static Future<void> _installAndroid(AppUpdate update) async {
     // For now, we'll use a simpler approach with the system browser
     // A full implementation would use DownloadManager and PackageManager
-    debugPrint('Android update: Starting download from ${update.downloadUrl}');
-
     // Note: Full Android implementation requires:
     // 1. DownloadManager API for background downloads
     // 2. REQUEST_INSTALL_PACKAGES permission (already added)
@@ -331,7 +322,6 @@ class PlatformUpdateInstaller {
 
   /// Windows: Download and run installer
   static Future<void> _installWindows(AppUpdate update) async {
-    debugPrint('Windows update: Downloading ${update.downloadUrl}');
     // Implementation would:
     // 1. Download the .exe to temp folder
     // 2. Run the installer with elevated privileges
@@ -341,7 +331,6 @@ class PlatformUpdateInstaller {
 
   /// Linux: Download and run installer/AppImage
   static Future<void> _installLinux(AppUpdate update) async {
-    debugPrint('Linux update: Downloading ${update.downloadUrl}');
     // Implementation would:
     // 1. Download AppImage/deb
     // 2. Make executable and run

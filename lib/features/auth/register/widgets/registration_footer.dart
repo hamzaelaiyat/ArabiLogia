@@ -9,6 +9,7 @@ class RegistrationFooter extends StatelessWidget {
   final bool isFirstStep;
   final bool isLastStep;
   final bool isLoading;
+  final bool showSuccess;
   final String? nextLabel;
 
   const RegistrationFooter({
@@ -18,6 +19,7 @@ class RegistrationFooter extends StatelessWidget {
     this.isFirstStep = false,
     this.isLastStep = false,
     this.isLoading = false,
+    this.showSuccess = false,
     this.nextLabel,
   });
 
@@ -29,7 +31,7 @@ class RegistrationFooter extends StatelessWidget {
         children: [
           if (!isFirstStep) ...[
             TextButton(
-              onPressed: isLoading ? null : onBack,
+              onPressed: (isLoading || showSuccess) ? null : onBack,
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppTokens.spacing8,
@@ -51,11 +53,11 @@ class RegistrationFooter extends StatelessWidget {
                   ? AppTokens.buttonHeightLg
                   : AppTokens.buttonHeightMd,
               decoration: BoxDecoration(
-                color: const Color(0xFFEB8A00),
+                color: showSuccess ? Colors.green : const Color(0xFFEB8A00),
                 borderRadius: BorderRadius.circular(AppTokens.radiusFull),
               ),
               child: ElevatedButton(
-                onPressed: isLoading ? null : onNext,
+                onPressed: (isLoading || showSuccess) ? null : onNext,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   elevation: 0,
@@ -65,20 +67,23 @@ class RegistrationFooter extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppTokens.radiusFull),
                   ),
                 ),
-                child: isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        nextLabel ??
-                            (isLastStep
-                                ? AppStrings.createAccount
-                                : AppStrings.next),
+                child: showSuccess
+                    ? const Icon(Icons.check_circle,
+                        color: Colors.white, size: 24)
+                    : isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            nextLabel ??
+                                (isLastStep
+                                    ? AppStrings.createAccount
+                                    : AppStrings.next),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

@@ -164,7 +164,6 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:#f5f5f5;display:flex;ju
         await Share.share(html, subject: subject);
       }
     } catch (e) {
-      debugPrint('Error sharing: $e');
     } finally {
       if (mounted) setState(() => _isSharing = false);
     }

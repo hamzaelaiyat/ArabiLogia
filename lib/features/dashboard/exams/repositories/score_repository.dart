@@ -1,90 +1,32 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'package:realtime_client/realtime_client.dart';
+import 'package:arabilogia/core/services/supabase_service_interface.dart';
+import 'package:arabilogia/core/services/supabase_service_wrapper.dart';
+import 'package:arabilogia/data/local/database.dart';
+import 'package:arabilogia/data/local/daos/score_dao.dart';
 import 'package:arabilogia/features/dashboard/exams/utils/grade_mapper.dart';
 
 class ScoreRepository {
   static final ScoreRepository _instance = ScoreRepository._internal();
-  factory ScoreRepository() => _instance;
-  ScoreRepository._internal();
+  factory ScoreRepository({SupabaseServiceInterface? supabaseService, AppDatabase? database}) =>
+      supabaseService != null || database != null
+          ? ScoreRepository._create(
+              supabaseService: supabaseService ?? SupabaseServiceWrapper(),
+              database: database ?? AppDatabase(),
+            )
+          : _instance;
+  ScoreRepository._internal()
+      : _supabaseService = SupabaseServiceWrapper(),
+        _scoreDao = ScoreDao(AppDatabase());
+  ScoreRepository._create({
+    required SupabaseServiceInterface supabaseService,
+    required AppDatabase database,
+  })  : _supabaseService = supabaseService,
+        _scoreDao = ScoreDao(database);
 
-  final _supabase = Supabase.instance.client;
-
-  static const String _scoresCacheKey = 'exam_scores_cache';
-
-  Stream<List<Map<String, dynamic>>> streamExamParticipants(
-    String examId, {
-    Duration interval = const Duration(seconds: 3),
-  }) {
-    final controller = StreamController<List<Map<String, dynamic>>>.broadcast();
-    Timer? timer;
-    bool isCancelled = false;
-
-    Future<void> poll() async {
-      if (isCancelled || controller.isClosed) return;
-      try {
-        final response = await _supabase
-            .from('exam_results')
-            .select('*, profiles(full_name, username, grade)')
-            .eq('exam_id', examId)
-            .eq('status', 'completed')
-            .order('created_at', ascending: false);
-        if (!isCancelled && !controller.isClosed) {
-          debugPrint('Poll exam $examId: ${response.length} participants');
-          controller.add(List<Map<String, dynamic>>.from(response));
-        }
-      } catch (e) {
-        debugPrint('streamExamParticipants poll error for exam $examId: $e');
-      }
-    }
-
-    timer = Timer.periodic(interval, (_) => poll());
-    poll();
-
-    controller.onCancel = () {
-      isCancelled = true;
-      timer?.cancel();
-      controller.close();
-    };
-
-    return controller.stream;
-  }
-
-  Stream<List<Map<String, dynamic>>> streamExamsManaged({
-    Duration interval = const Duration(seconds: 3),
-  }) {
-    final controller = StreamController<List<Map<String, dynamic>>>.broadcast();
-    Timer? timer;
-    bool isCancelled = false;
-
-    Future<void> poll() async {
-      if (isCancelled || controller.isClosed) return;
-      try {
-        final response = await _supabase
-            .from('exams')
-            .select('id, title, subject_id, created_at')
-            .order('created_at', ascending: false);
-        if (!isCancelled && !controller.isClosed) {
-          controller.add(List<Map<String, dynamic>>.from(response));
-        }
-      } catch (e) {
-        debugPrint('Poll error for exams: $e');
-      }
-    }
-
-    timer = Timer.periodic(interval, (_) => poll());
-    poll();
-
-    controller.onCancel = () {
-      isCancelled = true;
-      timer?.cancel();
-      controller.close();
-    };
-
-    return controller.stream;
-  }
+  final SupabaseServiceInterface _supabaseService;
+  final ScoreDao _scoreDao;
+  Future<void>? _syncFuture;
 
   Future<bool> submitScore({
     required String examId,
@@ -92,18 +34,29 @@ class ScoreRepository {
     required double score,
     List<String> wrongAnswers = const [],
     bool isCompleted = true,
+    int points = 0,
   }) async {
-    final user = _supabase.auth.currentUser;
+    final user = _supabaseService.auth.currentUser;
     if (user == null) {
-      debugPrint('submitScore: No user logged in, cannot submit');
       return false;
     }
 
-    debugPrint(
-      'submitScore: Submitting score for exam $examId, user ${user.id}, score $score, completed $isCompleted',
-    );
+    await _scoreDao.upsertScore(examId, score, points);
 
-    await _updateLocalCache(examId, score);
+    if (isCompleted) {
+      try {
+        final existing = await _supabaseService
+            .from('exam_results')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('exam_id', examId)
+            .eq('status', 'completed')
+            .maybeSingle();
+        if (existing != null) {
+          return true;
+        }
+      } catch (_) {}
+    }
 
     try {
       final data = {
@@ -111,127 +64,119 @@ class ScoreRepository {
         'exam_id': examId,
         'subject': subject,
         'score': score,
+        'points': points,
         'wrong_answers': wrongAnswers.toList(),
         'status': isCompleted ? 'completed' : 'abandoned',
       };
-      debugPrint('submitScore: Inserting data: $data');
-
-      final result = await _supabase.from('exam_results').insert(data).select();
-      debugPrint('submitScore: Success, result: $result');
+      final result = await _supabaseService.from('exam_results').insert(data).select();
       return true;
     } catch (e) {
-      debugPrint('Error submitting score to server: $e');
       try {
         final minimalData = {
           'user_id': user.id,
           'exam_id': examId,
           'score': score,
+          'points': points,
         };
-        debugPrint('submitScore: Trying minimal insert: $minimalData');
-        await _supabase.from('exam_results').insert(minimalData);
-        debugPrint('submitScore: Minimal insert success');
+        await _supabaseService.from('exam_results').insert(minimalData);
         return true;
       } catch (e2) {
-        debugPrint('Error: $e2');
         return false;
       }
     }
   }
 
-  Future<void> _updateLocalCache(String examId, double score) async {
-    final prefs = await SharedPreferences.getInstance();
-    final cacheJson = prefs.getString(_scoresCacheKey) ?? '{}';
-    final Map<String, dynamic> cache = json.decode(cacheJson);
-
-    final currentBest = cache[examId] as double? ?? 0.0;
-    if (score > currentBest) {
-      cache[examId] = score;
-      await prefs.setString(_scoresCacheKey, json.encode(cache));
-    }
-  }
-
-  Future<Map<String, double>> getLocalScores() async {
-    final prefs = await SharedPreferences.getInstance();
-    final cacheJson = prefs.getString(_scoresCacheKey) ?? '{}';
-    final Map<String, dynamic> cache = json.decode(cacheJson);
-    return cache.map((key, value) => MapEntry(key, (value as num).toDouble()));
+  Future<Map<String, dynamic>> getLocalScores() async {
+    return _scoreDao.getAllScores();
   }
 
   Future<void> syncScoresWithSupabase() async {
-    final user = _supabase.auth.currentUser;
+    if (_syncFuture != null) {
+      await _syncFuture;
+      return;
+    }
+
+    _syncFuture = _performSync();
+    await _syncFuture;
+    _syncFuture = null;
+  }
+
+  Future<void> _performSync() async {
+    final user = _supabaseService.auth.currentUser;
     if (user == null) return;
 
-    debugPrint('Starting score synchronization for user ${user.id}');
+    const maxRetries = 3;
+    var delay = const Duration(seconds: 1);
 
-    try {
-      // Fetch existing exams to filter out deleted ones
-      final existingExams = await _supabase
-          .from('exams')
-          .select('id')
-          .then(
-            (res) =>
-                (res as List<dynamic>).map((e) => e['id'] as String).toSet(),
-          );
+    for (int attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        final existingExams = await _supabaseService
+            .from('exams')
+            .select('id')
+            .then(
+              (res) =>
+                  (res as List<dynamic>).map((e) => e['id'] as String).toSet(),
+            );
 
-      final remoteData = await _supabase
-          .from('exam_results')
-          .select('exam_id, score, subject')
-          .eq('user_id', user.id);
+        final remoteData = await _supabaseService
+            .from('exam_results')
+            .select('exam_id, score, points, subject')
+            .eq('user_id', user.id);
 
-      final List<dynamic> results = remoteData;
-      final Map<String, double> remoteBestScores = {};
-      final Set<String> remoteExamIds = {};
+        final List<dynamic> results = remoteData;
+        final Map<String, Map<String, dynamic>> remoteBestScores = {};
+        final Set<String> remoteExamIds = {};
 
-      for (final res in results) {
-        final id = res['exam_id'] as String;
-        final score = (res['score'] as num).toDouble();
-        remoteExamIds.add(id);
-        if ((remoteBestScores[id] ?? 0.0) < score) {
-          remoteBestScores[id] = score;
-        }
-      }
-
-      final localScores = await getLocalScores();
-
-      for (final entry in localScores.entries) {
-        final examId = entry.key;
-        final score = entry.value;
-
-        // Only push if: exam still exists AND not in remote
-        if (!existingExams.contains(examId)) {
-          debugPrint('Skipping score for deleted exam: $examId');
-          continue;
-        }
-
-        if (!remoteExamIds.contains(examId)) {
-          debugPrint('Pushing local-only score to server: $examId ($score)');
-          try {
-            await _supabase.from('exam_results').insert({
-              'user_id': user.id,
-              'exam_id': examId,
-              'score': score,
-              'subject': 'unknown',
-              'wrong_answers': [],
-            });
-          } catch (e) {
-            debugPrint('Failed to push local score $examId: $e');
+        for (final res in results) {
+          final id = res['exam_id'] as String;
+          final score = (res['score'] as num).toDouble();
+          final points = (res['points'] as int?) ?? 0;
+          remoteExamIds.add(id);
+          final existing = remoteBestScores[id];
+          if (existing == null || (existing['score'] as double) < score) {
+            remoteBestScores[id] = {'score': score, 'points': points};
           }
         }
-      }
 
-      final prefs = await SharedPreferences.getInstance();
-      final Map<String, double> finalCache = Map.from(localScores);
+        final unsynced = await _scoreDao.getUnsyncedScores();
 
-      remoteBestScores.forEach((id, score) {
-        if ((finalCache[id] ?? 0.0) < score) {
-          finalCache[id] = score;
+        for (final entry in unsynced) {
+          if (!existingExams.contains(entry.examId)) {
+            continue;
+          }
+
+          if (!remoteExamIds.contains(entry.examId)) {
+            try {
+              await _supabaseService.from('exam_results').insert({
+                'user_id': user.id,
+                'exam_id': entry.examId,
+                'score': entry.score,
+                'points': entry.points,
+                'subject': 'unknown',
+                'wrong_answers': [],
+              });
+              await _scoreDao.markSynced(entry.examId);
+            } catch (e) {
+            }
+          }
         }
-      });
 
-      await prefs.setString(_scoresCacheKey, json.encode(finalCache));
-      debugPrint('Score synchronization completed successfully');
-    } catch (e) {
-      debugPrint('Critical error during score sync: $e');
+        for (final entry in remoteBestScores.entries) {
+          await _scoreDao.upsertScore(
+            entry.key,
+            (entry.value['score'] as num).toDouble(),
+            (entry.value['points'] as int?) ?? 0,
+          );
+        }
+
+        return;
+      } catch (e) {
+        if (attempt == maxRetries) {
+          return;
+        }
+        await Future.delayed(delay);
+        delay *= 2;
+      }
     }
   }
 
@@ -240,7 +185,7 @@ class ScoreRepository {
     String period = 'all',
   }) async {
     try {
-      var query = _supabase.rpc(
+      var query = _supabaseService.rpc(
         'get_leaderboard_by_period',
         params: {'period_filter': period},
       );
@@ -254,39 +199,35 @@ class ScoreRepository {
           .limit(100);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      debugPrint('Error fetching leaderboard: $e');
       return [];
     }
   }
 
   Future<Map<String, dynamic>?> getUserStats() async {
-    final user = _supabase.auth.currentUser;
+    final user = _supabaseService.auth.currentUser;
     if (user == null) return null;
 
     try {
-      final response = await _supabase
-          .from('leaderboard')
-          .select()
+      final response = await _supabaseService
+          .rpc('get_leaderboard_by_period', params: {'period_filter': 'all'})
           .eq('user_id', user.id)
           .maybeSingle();
 
       if (response == null) {
-        debugPrint('No leaderboard data found for user ${user.id}');
       }
 
       return response;
     } catch (e) {
-      debugPrint('Error fetching user stats: $e');
       return null;
     }
   }
 
   Future<List<Map<String, dynamic>>> getRecentActivity({int limit = 3}) async {
-    final user = _supabase.auth.currentUser;
+    final user = _supabaseService.auth.currentUser;
     if (user == null) return [];
 
     try {
-      final response = await _supabase
+      final response = await _supabaseService
           .from('exam_results')
           .select('subject, score, created_at, exam_id')
           .eq('user_id', user.id)
@@ -295,18 +236,17 @@ class ScoreRepository {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      debugPrint('Error fetching recent activity: $e');
       return [];
     }
   }
 
   Future<Map<String, dynamic>> getDetailedProfileStats() async {
-    final user = _supabase.auth.currentUser;
+    final user = _supabaseService.auth.currentUser;
     if (user == null) return {};
 
     final basicStats = await getUserStats();
 
-    final recentExamResponse = await _supabase
+    final recentExamResponse = await _supabaseService
         .from('exam_results')
         .select('subject, score, created_at')
         .eq('user_id', user.id)
@@ -327,34 +267,153 @@ class ScoreRepository {
     };
   }
 
+  Stream<List<Map<String, dynamic>>> streamExamsManagedRealtime() {
+    final controller = StreamController<List<Map<String, dynamic>>>.broadcast();
+
+    Future<void> fetchExams() async {
+      if (controller.isClosed) return;
+      try {
+        final response = await _supabaseService
+            .from('exams')
+            .select('id, title, subject_id, grade, created_at, data')
+            .order('created_at', ascending: false);
+        if (!controller.isClosed) {
+          controller.add(List<Map<String, dynamic>>.from(response));
+        }
+      } catch (e) {
+      }
+    }
+
+    fetchExams();
+
+    final channel = _supabaseService
+        .realtimeClient
+        .channel('exams-managed');
+    channel.onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'exams',
+      callback: (_) => fetchExams(),
+    ).subscribe();
+
+    controller.onCancel = () async {
+      await channel.unsubscribe();
+      await controller.close();
+    };
+
+    return controller.stream;
+  }
+
+  Stream<List<Map<String, dynamic>>> streamExamsManaged({
+    Duration interval = const Duration(seconds: 3),
+  }) {
+    return streamExamsManagedRealtime();
+  }
+
   Future<List<Map<String, dynamic>>> getExamsManaged() async {
     try {
-      final response = await _supabase
+      final response = await _supabaseService
           .from('exams')
-          .select('id, title, subject_id, created_at')
+          .select('id, title, subject_id, grade, created_at, data')
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      debugPrint('Error fetching managed exams: $e');
       return [];
     }
   }
 
+  Stream<List<Map<String, dynamic>>> streamExamParticipantsRealtime(
+    String examId,
+  ) {
+    final controller = StreamController<List<Map<String, dynamic>>>.broadcast();
+
+    Future<void> fetchAndAdd() async {
+      if (controller.isClosed) return;
+      try {
+        final response = await _supabaseService
+            .from('exam_results')
+            .select('*')
+            .eq('exam_id', examId)
+            .eq('status', 'completed')
+            .order('created_at', ascending: false);
+        if (!controller.isClosed) {
+          final results = List<Map<String, dynamic>>.from(response);
+          if (results.isNotEmpty) {
+            final allProfiles = await _supabaseService
+                .from('profiles')
+                .select('id, full_name, username, grade');
+            final profileMap = {
+              for (var p in allProfiles) p['id'] as String: p
+            };
+            for (var row in results) {
+              row['profile'] = profileMap[row['user_id'] as String];
+            }
+          }
+          controller.add(results);
+        }
+      } catch (e) {
+        if (!controller.isClosed) {
+          controller.add([]);
+        }
+      }
+    }
+
+    final channel = _supabaseService
+        .realtimeClient
+        .channel('exam-participants-$examId');
+    channel.onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'exam_results',
+      filter: PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'exam_id',
+        value: examId,
+      ),
+      callback: (payload) {
+        fetchAndAdd();
+      },
+    );
+    channel.subscribe();
+
+    fetchAndAdd();
+
+    controller.onCancel = () {
+      channel.unsubscribe();
+      controller.close();
+    };
+
+    return controller.stream;
+  }
+
   Future<List<Map<String, dynamic>>> getExamParticipants(String examId) async {
     try {
-      debugPrint('getExamParticipants: Fetching for examId: $examId');
-      final response = await _supabase
+      final response = await _supabaseService
           .from('exam_results')
-          .select('*, profiles(full_name, username, grade)')
+          .select('*')
           .eq('exam_id', examId)
           .eq('status', 'completed')
           .order('created_at', ascending: false);
-      debugPrint(
-        'getExamParticipants: Got ${response.length} participants for exam $examId',
-      );
-      return List<Map<String, dynamic>>.from(response);
+      final results = List<Map<String, dynamic>>.from(response);
+      if (results.isNotEmpty) {
+        final allProfiles = await _supabaseService
+            .from('profiles')
+            .select('id, full_name, username, grade');
+        final profileMap = {for (var p in allProfiles) p['id'] as String: p};
+        for (var row in results) {
+          row['profile'] = profileMap[row['user_id'] as String];
+        }
+      }
+      final seen = <String>{};
+      final deduplicated = <Map<String, dynamic>>[];
+      for (final row in results) {
+        final uid = row['user_id'] as String;
+        if (seen.add(uid)) {
+          deduplicated.add(Map<String, dynamic>.from(row));
+        }
+      }
+      return deduplicated;
     } catch (e) {
-      debugPrint('getExamParticipants error for exam $examId: $e');
       return [];
     }
   }
@@ -362,8 +421,7 @@ class ScoreRepository {
   Future<List<Map<String, dynamic>>> getGradeProfiles(int grade) async {
     try {
       final dbGrade = mapUiGradeToDbGrade(grade);
-      debugPrint('getGradeProfiles: UI grade=$grade -> DB grade=$dbGrade');
-      var query = _supabase
+      var query = _supabaseService
           .from('profiles')
           .select('id, full_name, username, grade');
 
@@ -372,10 +430,8 @@ class ScoreRepository {
       }
 
       final response = await query.order('full_name');
-      debugPrint('getGradeProfiles: Got ${response.length} profiles for grade=$dbGrade');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      debugPrint('getGradeProfiles error for grade=$grade: $e');
       return [];
     }
   }

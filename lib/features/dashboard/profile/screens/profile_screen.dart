@@ -1,6 +1,7 @@
-import 'dart:io' show Platform, File;
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
@@ -17,7 +18,6 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image/image.dart' as img;
-import 'package:path_provider/path_provider.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 
@@ -102,13 +102,13 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
 
     if (image == null) return;
 
-    String imagePath = image.path;
-
     // Platform-specific cropping: use image_cropper for Android/iOS/Web, auto-center-crop for desktop
-    final isDesktop = Platform.isLinux || Platform.isWindows || Platform.isMacOS;
+    final bool isWeb = kIsWeb;
+    final bool isDesktop = !isWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
+    Uint8List? croppedBytes;
     try {
-      if (!isDesktop) {
-        // Crop to 1:1 aspect ratio using native cropper
+      if (!isDesktop && !isWeb) {
+        // Mobile: Crop to 1:1 aspect ratio using native cropper
         final croppedFile = await ImageCropper().cropImage(
           sourcePath: image.path,
           aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
@@ -140,16 +140,15 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
         );
 
         if (croppedFile == null) return;
-        imagePath = croppedFile.path;
+        croppedBytes = await croppedFile.readAsBytes();
       } else {
-        // Desktop: auto center-crop to 1:1
-        if (mounted) {
+        // Desktop or Web fallback: auto center-crop to 1:1
+        if (mounted && !isWeb) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('جاري تجهيز الصورة...')),
           );
         }
-        final file = File(image.path);
-        final originalBytes = await file.readAsBytes();
+        final originalBytes = await image.readAsBytes();
         final decoded = img.decodeImage(originalBytes);
         if (decoded == null) {
           if (mounted) {
@@ -164,12 +163,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
         final x = (decoded.width - size) ~/ 2;
         final y = (decoded.height - size) ~/ 2;
         final cropped = img.copyCrop(decoded, x: x, y: y, width: size, height: size);
-        final croppedBytes = Uint8List.fromList(img.encodeJpg(cropped, quality: 90));
-        // Save to temp file
-        final tempDir = await getTemporaryDirectory();
-        final tempFile = File('${tempDir.path}/cropped_${DateTime.now().millisecondsSinceEpoch}.jpg');
-        await tempFile.writeAsBytes(croppedBytes);
-        imagePath = tempFile.path;
+        croppedBytes = Uint8List.fromList(img.encodeJpg(cropped, quality: 90));
       }
     } catch (e) {
       if (mounted) {
@@ -183,8 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     setState(() => _isUploading = true);
 
     try {
-      final file = File(imagePath);
-      final originalBytes = await file.readAsBytes();
+      final originalBytes = croppedBytes;
 
       // Decode and resize to 100x100 before size validation
       final decoded = img.decodeImage(originalBytes);

@@ -4,9 +4,15 @@ import 'package:arabilogia/core/constants/strings.dart';
 
 class LoginButton extends StatelessWidget {
   final bool isLoading;
+  final bool showSuccess;
   final VoidCallback? onPressed;
 
-  const LoginButton({super.key, required this.isLoading, this.onPressed});
+  const LoginButton({
+    super.key,
+    required this.isLoading,
+    this.showSuccess = false,
+    this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -16,11 +22,11 @@ class LoginButton extends StatelessWidget {
           ? AppTokens.buttonHeightLg
           : AppTokens.buttonHeightMd,
       decoration: BoxDecoration(
-        color: const Color(0xFFEB8A00),
+        color: showSuccess ? Colors.green : const Color(0xFFEB8A00),
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
       ),
       child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
+        onPressed: (isLoading || showSuccess) ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -30,22 +36,24 @@ class LoginButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppTokens.radiusFull),
           ),
         ),
-        child: isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Text(
-                AppStrings.login,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+        child: showSuccess
+            ? const Icon(Icons.check_circle, color: Colors.white, size: 24)
+            : isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    AppStrings.login,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
       ),
     );
   }

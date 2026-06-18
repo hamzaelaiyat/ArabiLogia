@@ -7,7 +7,7 @@ class TeacherExamDefaults {
   final int defaultGrade;
   final int defaultDurationMinutes;
   final bool defaultDurationEnabled;
-  final double defaultPoints;
+  final int defaultPoints;
   final bool defaultShuffleQuestions;
   final bool defaultShowCorrectAnswers;
   final bool defaultShowScore;
@@ -17,7 +17,7 @@ class TeacherExamDefaults {
     this.defaultGrade = 1,
     this.defaultDurationMinutes = 30,
     this.defaultDurationEnabled = false,
-    this.defaultPoints = 1.0,
+    this.defaultPoints = 10,
     this.defaultShuffleQuestions = false,
     this.defaultShowCorrectAnswers = true,
     this.defaultShowScore = true,
@@ -28,7 +28,7 @@ class TeacherExamDefaults {
     int? defaultGrade,
     int? defaultDurationMinutes,
     bool? defaultDurationEnabled,
-    double? defaultPoints,
+    int? defaultPoints,
     bool? defaultShuffleQuestions,
     bool? defaultShowCorrectAnswers,
     bool? defaultShowScore,
@@ -62,7 +62,7 @@ class TeacherExamDefaults {
       defaultGrade: json['defaultGrade'] ?? 1,
       defaultDurationMinutes: json['defaultDurationMinutes'] ?? 30,
       defaultDurationEnabled: json['defaultDurationEnabled'] ?? false,
-      defaultPoints: (json['defaultPoints'] ?? 1.0).toDouble(),
+      defaultPoints: (json['defaultPoints'] ?? 10) as int,
       defaultShuffleQuestions: json['defaultShuffleQuestions'] ?? false,
       defaultShowCorrectAnswers: json['defaultShowCorrectAnswers'] ?? true,
       defaultShowScore: json['defaultShowScore'] ?? true,
@@ -127,7 +127,7 @@ class TeacherExamDefaultsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setDefaultPoints(double value) async {
+  Future<void> setDefaultPoints(int value) async {
     _defaults = _defaults.copyWith(defaultPoints: value);
     await _saveDefaults();
     notifyListeners();

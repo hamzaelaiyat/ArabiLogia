@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +24,7 @@ import 'package:arabilogia/features/admin/screens/teacher_panel_screen.dart';
 import 'package:arabilogia/features/admin/screens/teacher_settings_screen.dart';
 import 'package:arabilogia/features/admin/screens/exam_editor_screen.dart';
 import 'package:arabilogia/features/admin/screens/exam_preview_screen.dart';
+import 'package:arabilogia/features/landing/screens/landing_screen.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
@@ -91,23 +93,26 @@ class AppRouter {
 
   static final GoRouter _router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: AppRoutes.login,
+    initialLocation: kIsWeb ? AppRoutes.landing : AppRoutes.login,
     observers: [routeObserver],
     debugLogDiagnostics: true,
     redirect: (context, state) {
       final authProvider = context.read<AuthProvider>();
       final isAuthenticated = authProvider.state.isAuthenticated;
       final isTeacher = authProvider.isTeacher;
+      final matched = state.matchedLocation;
+
       final isPublicRoute =
-          state.matchedLocation == AppRoutes.login ||
-          state.matchedLocation == AppRoutes.register ||
-          state.matchedLocation == AppRoutes.forgotPassword;
+          matched == AppRoutes.login ||
+          matched == AppRoutes.register ||
+          matched == AppRoutes.forgotPassword ||
+          (kIsWeb && matched == AppRoutes.landing);
 
       // Teacher panel is NOT public - requires teacher role
-      if (state.matchedLocation == AppRoutes.teacherPanel ||
-          state.matchedLocation == AppRoutes.examPreview) {
+      if (matched == AppRoutes.teacherPanel ||
+          matched == AppRoutes.examPreview) {
         if (!isAuthenticated) {
-          return AppRoutes.login;
+          return kIsWeb ? AppRoutes.landing : AppRoutes.login;
         }
         if (!isTeacher) {
           return AppRoutes.dashboard;
@@ -116,7 +121,7 @@ class AppRouter {
       }
 
       if (!isAuthenticated && !isPublicRoute) {
-        return AppRoutes.login;
+        return kIsWeb ? AppRoutes.landing : AppRoutes.login;
       }
 
       if (isAuthenticated && isPublicRoute) {
@@ -126,6 +131,15 @@ class AppRouter {
       return null;
     },
     routes: [
+      GoRoute(
+        path: AppRoutes.landing,
+        name: 'landing',
+        pageBuilder: (context, state) => AppRouter._buildPage(
+          context: context,
+          state: state,
+          child: const LandingScreen(),
+        ),
+      ),
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
