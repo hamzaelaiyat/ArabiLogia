@@ -11,6 +11,7 @@ import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/providers/accounts_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -117,6 +118,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     if (success && mounted) {
+      context.read<AccountsProvider>().saveCurrentSession(authProvider);
       context.go(AppRoutes.home);
     }
   }

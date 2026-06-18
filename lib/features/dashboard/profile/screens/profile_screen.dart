@@ -20,6 +20,9 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image/image.dart' as img;
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
+import 'package:arabilogia/features/dashboard/profile/widgets/switch_accounts_sheet.dart';
+import 'package:arabilogia/providers/accounts_provider.dart';
+import 'package:arabilogia/core/services/accounts_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -478,6 +481,11 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                     lastExamLabel: lastExamLabel,
                   ),
                 ),
+                const SizedBox(height: AppTokens.spacing32),
+                AnimatedWrapper(
+                  delay: const Duration(milliseconds: 240),
+                  child: _SwitchAccountButton(),
+                ),
                 const SizedBox(height: 100),
               ],
             ),
@@ -541,5 +549,74 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       return isoDate ?? '';
     }
   }
+}
 
+class _SwitchAccountButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final accountsProvider = context.watch<AccountsProvider>();
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: AppTokens.radius2xlAll,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: AppTokens.radius2xlAll,
+        child: InkWell(
+          borderRadius: AppTokens.radius2xlAll,
+          onTap: () => SwitchAccountsSheet.show(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTokens.spacing16,
+              vertical: AppTokens.spacing16,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: AppTokens.radiusLgAll,
+                  ),
+                  child: const Icon(
+                    Icons.swap_horiz_rounded,
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: AppTokens.spacing16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'تبديل الحساب',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${accountsProvider.accounts.length} من ${AccountsService.maxAccounts} حسابات',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.mutedColor(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_left,
+                  color: AppColors.mutedColor(context),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

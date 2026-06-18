@@ -17,6 +17,7 @@ import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/providers/exam_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/providers/teacher_exam_defaults_provider.dart';
+import 'package:arabilogia/providers/accounts_provider.dart';
 import 'package:arabilogia/features/dashboard/exams/models/grade_metadata.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -136,6 +137,10 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
         ),
         ChangeNotifierProvider(
           create: (_) => TeacherExamDefaultsProvider(),
+          lazy: true,
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AccountsProvider(),
           lazy: true,
         ),
       ],
