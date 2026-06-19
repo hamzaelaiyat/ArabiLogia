@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:drift/drift.dart';
 import 'package:arabilogia/core/services/supabase_service_interface.dart';
 import 'package:arabilogia/core/services/supabase_service_wrapper.dart';
 import 'package:arabilogia/data/local/database.dart';
+import 'package:arabilogia/data/local/daos/exam_dao.dart';
 import '../models/exam_model.dart';
 import '../utils/grade_mapper.dart';
 import 'score_repository.dart';
@@ -12,9 +12,11 @@ class ExamRepository {
   final SupabaseServiceInterface _supabaseService;
   final AppDatabase _database;
 
-  ExamRepository({SupabaseServiceInterface? supabaseService, AppDatabase? database})
-      : _supabaseService = supabaseService ?? SupabaseServiceWrapper(),
-        _database = database ?? AppDatabase();
+  ExamRepository({
+    SupabaseServiceInterface? supabaseService,
+    AppDatabase? database,
+  }) : _supabaseService = supabaseService ?? SupabaseServiceWrapper(),
+       _database = database ?? AppDatabase.instance;
 
   Future<void> publishExam(Exam exam) async {
     final minifiedData = exam.toMinifiedJson();
@@ -53,7 +55,9 @@ class ExamRepository {
         .eq('id', examId)
         .maybeSingle();
     if (row == null) return;
-    final examData = Map<String, dynamic>.from(row['data'] as Map<String, dynamic>);
+    final examData = Map<String, dynamic>.from(
+      row['data'] as Map<String, dynamic>,
+    );
     examData['p'] = 1;
     await _supabaseService
         .from('exams')
@@ -93,16 +97,12 @@ class ExamRepository {
 
         // Cache in drift if auto-download is enabled
         if (autoDownload) {
-          await _database.into(_database.cachedExams).insert(
-            CachedExamsCompanion(
-              id: Value(exam.id),
-              title: Value(exam.title),
-              subjectId: Value(subjectId),
-              grade: Value(examGrade),
-              data: Value(json.encode(examData)),
-              downloadedAt: Value(DateTime.now()),
-            ),
-            mode: InsertMode.replace,
+          await _database.examDao.cacheExamFields(
+            id: exam.id,
+            title: exam.title,
+            subjectId: subjectId,
+            grade: examGrade,
+            data: json.encode(examData),
           );
         }
 
@@ -110,10 +110,10 @@ class ExamRepository {
       }
     } catch (e) {
       // If offline, load from drift cache
-      final cachedExams = await (_database.select(_database.cachedExams)
-        ..where((t) => t.subjectId.equals(subjectId))
-        ..where((t) => t.grade.equals(examGrade))
-      ).get();
+      final cachedExams = await _database.examDao.getCachedExamsBySubject(
+        subjectId,
+        examGrade,
+      );
 
       for (final cached in cachedExams) {
         final data = json.decode(cached.data) as Map<String, dynamic>;
@@ -128,7 +128,9 @@ class ExamRepository {
 
     // Sort by sort_order so the lock chain follows the intended sequence
     // regardless of array index or insertion order.
-    exams.sort((a, b) => (a['sort_order'] as int).compareTo(b['sort_order'] as int));
+    exams.sort(
+      (a, b) => (a['sort_order'] as int).compareTo(b['sort_order'] as int),
+    );
 
     // 3. Handle locking logic (sequentially by sort_order).
     bool previousExamPassed = true;
@@ -148,7 +150,9 @@ class ExamRepository {
     bool isRemote = false,
   }) {
     final userScoreEntry = localScores[exam.id];
-    final userScore = userScoreEntry is Map ? (userScoreEntry['score'] as num?)?.toDouble() : (userScoreEntry as num?)?.toDouble();
+    final userScore = userScoreEntry is Map
+        ? (userScoreEntry['score'] as num?)?.toDouble()
+        : (userScoreEntry as num?)?.toDouble();
     return {
       'id': exam.id,
       'title': exam.title,
@@ -165,9 +169,7 @@ class ExamRepository {
 
   Future<Exam?> loadExamById(String subjectId, String examId) async {
     // 1. Check Drift Cache
-    final cached = await (_database.select(_database.cachedExams)
-      ..where((t) => t.id.equals(examId))
-    ).getSingleOrNull();
+    final cached = await _database.examDao.getCachedExam(examId);
     if (cached != null) {
       return Exam.fromMinifiedJson(json.decode(cached.data));
     }

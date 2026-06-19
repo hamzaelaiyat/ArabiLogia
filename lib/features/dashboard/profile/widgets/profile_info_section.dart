@@ -76,26 +76,29 @@ class _InfoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        ListTile(
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.background(context),
-              borderRadius: AppTokens.radiusMdAll,
+        Material(
+          type: MaterialType.transparency,
+          child: ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.background(context),
+                borderRadius: AppTokens.radiusMdAll,
+              ),
+              child: Icon(icon, size: 20, color: AppColors.primary),
             ),
-            child: Icon(icon, size: 20, color: AppColors.primary),
-          ),
-          title: Text(
-            title,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.mutedColor(context),
+            title: Text(
+              title,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: AppColors.mutedColor(context),
+              ),
             ),
-          ),
-          subtitle: Text(
-            value,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+            subtitle: Text(
+              value,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+            ),
           ),
         ),
         if (!isLast)

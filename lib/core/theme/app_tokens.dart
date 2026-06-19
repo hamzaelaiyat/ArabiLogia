@@ -4,7 +4,7 @@ class AppTokens {
   AppTokens._();
 
   static const String fontFamilyDisplay = 'Rubik';
-  static const String fontFamilyBody = 'Rubik';
+  static const String fontFamilyBody = 'Estedad';
 
   static const double fontSizeXs = 11.0;
   static const double fontSizeSm = 12.0;

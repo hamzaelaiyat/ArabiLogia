@@ -56,15 +56,19 @@ class AccountsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> switchToAccount(SavedAccount account, BuildContext context) async {
+  Future<bool> switchToAccount(
+    SavedAccount account,
+    BuildContext context,
+  ) async {
     try {
-      final sessionJson = account.sessionJson;
-      await Supabase.instance.client.auth.setSession(sessionJson);
+      await Supabase.instance.client.auth.recoverSession(account.sessionJson);
 
       _accounts = await _service.getAccounts();
       notifyListeners();
       return true;
     } catch (e) {
+      await _service.removeAccount(account.id);
+      _accounts = await _service.getAccounts();
       notifyListeners();
       return false;
     }

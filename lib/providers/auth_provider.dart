@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:arabilogia/core/config/supabase_config.dart';
+import 'package:arabilogia/core/routes/app_router.dart';
 import 'package:arabilogia/core/services/auth_service.dart';
 import 'package:arabilogia/core/services/profile_service.dart';
 import 'package:arabilogia/core/services/avatar_service.dart';
@@ -89,6 +90,7 @@ class AuthProvider extends ChangeNotifier {
     if (!SupabaseConfig.isConfigured) return;
 
     try {
+      await SupabaseService.instance.initialize();
       _initServices();
       _auth = Supabase.instance.client.auth;
       _state = _state.copyWith(
@@ -98,10 +100,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (_auth!.currentSession != null) {
-        await Future.wait([
-          _loadViolationState(),
-          _loadRole(),
-        ]);
+        await Future.wait([_loadViolationState(), _loadRole()]);
       }
 
       _auth!.onAuthStateChange.listen((event) async {
@@ -115,9 +114,11 @@ class AuthProvider extends ChangeNotifier {
           await _loadRole();
         }
         notifyListeners();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          AppRouter.router.refresh();
+        });
       });
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _loadRole() async {
@@ -362,10 +363,22 @@ class AuthProvider extends ChangeNotifier {
     if (oldUser != null) {
       final metadata = Map<String, dynamic>.from(oldUser.userMetadata ?? {});
       bool changed = false;
-      if (fullName != null) { metadata['full_name'] = fullName; changed = true; }
-      if (username != null) { metadata['username'] = username; changed = true; }
-      if (grade != null) { metadata['grade'] = grade; changed = true; }
-      if (avatarUrl != null) { metadata['avatar_url'] = avatarUrl; changed = true; }
+      if (fullName != null) {
+        metadata['full_name'] = fullName;
+        changed = true;
+      }
+      if (username != null) {
+        metadata['username'] = username;
+        changed = true;
+      }
+      if (grade != null) {
+        metadata['grade'] = grade;
+        changed = true;
+      }
+      if (avatarUrl != null) {
+        metadata['avatar_url'] = avatarUrl;
+        changed = true;
+      }
       if (changed) {
         final json = oldUser.toJson();
         json['user_metadata'] = metadata;
@@ -395,7 +408,11 @@ class AuthProvider extends ChangeNotifier {
 
     _state = _state.copyWith(
       isLoading: false,
-      user: result.user ?? (result.success ? (optimisticUser ?? _state.user) : oldUser ?? _state.user),
+      user:
+          result.user ??
+          (result.success
+              ? (optimisticUser ?? _state.user)
+              : oldUser ?? _state.user),
       error: result.error,
     );
     notifyListeners();
@@ -477,8 +494,9 @@ class AuthProvider extends ChangeNotifier {
       _state = _state.copyWith(isLoading: true, error: null);
       notifyListeners();
 
-      final result =
-          await _avatarService.removeAvatar(_authClient.currentUser!.id);
+      final result = await _avatarService.removeAvatar(
+        _authClient.currentUser!.id,
+      );
 
       _state = _state.copyWith(
         isLoading: false,

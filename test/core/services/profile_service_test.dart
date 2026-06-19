@@ -407,6 +407,10 @@ class _FakeSupabaseService implements SupabaseServiceInterface {
   String? get userEmail => currentUser?.email;
 
   @override
+  RealtimeClient get realtimeClient =>
+      throw UnimplementedError('realtimeClient not used in tests');
+
+  @override
   Stream<AuthState> get authStateChanges =>
       throw UnimplementedError('authStateChanges not used in tests');
 }

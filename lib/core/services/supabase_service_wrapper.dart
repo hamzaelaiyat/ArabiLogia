@@ -3,26 +3,24 @@ import 'package:arabilogia/core/config/supabase_config.dart';
 import 'supabase_service_interface.dart';
 
 class SupabaseServiceWrapper implements SupabaseServiceInterface {
-  SupabaseClient? _client;
+  @override
+  SupabaseClient get client => Supabase.instance.client;
 
   @override
-  SupabaseClient get client => _client!;
+  RealtimeClient get realtimeClient => client.realtime;
 
   @override
-  RealtimeClient get realtimeClient => _client!.realtime;
+  GoTrueClient get auth => client.auth;
 
   @override
-  GoTrueClient get auth => _client!.auth;
+  SupabaseQueryBuilder from(String table) => client.from(table);
 
   @override
-  SupabaseQueryBuilder from(String table) => _client!.from(table);
-
-  @override
-  SupabaseStorageClient get storage => _client!.storage;
+  SupabaseStorageClient get storage => client.storage;
 
   @override
   PostgrestFilterBuilder<dynamic> rpc(String fn, {Map<String, dynamic>? params}) =>
-      _client!.rpc(fn, params: params);
+      client.rpc(fn, params: params);
 
   @override
   User? get currentUser => auth.currentUser;
@@ -48,6 +46,5 @@ class SupabaseServiceWrapper implements SupabaseServiceInterface {
       anonKey: SupabaseConfig.supabaseAnonKey,
       debug: false,
     );
-    _client = Supabase.instance.client;
   }
 }

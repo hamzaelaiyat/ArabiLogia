@@ -78,7 +78,7 @@ class ResultShareCard extends StatelessWidget {
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 10,
-                            fontFamily: 'Vazirmatn',
+                            fontFamily: AppTokens.fontFamilyBody,
                           ),
                         ),
                       ],
@@ -143,7 +143,7 @@ class ResultShareCard extends StatelessWidget {
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 10,
-                            fontFamily: 'Vazirmatn',
+                            fontFamily: AppTokens.fontFamilyBody,
                           ),
                         ),
                       ],
@@ -185,10 +185,10 @@ class ResultShareCard extends StatelessWidget {
                 ),
                 Text(
                   grade,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white54,
                     fontSize: 12,
-                    fontFamily: 'Vazirmatn',
+                    fontFamily: AppTokens.fontFamilyBody,
                   ),
                 ),
               ],
@@ -212,10 +212,10 @@ class ResultShareCard extends StatelessWidget {
         ),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white54,
             fontSize: 10,
-            fontFamily: 'Vazirmatn',
+            fontFamily: AppTokens.fontFamilyBody,
           ),
         ),
       ],

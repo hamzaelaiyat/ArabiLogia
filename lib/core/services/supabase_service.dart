@@ -6,18 +6,16 @@ class SupabaseService implements SupabaseServiceInterface {
   SupabaseService._();
   static final SupabaseService instance = SupabaseService._();
 
-  late final SupabaseClient _client;
-
   @override
-  SupabaseClient get client => _client;
+  SupabaseClient get client => Supabase.instance.client;
   @override
-  GoTrueClient get auth => _client.auth;
+  GoTrueClient get auth => client.auth;
   @override
-  SupabaseQueryBuilder from(String table) => _client.from(table);
+  SupabaseQueryBuilder from(String table) => client.from(table);
   @override
-  SupabaseStorageClient get storage => _client.storage;
+  SupabaseStorageClient get storage => client.storage;
   @override
-  RealtimeClient get realtimeClient => _client.realtime;
+  RealtimeClient get realtimeClient => client.realtime;
 
   Future<void> initialize() async {
     await Supabase.initialize(
@@ -25,12 +23,13 @@ class SupabaseService implements SupabaseServiceInterface {
       anonKey: SupabaseConfig.supabaseAnonKey,
       debug: false,
     );
-    _client = Supabase.instance.client;
   }
 
   @override
-  PostgrestFilterBuilder<dynamic> rpc(String fn, {Map<String, dynamic>? params}) =>
-      _client.rpc(fn, params: params ?? {});
+  PostgrestFilterBuilder<dynamic> rpc(
+    String fn, {
+    Map<String, dynamic>? params,
+  }) => client.rpc(fn, params: params ?? {});
 
   @override
   User? get currentUser => auth.currentUser;

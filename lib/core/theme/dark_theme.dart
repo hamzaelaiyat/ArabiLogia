@@ -269,17 +269,20 @@ class DarkTheme {
         fontWeight: FontWeight.w600,
         color: fg,
       ),
-      bodyLarge: GoogleFonts.getFont('Vazirmatn',
+      bodyLarge: TextStyle(
+        fontFamily: AppTokens.fontFamilyBody,
         fontSize: AppTokens.fontSizeLg,
         fontWeight: FontWeight.normal,
         color: fg,
       ),
-      bodyMedium: GoogleFonts.getFont('Vazirmatn',
+      bodyMedium: TextStyle(
+        fontFamily: AppTokens.fontFamilyBody,
         fontSize: AppTokens.fontSizeMd,
         fontWeight: FontWeight.normal,
         color: fg,
       ),
-      bodySmall: GoogleFonts.getFont('Vazirmatn',
+      bodySmall: TextStyle(
+        fontFamily: AppTokens.fontFamilyBody,
         fontSize: AppTokens.fontSizeXs,
         fontWeight: FontWeight.normal,
         color: muted,

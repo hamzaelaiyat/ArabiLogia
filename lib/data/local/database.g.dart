@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'database.dart';
+part of 'database_io.dart';
 
 // ignore_for_file: type=lint
 class $CachedExamsTable extends CachedExams

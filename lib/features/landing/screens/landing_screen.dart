@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/constants/app_version.dart';
 import 'package:arabilogia/providers/theme_provider.dart';
@@ -22,6 +24,7 @@ class _LandingScreenState extends State<LandingScreen> {
   ReleaseInfo? _releaseInfo;
   bool _isLoading = true;
   bool _hasError = false;
+  List<String> _albumImages = [];
 
   final _downloadKey = GlobalKey();
   final _featuresKey = GlobalKey();
@@ -31,22 +34,23 @@ class _LandingScreenState extends State<LandingScreen> {
   int _currentSlide = 0;
   bool _mobileMenuOpen = false;
 
-  final _albumImages = [
-    'assets/images/album/673883538_951805597708178_3676183158133156276_n.jpg',
-    'assets/images/album/674395376_951805591041512_7371181102297422668_n.jpg',
-    'assets/images/album/678278711_955818653973539_6676515568733782605_n.jpg',
-    'assets/images/album/678465217_955818770640194_2596401437582107264_n.jpg',
-    'assets/images/album/679831904_955818623973542_7211739239666954843_n.jpg',
-    'assets/images/album/679859404_955818607306877_8739552286049830360_n.jpg',
-    'assets/images/album/682518386_955818660640205_8176697648994662818_n.jpg',
-    'assets/images/album/682525117_955818720640199_8622116451925099152_n.jpg',
-  ];
-
   @override
   void initState() {
     super.initState();
+    _loadAlbumImages();
     _fetchRelease();
     _startSlideshow();
+  }
+
+  Future<void> _loadAlbumImages() async {
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    if (!mounted) return;
+    setState(() {
+      _albumImages = manifest.listAssets()
+          .where((p) => p.startsWith('assets/images/album/'))
+          .toList()
+        ..sort();
+    });
   }
 
   @override
@@ -59,7 +63,7 @@ class _LandingScreenState extends State<LandingScreen> {
 
   void _startSlideshow() {
     _slideTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!mounted) return;
+      if (!mounted || _albumImages.isEmpty) return;
       final next = (_currentSlide + 1) % _albumImages.length;
       _pageController.animateToPage(
         next,
@@ -353,17 +357,16 @@ class _LandingScreenState extends State<LandingScreen> {
                 Expanded(child: _buildHeroText(context, isDesktop)),
                 const SizedBox(width: 48),
                 SizedBox(
-                  width: 480,
-                  height: 420,
+                  width: 360,
+                  height: 480,
                   child: _buildSlideshow(),
                 ),
               ],
             )
           : Column(
               children: [
-                SizedBox(
-                  height: 280,
-                  width: double.infinity,
+                AspectRatio(
+                  aspectRatio: 3 / 4,
                   child: _buildSlideshow(),
                 ),
                 const SizedBox(height: 32),
@@ -404,7 +407,7 @@ class _LandingScreenState extends State<LandingScreen> {
         const SizedBox(height: 16),
         Text(
           'منصة تعليمية مبتكرة مصممة خصيصاً لطلاب الثانوية العامة، تجمع بين قوة التكنولوجيا وجمال لغة الضاد لتجعل تعلم النحو والصرف والبلاغة والأدب تجربة ممتعة وتفاعلية لا تُنسى.',
-          style: GoogleFonts.vazirmatn(
+          style: TextStyle(fontFamily: AppTokens.fontFamilyBody,
             fontSize: 18,
             fontWeight: FontWeight.w500,
             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
@@ -464,7 +467,13 @@ class _LandingScreenState extends State<LandingScreen> {
   Widget _buildSlideshow() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
-      child: Stack(
+      child: _albumImages.isEmpty
+          ? Container(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF212325)
+                  : const Color(0xFFEDF2F8),
+            )
+          : Stack(
         children: [
           PageView.builder(
             controller: _pageController,
@@ -586,7 +595,7 @@ class _LandingScreenState extends State<LandingScreen> {
           const SizedBox(height: 12),
           Text(
             'كل ما يحتاجه طالب الثانوية العامة للتميز والتفوق في مادة اللغة العربية',
-            style: GoogleFonts.vazirmatn(
+            style: TextStyle(fontFamily: AppTokens.fontFamilyBody,
               fontSize: 16,
               fontWeight: FontWeight.w500,
               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
@@ -634,7 +643,7 @@ class _LandingScreenState extends State<LandingScreen> {
           const SizedBox(height: 12),
           Text(
             'تدعم منصة عربيلوجيا التشغيل عبر الويب مباشرة، كما نوفر تطبيقات رسمية لنظام الأندرويد ولينكس لتستمتع بأفضل أداء وتجربة تعليمية خفيفة وسريعة.',
-            style: GoogleFonts.vazirmatn(
+            style: TextStyle(fontFamily: AppTokens.fontFamilyBody,
               fontSize: 16,
               fontWeight: FontWeight.w500,
               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
@@ -690,7 +699,7 @@ class _LandingScreenState extends State<LandingScreen> {
               const SizedBox(height: 12),
               Text(
                 'تعذر الاتصال بسيرفر التحديثات',
-                style: GoogleFonts.vazirmatn(
+                style: TextStyle(fontFamily: AppTokens.fontFamilyBody,
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
@@ -723,7 +732,7 @@ class _LandingScreenState extends State<LandingScreen> {
           const SizedBox(height: 16),
           Text(
             'عربيلوجيا هي منصة تعليمية غير ربحية تهدف لتبسيط ودعم تعلم اللغة العربية لطلاب المرحلة الثانوية باستخدام التكنولوجيا الحديثة.',
-            style: GoogleFonts.vazirmatn(
+            style: TextStyle(fontFamily: AppTokens.fontFamilyBody,
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: isDark ? Colors.white70 : Colors.black54,
@@ -953,7 +962,7 @@ class _FeatureCardState extends State<_FeatureCard> {
             Text(
               widget.feature.description,
               textAlign: TextAlign.center,
-              style: GoogleFonts.vazirmatn(
+              style: TextStyle(fontFamily: AppTokens.fontFamilyBody,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 height: 1.6,

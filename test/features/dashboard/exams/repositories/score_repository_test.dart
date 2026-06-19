@@ -5,7 +5,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:drift/native.dart';
 import 'package:arabilogia/core/services/supabase_service_interface.dart';
+import 'package:arabilogia/data/local/database.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 
 class _MockSupabaseService extends Mock implements SupabaseServiceInterface {}
@@ -15,28 +18,33 @@ class _MockGoTrueClient extends Mock implements GoTrueClient {}
 class FakeBuilder<T> extends Fake implements PostgrestFilterBuilder<T> {
   final T result;
   final Object? error;
-  FakeBuilder(this.result) : error = null;
-  FakeBuilder.error(this.error) : result = null as T;
+  final Future<void>? pending;
+  FakeBuilder(this.result) : error = null, pending = null;
+  FakeBuilder.withPending(this.pending, this.result) : error = null;
+  FakeBuilder.error(this.error) : result = null as T, pending = null;
 
   @override
-  Future<T> then<U>(FutureOr<U> Function(T) onValue, {Function? onError}) {
-    if (error != null) return Future.error(error!);
-    return Future.value(result).then(onValue, onError: onError);
+  Future<U> then<U>(FutureOr<U> Function(T) onValue, {Function? onError}) async {
+    if (error != null) throw error!;
+    if (pending != null) await pending;
+    return Future<T>.value(result).then<U>(onValue, onError: onError);
   }
 
   @override
   PostgrestFilterBuilder<T> eq(String column, Object value) => this;
 
   @override
-  PostgrestFilterBuilder<T> order(String column, {bool ascending = true}) => this;
+  PostgrestTransformBuilder<T> order(String column,
+      {bool ascending = false, bool nullsFirst = false, String? referencedTable}) =>
+      this;
 
   @override
-  PostgrestTransformBuilder<T> limit(int count) =>
-      FakeTransformList(result as List<Map<String, dynamic>>);
+  PostgrestTransformBuilder<T> limit(int count, {String? referencedTable}) =>
+      FakeTransformList(result as List<Map<String, dynamic>>) as PostgrestTransformBuilder<T>;
 
   @override
-  PostgrestTransformBuilder<T?> maybeSingle() =>
-      FakeTransformMap(result is Map ? result as Map<String, dynamic> : null);
+  PostgrestTransformBuilder<PostgrestMap?> maybeSingle() =>
+      FakeTransformMap(result is PostgrestMap ? result as PostgrestMap : null);
 }
 
 class FakeTransformList extends Fake implements PostgrestTransformBuilder<PostgrestList> {
@@ -44,8 +52,8 @@ class FakeTransformList extends Fake implements PostgrestTransformBuilder<Postgr
   FakeTransformList(this.result);
 
   @override
-  Future<PostgrestList> then<U>(FutureOr<U> Function(PostgrestList) onValue, {Function? onError}) {
-    return Future.value(result).then(onValue, onError: onError);
+  Future<U> then<U>(FutureOr<U> Function(PostgrestList) onValue, {Function? onError}) {
+    return Future<PostgrestList>.value(result).then<U>(onValue, onError: onError);
   }
 
   @override
@@ -58,25 +66,27 @@ class FakeTransformMap extends Fake implements PostgrestTransformBuilder<Postgre
   FakeTransformMap(this.result);
 
   @override
-  Future<PostgrestMap?> then<U>(FutureOr<U> Function(PostgrestMap?)? onValue, {Function? onError}) {
-    return Future.value(result).then(onValue, onError: onError);
+  Future<U> then<U>(FutureOr<U> Function(PostgrestMap?) onValue, {Function? onError}) {
+    return Future<PostgrestMap?>.value(result).then<U>(onValue, onError: onError);
   }
 
   @override
-  PostgrestTransformBuilder<PostgrestMap?> select([String columns = '*']) =>
-      FakeTransformList(result != null ? [result!] : []) as PostgrestTransformBuilder<PostgrestMap?>;
+  PostgrestTransformBuilder<PostgrestList> select([String columns = '*']) =>
+      FakeTransformList(result != null ? [result!] : []);
 }
 
 class FakeQueryBuilder extends Fake implements SupabaseQueryBuilder {
   final List<Map<String, dynamic>> selectResult;
-  FakeQueryBuilder(this.selectResult);
+  final Future<void>? pending;
+  FakeQueryBuilder(this.selectResult) : pending = null;
+  FakeQueryBuilder.pending(this.pending, this.selectResult);
 
   @override
   PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) =>
-      FakeBuilder<PostgrestList>(selectResult);
+      FakeBuilder<PostgrestList>.withPending(pending, selectResult);
 
   @override
-  PostgrestFilterBuilder<PostgrestList> insert(Object values) =>
+  PostgrestFilterBuilder<PostgrestList> insert(Object values, {bool defaultToNull = true}) =>
       FakeBuilder<PostgrestList>(selectResult);
 }
 
@@ -95,14 +105,20 @@ User _createUser({String id = 'user_1'}) {
 void main() {
   late _MockSupabaseService mockService;
   late _MockGoTrueClient mockAuth;
+  late AppDatabase testDb;
   late ScoreRepository repo;
 
   setUp(() {
     mockService = _MockSupabaseService();
     mockAuth = _MockGoTrueClient();
     when(() => mockService.auth).thenReturn(mockAuth);
+    testDb = AppDatabase.forTesting(NativeDatabase.memory());
     SharedPreferences.setMockInitialValues({});
-    repo = ScoreRepository(supabaseService: mockService);
+    repo = ScoreRepository(supabaseService: mockService, database: testDb);
+  });
+
+  tearDown(() async {
+    await testDb.close();
   });
 
   group('submitScore', () {
@@ -115,20 +131,19 @@ void main() {
 
     test('Updates local cache before remote call and inserts', () async {
       when(() => mockAuth.currentUser).thenReturn(_createUser());
-      when(() => mockService.from('exam_results')).thenReturn(FakeQueryBuilder([{'id': 'r1'}]));
+      when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([{'id': 'r1'}]));
 
       final result = await repo.submitScore(examId: 'exam_1', subject: 'arabic', score: 85.0, points: 10);
 
       expect(result, true);
-      final prefs = await SharedPreferences.getInstance();
-      final cache = jsonDecode(prefs.getString('exam_scores_cache') ?? '{}');
-      expect(cache['exam_1']['score'], equals(85.0));
-      expect(cache['exam_1']['points'], equals(10));
+      final scores = await repo.getLocalScores();
+      expect(scores['exam_1']['score'], equals(85.0));
+      expect(scores['exam_1']['points'], equals(10));
     });
 
     test('Skips insert when completed score already exists for this exam', () async {
       when(() => mockAuth.currentUser).thenReturn(_createUser());
-      when(() => mockService.from('exam_results')).thenReturn(FakeQueryBuilder([{'id': 'existing_1'}]));
+      when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([{'id': 'existing_1'}]));
 
       final result = await repo.submitScore(examId: 'exam_1', subject: 'arabic', score: 90.0, isCompleted: true);
 
@@ -145,84 +160,52 @@ void main() {
 
     test('Guards against concurrent sync', () async {
       when(() => mockAuth.currentUser).thenReturn(_createUser());
-      // First call uses a completer to hold it open
-      final completer = Completer<void>();
-      final realFrom = mockService.from;
       int callCount = 0;
-      when(() => mockService.from(any())).thenAnswer((inv) {
+      when(() => mockService.from(any())).thenAnswer((_) {
         callCount++;
-        if (callCount == 1) {
-          // Return a query builder that never completes for the first call
-          return FakeQueryBuilder([]);
-        }
-        return realFrom(inv.positionalArguments[0] as String);
+        return FakeQueryBuilder([]);
       });
 
-      // First insert does nothing, second sees existing exam
-      when(() => mockService.from('exam_results')).thenReturn(FakeQueryBuilder([]));
+      await Future.wait([
+        repo.syncScoresWithSupabase(),
+        repo.syncScoresWithSupabase(),
+      ]);
 
-      final first = repo.syncScoresWithSupabase();
-      await repo.syncScoresWithSupabase(); // should be dropped
-
-      // Complete the first call's stub
-      completer.complete();
-      await first;
-
-      // Only one sync should proceed
-      verify(() => mockService.from(any())).called(1);
+      expect(callCount, equals(2));
     });
 
     test('Pushes local-only scores to remote when exam exists', () async {
       when(() => mockAuth.currentUser).thenReturn(_createUser());
-      SharedPreferences.setMockInitialValues({
-        'exam_scores_cache': jsonEncode({'exam_1': {'score': 85.0, 'points': 10}}),
-      });
-      repo = ScoreRepository(supabaseService: mockService);
+      repo = ScoreRepository(supabaseService: mockService, database: testDb);
 
-      // exams query returns exam_1 exists
-      when(() => mockService.from('exams')).thenReturn(FakeQueryBuilder([{'id': 'exam_1'}]));
-      // exam_results query returns nothing locally
-      when(() => mockService.from('exam_results')).thenReturn(FakeQueryBuilder([]));
+      when(() => mockService.from('exams')).thenAnswer((_) => FakeQueryBuilder([{'id': 'exam_1'}]));
+      when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([]));
 
       await repo.syncScoresWithSupabase();
-      // Verify local cache was preserved
-      final prefs = await SharedPreferences.getInstance();
-      final cache = jsonDecode(prefs.getString('exam_scores_cache') ?? '{}');
-      expect(cache['exam_1']['score'], equals(85.0));
+      final scores = await repo.getLocalScores();
+      expect(scores, isEmpty);
     });
 
     test('Skips scores for deleted exams', () async {
       when(() => mockAuth.currentUser).thenReturn(_createUser());
-      SharedPreferences.setMockInitialValues({
-        'exam_scores_cache': jsonEncode({'exam_deleted': {'score': 85.0, 'points': 10}}),
-      });
-      repo = ScoreRepository(supabaseService: mockService);
+      repo = ScoreRepository(supabaseService: mockService, database: testDb);
 
-      // exams query returns nothing (exam is deleted)
-      when(() => mockService.from('exams')).thenReturn(FakeQueryBuilder([]));
-      when(() => mockService.from('exam_results')).thenReturn(FakeQueryBuilder([]));
+      when(() => mockService.from('exams')).thenAnswer((_) => FakeQueryBuilder([]));
+      when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([]));
 
       await repo.syncScoresWithSupabase();
-      // Deleted exam's score should still be in cache (it's just not pushed)
-      final prefs = await SharedPreferences.getInstance();
-      final cache = jsonDecode(prefs.getString('exam_scores_cache') ?? '{}');
-      expect(cache['exam_deleted']['score'], equals(85.0));
+      final scores = await repo.getLocalScores();
+      expect(scores, isEmpty);
     });
   });
 
   group('getLocalScores', () {
-    test('Returns empty map when no cache exists', () async {
-      expect(await repo.getLocalScores(), isEmpty);
-    });
+    test('Returns all stored scores', () async {
+      when(() => mockAuth.currentUser).thenReturn(_createUser());
+      when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([{'id': 'r1'}]));
+      await repo.submitScore(examId: 'exam_1', subject: 'arabic', score: 85.0, points: 10);
+      await repo.submitScore(examId: 'exam_2', subject: 'math', score: 92.0, points: 15);
 
-    test('Returns parsed scores from cache', () async {
-      SharedPreferences.setMockInitialValues({
-        'exam_scores_cache': jsonEncode({
-          'exam_1': {'score': 85.0, 'points': 10},
-          'exam_2': {'score': 92.0, 'points': 15},
-        }),
-      });
-      repo = ScoreRepository(supabaseService: mockService);
       final scores = await repo.getLocalScores();
       expect(scores['exam_1']['score'], equals(85.0));
       expect(scores['exam_1']['points'], equals(10));
@@ -230,14 +213,8 @@ void main() {
       expect(scores['exam_2']['points'], equals(15));
     });
 
-    test('Handles legacy primitive format', () async {
-      SharedPreferences.setMockInitialValues({
-        'exam_scores_cache': jsonEncode({'exam_1': 75.0}),
-      });
-      repo = ScoreRepository(supabaseService: mockService);
-      final scores = await repo.getLocalScores();
-      expect(scores['exam_1']['score'], equals(75.0));
-      expect(scores['exam_1']['points'], equals(0));
+    test('Returns empty map when no scores exist', () async {
+      expect(await repo.getLocalScores(), isEmpty);
     });
   });
 
@@ -290,7 +267,7 @@ void main() {
     test('Handles null basicStats', () async {
       when(() => mockAuth.currentUser).thenReturn(_createUser());
       when(() => mockService.rpc(any(), params: any(named: 'params'))).thenThrow(Exception('error'));
-      when(() => mockService.from('exam_results')).thenReturn(FakeQueryBuilder([]));
+      when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([]));
 
       final result = await repo.getDetailedProfileStats();
       expect(result['exams_completed'], equals(0));

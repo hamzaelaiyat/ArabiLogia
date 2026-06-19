@@ -8,7 +8,7 @@ class ExamSessionService {
   late final SessionDao _dao;
 
   ExamSessionService({AppDatabase? database})
-      : _database = database ?? AppDatabase() {
+    : _database = database ?? AppDatabase.instance {
     _dao = SessionDao(_database);
   }
 
@@ -19,8 +19,7 @@ class ExamSessionService {
       durationMinutes: session.durationMinutes,
       startTimestamp: session.startTimestamp,
       selectedAnswers: session.selectedAnswers,
-      expiresAt:
-          session.startTimestamp + session.durationMinutes * 60 * 1000,
+      expiresAt: session.startTimestamp + session.durationMinutes * 60 * 1000,
     );
   }
 

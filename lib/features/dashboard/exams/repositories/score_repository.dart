@@ -8,21 +8,23 @@ import 'package:arabilogia/features/dashboard/exams/utils/grade_mapper.dart';
 
 class ScoreRepository {
   static final ScoreRepository _instance = ScoreRepository._internal();
-  factory ScoreRepository({SupabaseServiceInterface? supabaseService, AppDatabase? database}) =>
-      supabaseService != null || database != null
-          ? ScoreRepository._create(
-              supabaseService: supabaseService ?? SupabaseServiceWrapper(),
-              database: database ?? AppDatabase(),
-            )
-          : _instance;
+  factory ScoreRepository({
+    SupabaseServiceInterface? supabaseService,
+    AppDatabase? database,
+  }) => supabaseService != null || database != null
+      ? ScoreRepository._create(
+          supabaseService: supabaseService ?? SupabaseServiceWrapper(),
+          database: database ?? AppDatabase.instance,
+        )
+      : _instance;
   ScoreRepository._internal()
-      : _supabaseService = SupabaseServiceWrapper(),
-        _scoreDao = ScoreDao(AppDatabase());
+    : _supabaseService = SupabaseServiceWrapper(),
+      _scoreDao = ScoreDao(AppDatabase.instance);
   ScoreRepository._create({
     required SupabaseServiceInterface supabaseService,
     required AppDatabase database,
-  })  : _supabaseService = supabaseService,
-        _scoreDao = ScoreDao(database);
+  }) : _supabaseService = supabaseService,
+       _scoreDao = ScoreDao(database);
 
   final SupabaseServiceInterface _supabaseService;
   final ScoreDao _scoreDao;
@@ -68,7 +70,10 @@ class ScoreRepository {
         'wrong_answers': wrongAnswers.toList(),
         'status': isCompleted ? 'completed' : 'abandoned',
       };
-      final result = await _supabaseService.from('exam_results').insert(data).select();
+      final result = await _supabaseService
+          .from('exam_results')
+          .insert(data)
+          .select();
       return true;
     } catch (e) {
       try {
@@ -156,8 +161,7 @@ class ScoreRepository {
                 'wrong_answers': [],
               });
               await _scoreDao.markSynced(entry.examId);
-            } catch (e) {
-            }
+            } catch (e) {}
           }
         }
 
@@ -213,8 +217,7 @@ class ScoreRepository {
           .eq('user_id', user.id)
           .maybeSingle();
 
-      if (response == null) {
-      }
+      if (response == null) {}
 
       return response;
     } catch (e) {
@@ -280,21 +283,20 @@ class ScoreRepository {
         if (!controller.isClosed) {
           controller.add(List<Map<String, dynamic>>.from(response));
         }
-      } catch (e) {
-      }
+      } catch (e) {}
     }
 
     fetchExams();
 
-    final channel = _supabaseService
-        .realtimeClient
-        .channel('exams-managed');
-    channel.onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'exams',
-      callback: (_) => fetchExams(),
-    ).subscribe();
+    final channel = _supabaseService.realtimeClient.channel('exams-managed');
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'exams',
+          callback: (_) => fetchExams(),
+        )
+        .subscribe();
 
     controller.onCancel = () async {
       await channel.unsubscribe();
@@ -343,7 +345,7 @@ class ScoreRepository {
                 .from('profiles')
                 .select('id, full_name, username, grade');
             final profileMap = {
-              for (var p in allProfiles) p['id'] as String: p
+              for (var p in allProfiles) p['id'] as String: p,
             };
             for (var row in results) {
               row['profile'] = profileMap[row['user_id'] as String];
@@ -358,9 +360,9 @@ class ScoreRepository {
       }
     }
 
-    final channel = _supabaseService
-        .realtimeClient
-        .channel('exam-participants-$examId');
+    final channel = _supabaseService.realtimeClient.channel(
+      'exam-participants-$examId',
+    );
     channel.onPostgresChanges(
       event: PostgresChangeEvent.all,
       schema: 'public',

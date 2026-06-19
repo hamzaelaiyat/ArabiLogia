@@ -64,9 +64,9 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
         SnackBar(content: Text('مرحباً بعودتك، ${account.fullName}')),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('فشل تبديل الحساب')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('فشل تبديل الحساب')));
     }
   }
 
@@ -75,17 +75,20 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
 
     if (accountsProvider.hasReachedMax) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('لقد وصلت إلى الحد الأقصى من الحسابات (8)')),
+        const SnackBar(
+          content: Text('لقد وصلت إلى الحد الأقصى من الحسابات (8)'),
+        ),
       );
       return;
     }
 
     final authProvider = context.read<AuthProvider>();
     await accountsProvider.saveCurrentSession(authProvider);
-    await authProvider.signOut();
 
     if (!mounted) return;
     Navigator.pop(context);
+
+    await authProvider.signOut();
   }
 
   void _removeAccount(SavedAccount account) {
@@ -127,10 +130,14 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
 
   String _getGradeText(int grade) {
     switch (grade) {
-      case 10: return 'الأولى باكالوريا';
-      case 11: return 'الثانية ثانوي';
-      case 12: return 'الثالثة ثانوي';
-      default: return 'صفك الدراسي';
+      case 10:
+        return 'الأولى باكالوريا';
+      case 11:
+        return 'الثانية ثانوي';
+      case 12:
+        return 'الثالثة ثانوي';
+      default:
+        return 'صفك الدراسي';
     }
   }
 
@@ -202,9 +209,12 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
               ),
               child: ListView.separated(
                 shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(horizontal: AppTokens.spacing16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTokens.spacing16,
+                ),
                 itemCount: accountsProvider.accounts.length,
-                separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
+                separatorBuilder: (_, __) =>
+                    const Divider(height: 1, indent: 72),
                 itemBuilder: (context, index) {
                   final account = accountsProvider.accounts[index];
                   final isCurrent = account.id == currentUserId;
@@ -222,7 +232,9 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
           if (!accountsProvider.hasReachedMax) ...[
             const SizedBox(height: AppTokens.spacing12),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppTokens.spacing16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTokens.spacing16,
+              ),
               child: TextButton.icon(
                 onPressed: _addAccount,
                 icon: const Icon(Icons.add_circle_outline, size: 20),
@@ -231,7 +243,10 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
                 ),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ),
@@ -280,92 +295,96 @@ class _AccountTile extends StatelessWidget {
 
     return Opacity(
       opacity: isSwitching ? 0.5 : 1.0,
-      child: ListTile(
-        onTap: isSwitching ? null : onTap,
-        leading: Stack(
-          children: [
-            CircleAvatar(
-              radius: 26,
-              backgroundColor: AppColors.surface(context),
-              backgroundImage: account.avatarUrl != null
-                  ? NetworkImage(account.avatarUrl!)
-                  : null,
-              child: account.avatarUrl == null
-                  ? Text(
-                      account.fullName.isNotEmpty
-                          ? account.fullName[0]
-                          : '?',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : null,
-            ),
-            if (isCurrent)
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 12,
-                    color: Colors.white,
-                  ),
-                ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          onTap: isSwitching ? null : onTap,
+          leading: Stack(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: AppColors.surface(context),
+                backgroundImage: account.avatarUrl != null
+                    ? NetworkImage(account.avatarUrl!)
+                    : null,
+                child: account.avatarUrl == null
+                    ? Text(
+                        account.fullName.isNotEmpty ? account.fullName[0] : '?',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
               ),
-          ],
-        ),
-        title: Text(
-          account.fullName.isNotEmpty ? account.fullName : account.email,
-          style: TextStyle(
-            fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-            color: isCurrent ? AppColors.primary : null,
-          ),
-        ),
-        subtitle: Row(
-          children: [
-            Text(
-              '@${account.username}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.mutedColor(context),
-              ),
-            ),
-            if (account.grade > 0) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-                ),
-                child: Text(
-                  gradeText,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+              if (isCurrent)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      size: 12,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
             ],
-          ],
-        ),
-        trailing: isCurrent
-            ? null
-            : IconButton(
-                icon: Icon(
-                  Icons.remove_circle_outline,
-                  size: 20,
-                  color: AppColors.error.withValues(alpha: 0.7),
+          ),
+          title: Text(
+            account.fullName.isNotEmpty ? account.fullName : account.email,
+            style: TextStyle(
+              fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+              color: isCurrent ? AppColors.primary : null,
+            ),
+          ),
+          subtitle: Row(
+            children: [
+              Text(
+                '@${account.username}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.mutedColor(context),
                 ),
-                onPressed: onRemove,
               ),
+              if (account.grade > 0) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppTokens.radiusFull),
+                  ),
+                  child: Text(
+                    gradeText,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          trailing: isCurrent
+              ? null
+              : IconButton(
+                  icon: Icon(
+                    Icons.remove_circle_outline,
+                    size: 20,
+                    color: AppColors.error.withValues(alpha: 0.7),
+                  ),
+                  onPressed: onRemove,
+                ),
+        ),
       ),
     );
   }
