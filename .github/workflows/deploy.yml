@@ -25,35 +25,36 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build clang pkg-config libgtk-3-dev dpkg-dev
 
-      - name: Update version files
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=${{ github.event.inputs.version }}
-          # Convert hyphenated semver to display form (e.g. 2.7.8-b -> 2.7.8b)
-          DISPLAY_VERSION=$(echo "$VERSION" | sed 's/^-b$//;s/-b/b/')
-          # Strip leading 'v' and convert for pubspec (e.g. v2.7.8b -> 2.7.8-b+1)
-          PUBSPEC_VERSION=$(echo "$VERSION" | sed 's/^v//;s/b$/-b/')
-          PUBSPEC_VERSION="${PUBSPEC_VERSION}+1"
-          # Update pubspec.yaml
-          sed -i "s/^version:.*/version: $PUBSPEC_VERSION/" pubspec.yaml
+          TAG="$VERSION"
+          ANDROID_ARM64="arabilogia-android-arm64-v8a-${VERSION//./_}.apk"
+          ANDROID_ARMEABI="arabilogia-android-armeabi-v7a-${VERSION//./_}.apk"
+          ANDROID_X86_64="arabilogia-android-x86_64-${VERSION//./_}.apk"
+          LINUX_X64="arabilogia-linux-x64-${VERSION//./_}.tar.xz"
 
-          # Update legal_content.dart
-          DATE=$(date "+%B %d, %Y")
-          sed -i "s/'الإصدار الحالي: v[0-9.b-]* | تاريخ الإصدار: [^}]*'/'الإصدار الحالي: v$DISPLAY_VERSION | تاريخ الإصدار: $DATE'/" lib/core/constants/legal_content.dart
+          # Rename APKs to the desired naming convention
+          mkdir -p build/outputs/release
+          cp build/outputs/apk/app-arm64-v8a-release.apk "build/outputs/release/$ANDROID_ARM64" 2>/dev/null || true
+          cp build/outputs/apk/app-armeabi-v7a-release.apk "build/outputs/release/$ANDROID_ARMEABI" 2>/dev/null || true
+          cp build/outputs/apk/app-x86_64-release.apk "build/outputs/release/$ANDROID_X86_64" 2>/dev/null || true
+          cp build/outputs/linux/arabilogia-*-linux-x64.tar.xz "build/outputs/release/$LINUX_X64" 2>/dev/null || true
 
-          # Update dashboard_shell.dart
-          sed -i "s/'v[0-9.b-]*'/'v${DISPLAY_VERSION#v}'/" lib/features/dashboard/screens/dashboard_shell.dart
-
-          # Update dashboard_sidebar.dart
-          sed -i "s/'v[0-9.b-]*'/'v${DISPLAY_VERSION#v}'/" lib/features/dashboard/widgets/dashboard_sidebar.dart
-
-      - name: Commit and tag
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add -A
-          git commit -m "release ${{ github.event.inputs.version }}"
-          git tag ${{ github.event.inputs.version }}
-          git push origin main --tags
+          # Create release if tag exists, otherwise skip
+          if gh release view "$TAG" &>/dev/null; then
+            echo "Release $TAG already exists, uploading assets..."
+            gh release upload "$TAG" build/outputs/release/* --clobber
+          else
+            echo "Creating release $TAG..."
+            NOTES="## ArabiLogia $VERSION\n\n### Downloads\n- [Android ARM64]($ANDROID_ARM64)\n- [Android ARMv7a]($ANDROID_ARMEABI)\n- [Android x86_64]($ANDROID_X86_64)\n- [Linux x64]($LINUX_X64)"
+            gh release create "$TAG" build/outputs/release/* \
+              --title "ArabiLogia $VERSION" \
+              --notes "$NOTES" \
+              --target main
+          fi
 
       - name: Install dependencies
         run: flutter pub get
