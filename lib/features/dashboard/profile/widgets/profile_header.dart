@@ -105,19 +105,35 @@ class _AvatarSection extends StatelessWidget {
             child: CircleAvatar(
               radius: 60,
               backgroundColor: AppColors.surface(context),
-              backgroundImage: avatarUrl != null
-                  ? NetworkImage(avatarUrl!)
-                  : null,
-              child: avatarUrl == null
-                  ? Text(
+              child: avatarUrl != null
+                  ? ClipOval(
+                      child: Image.network(
+                        avatarUrl!,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Center(
+                            child: Text(
+                              name.isNotEmpty ? name[0] : '؟',
+                              style: Theme.of(context).textTheme.headlineLarge
+                                  ?.copyWith(
+                                    color: canUpload ? AppColors.primary : AppColors.mutedColor(context),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : Text(
                       name.isNotEmpty ? name[0] : '؟',
                       style: Theme.of(context).textTheme.headlineLarge
                           ?.copyWith(
                             color: canUpload ? AppColors.primary : AppColors.mutedColor(context),
                             fontWeight: FontWeight.bold,
                           ),
-                    )
-                  : null,
+                    ),
             ),
           ),
         ),

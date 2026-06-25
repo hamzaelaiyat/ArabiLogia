@@ -1,37 +1,1428 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-theme="dark">
+
 <head>
   <base href="$FLUTTER_BASE_HREF">
+  <script>
+    // Dynamically patch base href during local template preview to prevent 404s
+    (function () {
+      var baseEl = document.querySelector('base');
+      if (baseEl && baseEl.getAttribute('href') === '$FLUTTER_BASE_HREF') {
+        var path = window.location.pathname;
+        var dir = path.substring(0, path.lastIndexOf('/') + 1);
+        baseEl.setAttribute('href', dir || '/');
+      }
+    })();
+  </script>
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="عربيلوجيا - منصة تعلم اللغة العربية للثانوية العامة. امتحانات تفاعلية في النحو والصرف والبلاغة والأدب.">
-  <meta name="keywords" content="عربيلوجيا, لغة عربية, ثانوية عامة, نحو, صرف, بلاغة, أدب, امتحانات">
 
+  <!-- SEO & Search Engine Optimization -->
+  <meta name="description"
+    content="عربيلوجيا - منصة تعلم اللغة العربية للثانوية العامة. امتحانات تفاعلية وتتبع ذكي للأداء في النحو والصرف والبلاغة والأدب.">
+  <meta name="keywords"
+    content="عربيلوجيا, لغة عربية, ثانوية عامة, نحو, صرف, بلاغة, أدب, امتحانات, تعليم, منصة تعليمية">
+  <meta name="author" content="حمزة العياط">
+
+  <!-- Open Graph / Facebook -->
   <meta property="og:title" content="عربيلوجيا - منصة تعلم اللغة العربية">
-  <meta property="og:description" content="منصة تعليمية مبتكرة لطلاب الثانوية العامة تجمع بين التكنولوجيا وجمال لغة الضاد.">
+  <meta property="og:description"
+    content="منصة تعليمية مبتكرة لطلاب الثانوية العامة تجمع بين التكنولوجيا وجمال لغة الضاد.">
   <meta property="og:type" content="website">
+  <meta property="og:url" content="https://arabilogia.vercel.app/">
   <meta property="og:image" content="https://arabilogia.vercel.app/icons/Icon-512.png">
 
+  <!-- Apple & Mobile Web App Meta -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="عربيلوجيا">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png" />
 
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&family=Estedad:wght@100..900&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Estedad:wght@100..900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
+    rel="stylesheet">
 
   <title>عربيلوجيا - منصة تعلم اللغة العربية</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8677686078416176"
-     crossorigin="anonymous"></script>
+    crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      /* Typography */
+      --font-headings: 'Rubik', sans-serif;
+      --font-body: 'Estedad', sans-serif;
+
+      /* Common Brand Colors */
+      --color-primary: #EB8A00;
+      --color-primary-rgb: 235, 138, 0;
+      --color-accent: #FF6B35;
+      --color-accent-rgb: 255, 107, 53;
+      --color-success: #30D158;
+      --color-error: #FF3B30;
+
+      /* Dark Theme (Default) */
+      --color-bg: #191B1D;
+      --color-bg-alt: #212325;
+      --color-fg: #EAEFF5;
+      --color-fg-muted: #91A0B1;
+      --color-secondary-bg: #212325;
+      --color-glass-bg: rgba(33, 35, 37, 0.7);
+      --color-glass-border: rgba(255, 255, 255, 0.08);
+      --color-card-shadow: rgba(0, 0, 0, 0.4);
+    }
+
+    [data-theme="light"] {
+      /* Light Theme */
+      --color-bg: #F7FCFF;
+      --color-bg-alt: #EDF2F8;
+      --color-fg: #1A222B;
+      --color-fg-muted: #6B7280;
+      --color-secondary-bg: #EDF2F8;
+      --color-glass-bg: rgba(255, 255, 255, 0.75);
+      --color-glass-border: rgba(26, 34, 43, 0.08);
+      --color-card-shadow: rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--color-bg);
+      color: var(--color-fg);
+      overflow-x: hidden;
+      line-height: 1.6;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    .brand-title {
+      font-family: var(--font-headings);
+      font-weight: 700;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header & Navigation */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: var(--color-glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--color-glass-border);
+      height: 72px;
+      display: flex;
+      align-items: center;
+    }
+
+    .nav-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .brand-logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-logo {
+      height: 40px;
+      width: auto;
+      animation: logo-bounce 4s ease-in-out infinite alternate;
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--color-fg);
+      font-family: var(--font-headings);
+      background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: var(--color-fg-muted);
+      font-weight: 600;
+      font-size: 15px;
+      position: relative;
+      padding: 6px 0;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: var(--color-fg);
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 2.5px;
+      background: var(--color-primary);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .nav-link:hover::after,
+    .nav-link.active::after {
+      width: 100%;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 24px;
+      border-radius: 12px;
+      font-family: var(--font-headings);
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease, border-color 0.3s ease;
+      border: none;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #c77500;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--color-card-shadow);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--color-fg);
+      border: 1.5px solid var(--color-glass-border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--color-bg-alt);
+      border-color: var(--color-fg-muted);
+      transform: translateY(-2px);
+    }
+
+    .theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--color-fg);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--color-glass-border);
+      background-color: var(--color-glass-bg);
+    }
+
+    .theme-toggle:hover {
+      background-color: var(--color-bg-alt);
+      transform: rotate(15deg);
+    }
+
+    .theme-toggle svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+
+    .hamburger span {
+      width: 24px;
+      height: 2.5px;
+      background-color: var(--color-fg);
+      border-radius: 2px;
+      transition: 0.3s ease;
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 160px 0 100px;
+      min-height: 85vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      opacity: 0;
+      animation: fade-in-hero 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fade-in-hero {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 48px;
+      align-items: center;
+    }
+
+    .hero-content {
+      text-align: right;
+    }
+
+    .hero-title {
+      font-size: 54px;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      font-weight: 900;
+    }
+
+    .hero-title span {
+      color: var(--color-primary);
+      background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-description {
+      font-size: 18px;
+      color: var(--color-fg-muted);
+      margin-bottom: 36px;
+      max-width: 580px;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    /* CSS App Mockup */
+    .hero-image {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      perspective: 1000px;
+    }
+
+    .teacher-image {
+      max-width: 100%;
+      height: auto;
+      max-height: 480px;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      -webkit-mask-image: linear-gradient(to top, transparent 0%, black 15%);
+      mask-image: linear-gradient(to top, transparent 0%, black 15%);
+    }
+
+    .teacher-image:hover {
+      transform: translateY(-10px) scale(1.02);
+    }
+
+    /* Features Section */
+    .features {
+      padding: 100px 0;
+      background-color: var(--color-secondary-bg);
+      position: relative;
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto 64px;
+    }
+
+    .section-title {
+      font-size: 40px;
+      margin-bottom: 16px;
+      font-weight: 800;
+    }
+
+    .section-subtitle {
+      font-size: 16px;
+      color: var(--color-fg-muted);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--color-bg);
+      border: 1px solid var(--color-glass-border);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 8px 30px var(--color-card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      border-color: var(--color-fg-muted);
+      box-shadow: 0 12px 40px var(--color-card-shadow);
+    }
+
+    .feature-icon-wrapper {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background-color: var(--color-secondary-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-primary);
+    }
+
+    .feature-icon-wrapper svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .feature-title {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .feature-desc {
+      font-size: 14px;
+      color: var(--color-fg-muted);
+      line-height: 1.6;
+    }
+
+    /* Graduates Album Carousel Section */
+    .album-section {
+      padding: 100px 0;
+      background-color: var(--color-bg);
+      position: relative;
+    }
+
+    .album-slider {
+      direction: ltr;
+      overflow: hidden;
+      width: 100%;
+      position: relative;
+      padding: 20px 0;
+    }
+
+    /* Edge Gradient Fade Out Fading Effect */
+    .album-slider::before,
+    .album-slider::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 200px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .album-slider::before {
+      left: 0;
+      background: linear-gradient(to right, var(--color-bg), transparent);
+    }
+
+    .album-slider::after {
+      right: 0;
+      background: linear-gradient(to left, var(--color-bg), transparent);
+    }
+
+    .marquee-track {
+      display: flex;
+      width: max-content;
+      animation: marquee-scroll 75s linear infinite;
+    }
+
+    .marquee-track:hover {
+      animation-play-state: paused;
+    }
+
+    .marquee-content {
+      display: flex;
+      gap: 20px;
+      padding-right: 20px;
+    }
+
+    .album-card {
+      width: 260px;
+      height: 350px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--color-glass-border);
+      box-shadow: 0 10px 30px var(--color-card-shadow);
+      background: var(--color-bg-alt);
+      transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), border-color 0.3s ease;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .album-card:hover {
+      transform: translateY(-8px) scale(1.03);
+      border-color: var(--color-fg-muted);
+    }
+
+    .album-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    @keyframes marquee-scroll {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+
+    /* Download Section */
+    .download {
+      padding: 100px 0;
+      background-color: var(--color-secondary-bg);
+      position: relative;
+    }
+
+    .download-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+
+    .download-content {
+      text-align: right;
+    }
+
+    .download-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .download-card {
+      background: var(--color-bg);
+      border: 1px solid var(--color-glass-border);
+      border-radius: 20px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      position: relative;
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .download-card:hover {
+      transform: translateX(-6px);
+      border-color: var(--color-fg-muted);
+      box-shadow: 0 8px 24px var(--color-card-shadow);
+    }
+
+    .download-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background-color: var(--color-secondary-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-primary);
+      flex-shrink: 0;
+    }
+
+    .download-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .download-info {
+      flex: 1;
+      text-align: right;
+    }
+
+    .download-platform {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .download-details {
+      font-size: 13px;
+      color: var(--color-fg-muted);
+    }
+
+    .download-action {
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .download-action svg {
+      width: 20px;
+      height: 20px;
+      transition: transform 0.3s ease;
+    }
+
+    .download-card:hover .download-action svg {
+      transform: translateX(-4px);
+    }
+
+    .version-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 12px;
+      background: var(--color-glass-border);
+      color: var(--color-fg);
+      font-family: var(--font-headings);
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 16px;
+    }
+
+    /* Footer */
+    footer {
+      background-color: var(--color-bg);
+      border-top: 1px solid var(--color-glass-border);
+      padding: 60px 0 30px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .footer-brand {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .footer-desc {
+      color: var(--color-fg-muted);
+      font-size: 14px;
+      max-width: 380px;
+    }
+
+    .footer-links-col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .footer-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--color-fg);
+    }
+
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      color: var(--color-fg-muted);
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .footer-links a:hover {
+      color: var(--color-primary);
+    }
+
+    .footer-bottom {
+      border-top: 1px solid var(--color-glass-border);
+      padding-top: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--color-fg-muted);
+    }
+
+    /* Fullscreen Loading & Islamic star spinner */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--color-bg);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+    }
+
+    #loading-screen.active {
+      display: flex;
+    }
+
+    .islamic-spinner {
+      position: relative;
+      width: 80px;
+      height: 80px;
+    }
+
+    .star-shape {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 3.5px solid var(--color-primary);
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    .star-shape:nth-child(1) {
+      transform: rotate(0deg);
+      animation: rotate-star-1 4s cubic-bezier(0.68, -0.6, 0.32, 1.6) infinite;
+    }
+
+    .star-shape:nth-child(2) {
+      transform: rotate(45deg);
+      animation: rotate-star-2 4s cubic-bezier(0.68, -0.6, 0.32, 1.6) infinite;
+    }
+
+    .spinner-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 24px;
+      height: 24px;
+      background-color: var(--color-accent);
+      border-radius: 50%;
+      animation: pulse-center 2s ease-in-out infinite;
+    }
+
+    .loading-text {
+      font-family: var(--font-headings);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--color-fg);
+      text-align: center;
+      animation: pulse-text 1.5s ease-in-out infinite alternate;
+    }
+
+    /* Keyframes Animations */
+    @keyframes logo-bounce {
+      0% {
+        transform: translateY(0);
+      }
+
+      100% {
+        transform: translateY(-4px);
+      }
+    }
+
+    @keyframes rotate-star-1 {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      25% {
+        transform: rotate(90deg);
+      }
+
+      50% {
+        transform: rotate(180deg);
+      }
+
+      75% {
+        transform: rotate(270deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes rotate-star-2 {
+      0% {
+        transform: rotate(45deg);
+      }
+
+      25% {
+        transform: rotate(135deg);
+      }
+
+      50% {
+        transform: rotate(225deg);
+      }
+
+      75% {
+        transform: rotate(315deg);
+      }
+
+      100% {
+        transform: rotate(405deg);
+      }
+    }
+
+    @keyframes pulse-center {
+
+      0%,
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 0.8;
+      }
+    }
+
+    @keyframes pulse-text {
+      0% {
+        opacity: 0.6;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+
+    /* Responsive Queries */
+    @media (max-width: 991px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .hero-content {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .hero-description {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .hero-image {
+        order: -1;
+      }
+
+      .download-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+
+      .download-content {
+        text-align: center;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 36px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 72px;
+        left: 0;
+        right: 0;
+        background-color: var(--color-bg-alt);
+        flex-direction: column;
+        padding: 24px;
+        gap: 16px;
+        border-bottom: 1px solid var(--color-glass-border);
+      }
+
+      .nav-links.mobile-open {
+        display: flex;
+      }
+
+      .hamburger {
+        display: flex;
+      }
+
+      .hero-title {
+        font-size: 38px;
+      }
+
+      .btn {
+        padding: 8px 20px;
+        font-size: 14px;
+      }
+    }
+  </style>
 </head>
+
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- Landing Page Content Wrapper -->
+  <div id="landing-content" style="display: none;">
+    <!-- Navigation Bar -->
+    <header>
+      <div class="container nav-container">
+        <a href="#" class="brand-logo-container">
+          <img src="assets/assets/images/logo-removedbg.png" alt="عربيلوجيا" class="brand-logo"
+            onerror="this.onerror=null; this.src='assets/images/logo-removedbg.png'"> </a>
+
+        <ul class="nav-links" id="navLinks">
+          <li><a href="#" class="nav-link active">الرئيسية</a></li>
+          <li><a href="#features" class="nav-link">المميزات</a></li>
+          <li><a href="#album" class="nav-link">المتفوقون</a></li>
+          <li><a href="#download" class="nav-link">التحميل</a></li>
+        </ul>
+
+        <div class="nav-actions">
+          <!-- Theme Switcher -->
+          <button class="theme-toggle" id="themeToggle" title="تبديل المظهر">
+            <svg id="theme-sun" viewBox="0 0 24 24" style="display: block;">
+              <path
+                d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z" />
+            </svg>
+            <svg id="theme-moon" viewBox="0 0 24 24" style="display: none;">
+              <path
+                d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.98-2.63 3.65-4.64 4.61-3.16 1.51-6.91.26-8.42-2.9-1.13-2.37-.85-5.13.63-7.19.93-1.3 2.28-2.26 3.85-2.73-.36-.16-.74-.29-1.12-.37C12.66 3.11 12.33 3 12 3z" />
+            </svg>
+          </button>
+
+          <!-- CTA Button to boot App -->
+          <button class="btn btn-primary" onclick="launchApp('/register')">إنشاء حساب</button>
+
+          <button class="hamburger" id="hamburger" title="القائمة">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <!-- Right Side: Text info -->
+        <div class="hero-content">
+          <h1 class="hero-title">لغتنا الجميلة<br> <span>مع عربيلوجيا</span></h1>
+          <p class="hero-description">
+            منصة تعليمية مبتكرة مصممة خصيصاً لطلاب الثانوية العامة، تجمع بين قوة التكنولوجيا وجمال لغة الضاد لتجعل تعلم
+            النحو والصرف والبلاغة والأدب تجربة ممتعة وتفاعلية لا تُنسى.
+          </p>
+          <div class="hero-actions">
+            <button class="btn btn-primary" onclick="launchApp('/register')">ابدأ الآن مجاناً</button>
+            <a href="#download" class="btn btn-secondary">تحميل التطبيق</a>
+          </div>
+        </div>
+
+        <!-- Left Side: Teacher Image -->
+        <div class="hero-image">
+          <img src="assets/assets/images/teacher.png" alt="الأستاذ" class="teacher-image"
+            onerror="this.onerror=null; this.src='assets/images/teacher.png'">
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">مميزات المنصة</h2>
+          <p class="section-subtitle">كل ما يحتاجه طالب الثانوية العامة للتميز والتفوق في مادة اللغة العربية</p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Feature 1 -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                <path d="M9 12l2 2 4-4" />
+              </svg>
+            </div>
+            <h3 class="feature-title">امتحانات تفاعلية</h3>
+            <p class="feature-desc">اختبر معلوماتك في النحو والأدب والبلاغة والقراءة مع آلاف الأسئلة المصممة طبقاً
+              للنظام
+              الحديث للثانوية العامة.</p>
+          </div>
+
+          <!-- Feature 2 -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path
+                  d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            </div>
+            <h3 class="feature-title">لوحة المتصدرين</h3>
+            <p class="feature-desc">أشعل روح الحماس والتنافس مع زملائك على مستوى الجمهورية وتصدر القائمة الأسبوعية
+              للحصول
+              على ألقاب مميزة.</p>
+          </div>
+
+          <!-- Feature 3 -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 20V10M12 20V4M6 20v-6" />
+              </svg>
+            </div>
+            <h3 class="feature-title">تتبع التقدم</h3>
+            <p class="feature-desc">إحصائيات تفصيلية لمستوى إنجازك في كل فرع، تساعدك على معرفة نقاط قوتك وضعفك لتركز
+              عليها.</p>
+          </div>
+
+          <!-- Feature 4 -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              </svg>
+            </div>
+            <h3 class="feature-title">تصنيفات شاملة</h3>
+            <p class="feature-desc">تقسيم منظم للمنهج يغطي النحو، الصرف، الأدب، البلاغة، النصوص والقراءة لتسهيل الوصول
+              والتنقل.</p>
+          </div>
+
+          <!-- Feature 5 -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+            </div>
+            <h3 class="feature-title">وضع الأداء</h3>
+            <p class="feature-desc">واجهة خفيفة وسريعة تتكيف مع سرعة جهازك ونوع اتصالك بالإنترنت لتقديم تجربة تصفح سلسة
+              بلا انقطاع.</p>
+          </div>
+
+          <!-- Feature 6 -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                <path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+              </svg>
+            </div>
+            <h3 class="feature-title">تصاميم جذابة</h3>
+            <p class="feature-desc">تصميم عصري مريح للعين يدعم المظهرين الداكن والفاتح بالكامل، ليمنحك متعة التعلم ليلاً
+              أو نهاراً.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Graduates Album Section -->
+    <section class="album-section" id="album">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">لوحة شرف متفوقينا</h2>
+          <p class="section-subtitle">نعتز بطلابنا المتميزين الذين حققوا التميز والتفوق وحصلوا على شهادات تقدير من
+            المنصة</p>
+        </div>
+      </div>
+      <div class="album-slider">
+        <div class="marquee-track" id="marqueeTrack">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Download Section -->
+    <section class="download" id="download">
+      <div class="container download-grid">
+        <!-- Right Side: Cards -->
+        <div class="download-cards">
+          <!-- Android Download Card -->
+          <a id="android-link" href="#" class="download-card">
+            <div class="download-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                <line x1="12" y1="18" x2="12.01" y2="18" />
+              </svg>
+            </div>
+            <div class="download-info">
+              <div class="download-platform">تطبيق الأندرويد (Android APK)</div>
+              <div class="download-details" id="apk-details">تحميل مباشر لملف الـ APK وتثبيته على جوالك</div>
+            </div>
+            <div class="download-action">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M19 12l-7 7-7-7" />
+              </svg>
+            </div>
+          </a>
+
+          <!-- Linux Download Card -->
+          <a href="https://github.com/hamzaelaiyat/ArabiLogia/releases/latest" target="_blank" class="download-card">
+            <div class="download-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+            </div>
+            <div class="download-info">
+              <div class="download-platform">نسخة لينكس (Linux Package)</div>
+              <div class="download-details">متاحة كحزمة قابلة للتشغيل عبر GitHub Releases</div>
+            </div>
+            <div class="download-action">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
+              </svg>
+            </div>
+          </a>
+        </div>
+
+        <!-- Left Side: Text and info -->
+        <div class="download-content">
+          <h2 class="section-title">ادرس في أي وقت، ومن أي جهاز</h2>
+          <p class="hero-description" style="margin-bottom: 24px;">
+            تدعم منصة عربيلوجيا التشغيل عبر الويب مباشرة، كما نوفر تطبيقات رسمية لنظام الأندرويد ولينكس لتستمتع بأفضل
+            أداء
+            وتجربة تعليمية خفيفة وسريعة.
+          </p>
+          <span class="version-badge" id="version-badge">جاري التحقق من أحدث إصدار...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div class="container footer-grid">
+        <div class="footer-brand">
+          <a href="#" class="brand-logo-container">
+            <img src="assets/assets/images/logo-removedbg.png" alt="عربيلوجيا" class="brand-logo" style="height: 36px;"
+              onerror="this.onerror=null; this.src='assets/images/logo-removedbg.png'">
+          </a>
+          <p class="footer-desc">عربيلوجيا هي منصة تعليمية غير ربحية تهدف لتبسيط ودعم تعلم اللغة العربية لطلاب المرحلة
+            الثانوية باستخدام التكنولوجيا الحديثة.</p>
+        </div>
+
+        <div class="footer-links-col">
+          <h4 class="footer-title">روابط سريعة</h4>
+          <ul class="footer-links">
+            <li><a href="#">الرئيسية</a></li>
+            <li><a href="#features">المميزات</a></li>
+            <li><a href="#album">المتفوقون</a></li>
+            <li><a href="#download">التحميل</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col">
+          <h4 class="footer-title">المطور والمنصة</h4>
+          <ul class="footer-links">
+            <li><a href="https://github.com/hamzaelaiyat/ArabiLogia" target="_blank">المشروع على GitHub</a></li>
+            <li><a href="https://github.com/hamzaelaiyat" target="_blank">حمزة العياط</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="container footer-bottom">
+        <p>© ٢٠٢٦ عربيلوجيا. جميع الحقوق محفوظة.</p>
+        <p>صنع بحب لخدمة لغة الضاد 📖</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Transition / Bootstrapping Loading Screen -->
+  <div id="loading-screen">
+    <div class="islamic-spinner">
+      <div class="star-shape"></div>
+      <div class="star-shape"></div>
+      <div class="spinner-center"></div>
+    </div>
+    <div class="loading-text" id="loading-text">جاري تهيئة منصة عربيلوجيا...</div>
+  </div>
+
+  <script>
+    // Theme Toggle Functionality
+    const themeToggleBtn = document.getElementById('themeToggle');
+    const themeSunIcon = document.getElementById('theme-sun');
+    const themeMoonIcon = document.getElementById('theme-moon');
+
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+      if (theme === 'light') {
+        themeSunIcon.style.display = 'none';
+        themeMoonIcon.style.display = 'block';
+      } else {
+        themeSunIcon.style.display = 'block';
+        themeMoonIcon.style.display = 'none';
+      }
+    }
+
+    // Initialize Theme
+    const savedTheme = localStorage.getItem('theme') ||
+      (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    setTheme(savedTheme);
+
+    themeToggleBtn.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
+
+    // Mobile Navigation Drawer Toggle
+    const hamburger = document.getElementById('hamburger');
+    const navLinks = document.getElementById('navLinks');
+
+    hamburger.addEventListener('click', () => {
+      navLinks.classList.toggle('mobile-open');
+      hamburger.classList.toggle('active');
+    });
+
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.classList.remove('mobile-open');
+        hamburger.classList.remove('active');
+      });
+    });
+
+    // Dynamic GitHub Releases API Integration
+    async function fetchLatestRelease() {
+      try {
+        const response = await fetch('https://api.github.com/repos/hamzaelaiyat/ArabiLogia/releases/latest');
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+
+        const version = data.tag_name;
+        const publishedDate = new Date(data.published_at).toLocaleDateString('ar-EG', {
+          year: 'numeric', month: 'long', day: 'numeric'
+        });
+
+        const apkAsset = data.assets.find(asset => asset.name.endsWith('.apk'));
+
+        if (apkAsset) {
+          const apkUrl = apkAsset.browser_download_url;
+          const apkSizeMb = (apkAsset.size / (1024 * 1024)).toFixed(1);
+
+          const androidLink = document.getElementById('android-link');
+          androidLink.href = apkUrl;
+          androidLink.target = '_blank';
+
+          document.getElementById('apk-details').innerText = `تحميل مباشر لملف APK (حجم الملف: ${apkSizeMb} ميجابايت) | تاريخ التحديث: ${publishedDate}`;
+        }
+
+        document.getElementById('version-badge').innerText = `الإصدار الحالي: ${version} (${publishedDate})`;
+      } catch (error) {
+        console.error('Failed to fetch release from GitHub API:', error);
+        document.getElementById('version-badge').innerText = 'الإصدار الحالي: v2.7.8b';
+      }
+    }
+
+    // Dynamic Graduates Album Population
+    function setupAlbumSlider() {
+      const albumImages = [
+        "485791907_638713509017390_775771866483108828_n.jpg",
+        "486045275_638713432350731_2253743793140220714_n.jpg",
+        "486081045_638702809018460_7658931723269771210_n.jpg",
+        "486121945_638713362350738_4586673166004798193_n.jpg",
+        "486216602_638702825685125_7360229243126141413_n.jpg",
+        "521228236_731690629719677_5037047839857775172_n.jpg",
+        "525354278_737556065799800_7872842684812497127_n.jpg",
+        "526123352_737556082466465_6867399126565655136_n.jpg",
+        "526620378_737556125799794_8101003257694284326_n.jpg",
+        "590624470_839749925580413_4275391624082000064_n.jpg",
+        "591423421_839749945580411_5026117776686659946_n.jpg",
+        "591456739_839749975580408_2550495911253528909_n.jpg",
+        "594295700_843210218567717_5059294870298463275_n.jpg",
+        "594532689_843208501901222_2412440464149043329_n.jpg",
+        "594964548_846313561590716_6721931374539881717_n.jpg",
+        "596807053_846313938257345_1553939440716834282_n.jpg",
+        "596812429_846314044924001_207264477059728701_n.jpg",
+        "596815486_846314034924002_7270212191565671716_n.jpg",
+        "596953883_846751314880274_4087278841861521682_n.jpg",
+        "597545548_846751254880280_6989014906146519658_n_Edited.jpg",
+        "602494357_885989904289748_2413602575286987659_n_Edited.jpg",
+        "615410628_873876045501134_6938514583093831879_n.jpg",
+        "617656330_877649128457159_4023121466451699369_n.jpg",
+        "618217095_877649255123813_421813332356376804_n.jpg",
+        "619332563_877649125123826_7704816627655128836_n.jpg",
+        "622373148_883369951218410_1489586576161250102_n.jpg",
+        "622653332_885990764289662_3725155506937826972_n.jpg",
+        "623445114_883369947885077_7331065472242748415_n.jpg",
+        "673883538_951805597708178_3676183158133156276_n.jpg",
+        "674395376_951805591041512_7371181102297422668_n.jpg",
+        "678278711_955818653973539_6676515568733782605_n.jpg",
+        "678465217_955818770640194_2596401437582107264_n.jpg",
+        "679831904_955818623973542_7211739239666954843_n.jpg",
+        "679859404_955818607306877_8739552286049830360_n.jpg",
+        "682518386_955818660640205_8176697648994662818_n.jpg",
+        "682525117_955818720640199_8622116451925099152_n.jpg"
+      ];
+
+      const track = document.getElementById('marqueeTrack');
+      if (!track) return;
+
+      function createContentBlock() {
+        const block = document.createElement('div');
+        block.className = 'marquee-content';
+        albumImages.forEach(imgName => {
+          const card = document.createElement('div');
+          card.className = 'album-card';
+          const img = document.createElement('img');
+          // Try loading compiled production asset first
+          img.src = `assets/assets/images/album/${imgName}`;
+          img.alt = 'شهادة تفوق';
+          img.loading = 'lazy';
+          // Fallback to local dev repository asset if compilation folder is absent
+          img.onerror = function () {
+            this.src = `assets/images/album/${imgName}`;
+            this.onerror = null; // Clear loop trigger
+          };
+          card.appendChild(img);
+          block.appendChild(card);
+        });
+        return block;
+      }
+
+      // Append twice for infinite loop
+      track.appendChild(createContentBlock());
+      track.appendChild(createContentBlock());
+    }
+
+    // MutationObserver to automatically hide the loading screen when Flutter renders
+    const flutterViewObserver = new MutationObserver(function (mutations) {
+      for (let mutation of mutations) {
+        for (let node of mutation.addedNodes) {
+          if (node.nodeName === 'FLUTTER-VIEW' || node.nodeName === 'FLT-GLASS-PANE') {
+            const loader = document.getElementById('loading-screen');
+            if (loader) {
+              loader.classList.remove('active');
+              setTimeout(() => { loader.style.display = 'none'; }, 500);
+            }
+            flutterViewObserver.disconnect();
+            return;
+          }
+        }
+      }
+    });
+    flutterViewObserver.observe(document.body, { childList: true, subtree: true });
+
+    // UI element references
+    const landingContent = document.getElementById('landing-content');
+    const loadingScreen = document.getElementById('loading-screen');
+
+    // Launch Flutter app to a specific route
+    function launchApp(route) {
+      window.location.hash = route || '/login';
+      if (landingContent) landingContent.style.display = 'none';
+      if (loadingScreen) {
+        loadingScreen.style.display = 'flex';
+        loadingScreen.classList.add('active');
+      }
+    }
+
+    // Route-based bootstrapping logic
+    const currentPath = window.location.pathname;
+    const isLandingRoute = currentPath === '/' ||
+      currentPath === '/index.html' ||
+      currentPath.endsWith('index.html') ||
+      currentPath === '/web/' ||
+      currentPath === '/web';
+
+    if (!isLandingRoute) {
+      // App route: hide landing, show loading, let Flutter handle the hash
+      if (landingContent) landingContent.style.display = 'none';
+      if (loadingScreen) {
+        loadingScreen.style.display = 'flex';
+        loadingScreen.classList.add('active');
+      }
+    } else {
+      // Landing page route: show static page UI and wait for manual launch
+      if (landingContent) landingContent.style.display = 'block';
+
+      fetchLatestRelease();
+      setupAlbumSlider();
+    }
+  </script>
 </body>
+
 </html>

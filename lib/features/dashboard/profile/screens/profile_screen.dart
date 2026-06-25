@@ -395,6 +395,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     final email = user?.email ?? '---';
     final grade = user?.userMetadata?['grade'];
     final gradeText = _getGradeText(grade);
+    final description = user?.userMetadata?['description'] as String? ?? '';
     final createdAt = user?.createdAt != null
         ? _formatArabicDate(user!.createdAt)
         : '---';
@@ -463,6 +464,38 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                     onRemoveAvatar: avatarUrl != null ? _removeAvatar : null,
                   ),
                 ),
+                if (description.isNotEmpty) ...[
+                  const SizedBox(height: AppTokens.spacing20),
+                  AnimatedWrapper(
+                    delay: const Duration(milliseconds: 40),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(AppTokens.spacing16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface(context),
+                        borderRadius: AppTokens.radius2xlAll,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.format_quote,
+                            size: 20,
+                            color: AppColors.primary.withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(width: AppTokens.spacing8),
+                          Expanded(
+                            child: Text(
+                              description,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppColors.mutedColor(context),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppTokens.spacing32),
                 AnimatedWrapper(
                   delay: const Duration(milliseconds: 80),

@@ -82,6 +82,32 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
       return;
     }
 
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('إضافة حساب جديد'),
+          content: const Text('سيتم تسجيل الخروج من الحساب الحالي للسماح لك بتسجيل الدخول بحساب آخر.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('تسجيل الخروج'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true) return;
+
     final authProvider = context.read<AuthProvider>();
     await accountsProvider.saveCurrentSession(authProvider);
 
@@ -304,18 +330,33 @@ class _AccountTile extends StatelessWidget {
               CircleAvatar(
                 radius: 26,
                 backgroundColor: AppColors.surface(context),
-                backgroundImage: account.avatarUrl != null
-                    ? NetworkImage(account.avatarUrl!)
-                    : null,
-                child: account.avatarUrl == null
-                    ? Text(
+                child: account.avatarUrl != null
+                    ? ClipOval(
+                        child: Image.network(
+                          account.avatarUrl!,
+                          width: 52,
+                          height: 52,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Text(
+                                account.fullName.isNotEmpty ? account.fullName[0] : '?',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Text(
                         account.fullName.isNotEmpty ? account.fullName[0] : '?',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
                         ),
-                      )
-                    : null,
+                      ),
               ),
               if (isCurrent)
                 Positioned(

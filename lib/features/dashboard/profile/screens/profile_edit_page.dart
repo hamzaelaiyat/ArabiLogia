@@ -17,6 +17,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _usernameController;
+  late TextEditingController _descriptionController;
   int? _selectedGrade;
   DateTime? _gradeUpdatedAt;
   bool _isInitialLoading = true;
@@ -37,6 +38,21 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     _usernameController = TextEditingController(
       text: user?.userMetadata?['username'],
     );
+    _descriptionController = TextEditingController(
+      text: user?.userMetadata?['description'],
+    );
+
+    try {
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('description')
+          .eq('id', user!.id)
+          .single();
+      if (profileResponse['description'] != null && mounted) {
+        _descriptionController.text = profileResponse['description'] as String;
+      }
+    } catch (_) {}
+
     final gradeVal = user?.userMetadata?['grade'];
     if (gradeVal is int) {
       _selectedGrade = gradeVal;
@@ -68,6 +84,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   void dispose() {
     _nameController.dispose();
     _usernameController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -105,6 +122,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     final success = await authProvider.updateProfile(
       fullName: _nameController.text.trim(),
       username: _usernameController.text.trim(),
+      description: _descriptionController.text.trim(),
       grade: _selectedGrade,
     );
 
@@ -192,7 +210,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         AppTokens.spacing16,
                     left: AppTokens.spacing16,
                     right: AppTokens.spacing16,
-                    bottom: AppTokens.spacing16,
+                    bottom: MediaQuery.paddingOf(context).bottom + 100,
                   ),
                   children: [
                     _buildSectionHeader('المعلومات الأساسية'),
@@ -220,6 +238,17 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         if (v.length < 3) return 'اسم المستخدم قصير جداً';
                         return null;
                       },
+                    ),
+                    const SizedBox(height: AppTokens.spacing16),
+                    TextFormField(
+                      controller: _descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'نبذة عني',
+                        prefixIcon: Icon(Icons.description_outlined),
+                        helperText: 'اكتب نبذة مختصرة عن نفسك',
+                      ),
+                      maxLines: 3,
+                      maxLength: 200,
                     ),
                     const SizedBox(height: AppTokens.spacing32),
                     _buildSectionHeader('الدراسة'),

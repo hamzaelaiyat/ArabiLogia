@@ -9,6 +9,7 @@ class LeaderboardRankCard extends StatelessWidget {
   final bool isTopThree;
   final String gradeName;
   final String avatarLetters;
+  final VoidCallback? onTap;
 
   const LeaderboardRankCard({
     super.key,
@@ -18,6 +19,7 @@ class LeaderboardRankCard extends StatelessWidget {
     required this.isTopThree,
     required this.gradeName,
     required this.avatarLetters,
+    this.onTap,
   });
 
   Color _avatarColor(String userId) {
@@ -59,7 +61,10 @@ class LeaderboardRankCard extends StatelessWidget {
                 borderRadius: AppTokens.radius2xlAll,
               )
             : null,
-        child: Padding(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppTokens.radius2xlAll,
+          child: Padding(
           padding: const EdgeInsets.all(AppTokens.spacing8),
           child: Row(
             children: [
@@ -102,11 +107,30 @@ class LeaderboardRankCard extends StatelessWidget {
               const SizedBox(width: AppTokens.spacing8),
               CircleAvatar(
                 backgroundColor: _avatarColor(userId).withValues(alpha: 0.15),
-                backgroundImage: avatarUrl != null
-                    ? NetworkImage(avatarUrl)
-                    : null,
-                child: avatarUrl == null
-                    ? Center(
+                child: avatarUrl != null
+                    ? ClipOval(
+                        child: Image.network(
+                          avatarUrl,
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Text(
+                                avatarLetters,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: _avatarColor(userId),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  height: 1.0,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Center(
                         child: Text(
                           avatarLetters,
                           textAlign: TextAlign.center,
@@ -117,8 +141,7 @@ class LeaderboardRankCard extends StatelessWidget {
                             height: 1.0,
                           ),
                         ),
-                      )
-                    : null,
+                      ),
               ),
               const SizedBox(width: AppTokens.spacing8),
               Expanded(
@@ -208,6 +231,7 @@ class LeaderboardRankCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

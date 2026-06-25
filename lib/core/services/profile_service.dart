@@ -138,6 +138,7 @@ class ProfileService {
     String? username,
     String? avatarUrl,
     int? grade,
+    String? description,
     bool? isPublic,
     bool? hideAvatar,
     bool? hideName,
@@ -160,6 +161,9 @@ class ProfileService {
         data['avatar_url'] = avatarUrl;
         data['avatar_updated_at'] = _now().toIso8601String();
         profileUpdate['avatar_url'] = avatarUrl;
+      }
+      if (description != null) {
+        profileUpdate['description'] = description;
       }
       if (grade != null) {
         final profile =

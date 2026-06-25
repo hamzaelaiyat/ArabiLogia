@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class AppVersion {
@@ -7,6 +8,12 @@ class AppVersion {
   /// Get version from pubspec.yaml (cached after first call)
   static Future<String> getVersion() async {
     if (_cachedVersion != null) return _cachedVersion!;
+
+    if (kIsWeb) {
+      _cachedVersion = '2.8.0-b';
+      _cachedBuildNumber = '1';
+      return _cachedVersion!;
+    }
 
     try {
       final pubspec = await rootBundle.loadString('pubspec.yaml');

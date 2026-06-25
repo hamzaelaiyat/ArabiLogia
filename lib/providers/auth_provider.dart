@@ -91,6 +91,11 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       await SupabaseService.instance.initialize();
+    } catch (e) {
+      // Already initialized, which is expected
+    }
+
+    try {
       _initServices();
       _auth = Supabase.instance.client.auth;
       _state = _state.copyWith(
@@ -118,7 +123,9 @@ class AuthProvider extends ChangeNotifier {
           AppRouter.router.refresh();
         });
       });
-    } catch (e) {}
+    } catch (e) {
+      debugPrint('Error initializing AuthProvider: $e');
+    }
   }
 
   Future<void> _loadRole() async {
@@ -351,6 +358,7 @@ class AuthProvider extends ChangeNotifier {
     String? username,
     String? avatarUrl,
     int? grade,
+    String? description,
     bool? isPublic,
     bool? hideAvatar,
     bool? hideName,
@@ -379,6 +387,10 @@ class AuthProvider extends ChangeNotifier {
         metadata['avatar_url'] = avatarUrl;
         changed = true;
       }
+      if (description != null) {
+        metadata['description'] = description;
+        changed = true;
+      }
       if (changed) {
         final json = oldUser.toJson();
         json['user_metadata'] = metadata;
@@ -399,6 +411,7 @@ class AuthProvider extends ChangeNotifier {
       username: username,
       avatarUrl: avatarUrl,
       grade: grade,
+      description: description,
       isPublic: isPublic,
       hideAvatar: hideAvatar,
       hideName: hideName,

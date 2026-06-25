@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import '../widgets/leaderboard_empty_state.dart';
 import '../widgets/leaderboard_filters.dart';
 import '../widgets/leaderboard_rank_card.dart';
+import '../widgets/leaderboard_user_profile_sheet.dart';
 import '../widgets/leaderboard_helpers.dart';
 
 class LeaderboardScreen extends StatefulWidget {
@@ -33,6 +34,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   void initState() {
     super.initState();
+  }
+
+  void _showUserProfile(Map<String, dynamic> userData) {
+    LeaderboardUserProfileSheet.show(context: context, userData: userData);
   }
 
   Future<void> _fetchLeaderboard() async {
@@ -138,6 +143,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                             isTopThree: rank <= 3,
                             gradeName: gradeName,
                             avatarLetters: avatarLetters,
+                            onTap: () => _showUserProfile(leader),
                           );
                         },
                       ),

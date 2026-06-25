@@ -10,6 +10,7 @@ import 'package:arabilogia/features/auth/register/widgets/registration_footer.da
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/core/constants/routes.dart';
+
 import 'package:arabilogia/providers/auth_provider.dart';
 import 'package:arabilogia/providers/accounts_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';

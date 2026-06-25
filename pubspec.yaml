@@ -1,7 +1,7 @@
 name: arabilogia
 description: "منصة عربيلوجيا - منصة لغة عربية للثانوية العامة"
 publish_to: 'none'
-version: 26.6.19+1
+version: 26.2.25+1
 
 environment:
   sdk: ^3.11.4
@@ -41,6 +41,7 @@ dependencies:
   shimmer: ^3.0.0
   drift: ^2.25.0
   sqlite3_flutter_libs: ^0.5.0
+
 
 dev_dependencies:
   flutter_test:

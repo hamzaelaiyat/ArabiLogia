@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -24,7 +23,6 @@ import 'package:arabilogia/features/admin/screens/teacher_panel_screen.dart';
 import 'package:arabilogia/features/admin/screens/teacher_settings_screen.dart';
 import 'package:arabilogia/features/admin/screens/exam_editor_screen.dart';
 import 'package:arabilogia/features/admin/screens/exam_preview_screen.dart';
-import 'package:arabilogia/features/landing/screens/landing_screen.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
@@ -93,7 +91,7 @@ class AppRouter {
 
   static final GoRouter _router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: kIsWeb ? AppRoutes.landing : AppRoutes.login,
+    initialLocation: AppRoutes.login,
     observers: [routeObserver],
     debugLogDiagnostics: true,
     redirect: (context, state) {
@@ -105,14 +103,13 @@ class AppRouter {
       final isPublicRoute =
           matched == AppRoutes.login ||
           matched == AppRoutes.register ||
-          matched == AppRoutes.forgotPassword ||
-          (kIsWeb && matched == AppRoutes.landing);
+          matched == AppRoutes.forgotPassword;
 
       // Teacher panel is NOT public - requires teacher role
       if (matched == AppRoutes.teacherPanel ||
           matched == AppRoutes.examPreview) {
         if (!isAuthenticated) {
-          return kIsWeb ? AppRoutes.landing : AppRoutes.login;
+          return AppRoutes.login;
         }
         if (!isTeacher) {
           return AppRoutes.dashboard;
@@ -121,7 +118,7 @@ class AppRouter {
       }
 
       if (!isAuthenticated && !isPublicRoute) {
-        return kIsWeb ? AppRoutes.landing : AppRoutes.login;
+        return AppRoutes.login;
       }
 
       if (isAuthenticated && isPublicRoute) {
@@ -131,15 +128,6 @@ class AppRouter {
       return null;
     },
     routes: [
-      GoRoute(
-        path: AppRoutes.landing,
-        name: 'landing',
-        pageBuilder: (context, state) => AppRouter._buildPage(
-          context: context,
-          state: state,
-          child: const LandingScreen(),
-        ),
-      ),
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
