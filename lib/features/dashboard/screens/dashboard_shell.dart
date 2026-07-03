@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
@@ -137,7 +138,7 @@ class DashboardShell extends StatelessWidget {
 
   Widget _buildDesktopLayout(BuildContext context, int selectedIndex) {
     final auth = context.watch<AuthProvider>();
-    final version = AppVersion.displayVersion;
+    final version = kIsWeb ? '' : AppVersion.displayVersion;
 
     return Scaffold(
       body: Container(
