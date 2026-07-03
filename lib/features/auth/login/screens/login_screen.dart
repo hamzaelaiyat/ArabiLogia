@@ -5,8 +5,8 @@ import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 
-import 'package:arabilogia/providers/auth_provider.dart';
-import 'package:arabilogia/providers/accounts_provider.dart';
+import 'package:arabilogia/features/auth/providers/auth_provider.dart';
+import 'package:arabilogia/features/dashboard/profile/providers/accounts_provider.dart';
 import 'package:arabilogia/features/auth/forgot_password/screens/forgot_password_overlay.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';

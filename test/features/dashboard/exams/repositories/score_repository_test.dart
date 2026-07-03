@@ -10,6 +10,7 @@ import 'package:drift/native.dart';
 import 'package:arabilogia/core/services/supabase_service_interface.dart';
 import 'package:arabilogia/data/local/database.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
+import 'package:arabilogia/features/dashboard/leaderboard/repositories/leaderboard_repository.dart';
 
 class _MockSupabaseService extends Mock implements SupabaseServiceInterface {}
 class _MockGoTrueClient extends Mock implements GoTrueClient {}
@@ -107,6 +108,7 @@ void main() {
   late _MockGoTrueClient mockAuth;
   late AppDatabase testDb;
   late ScoreRepository repo;
+  late LeaderboardRepository leaderboardRepo;
 
   setUp(() {
     mockService = _MockSupabaseService();
@@ -115,6 +117,7 @@ void main() {
     testDb = AppDatabase.forTesting(NativeDatabase.memory());
     SharedPreferences.setMockInitialValues({});
     repo = ScoreRepository(supabaseService: mockService, database: testDb);
+    leaderboardRepo = LeaderboardRepository(supabaseService: mockService);
   });
 
   tearDown(() async {
@@ -221,27 +224,27 @@ void main() {
   group('getLeaderboard', () {
     test('Calls RPC with correct period filter', () async {
       when(() => mockAuth.currentUser).thenReturn(_createUser());
-      await repo.getLeaderboard(period: 'weekly');
+      await leaderboardRepo.getLeaderboard(period: 'weekly');
       verify(() => mockService.rpc('get_leaderboard_by_period', params: {'period_filter': 'weekly'})).called(1);
     });
 
     test('Returns empty on error', () async {
       when(() => mockAuth.currentUser).thenReturn(_createUser());
       when(() => mockService.rpc(any(), params: any(named: 'params'))).thenThrow(Exception('error'));
-      expect(await repo.getLeaderboard(period: 'monthly'), isEmpty);
+      expect(await leaderboardRepo.getLeaderboard(period: 'monthly'), isEmpty);
     });
   });
 
   group('getUserStats', () {
     test('Returns null when not logged in', () async {
       when(() => mockAuth.currentUser).thenReturn(null);
-      expect(await repo.getUserStats(), isNull);
+      expect(await leaderboardRepo.getUserStats(), isNull);
     });
 
     test('Returns null on error', () async {
       when(() => mockAuth.currentUser).thenReturn(_createUser());
       when(() => mockService.rpc(any(), params: any(named: 'params'))).thenThrow(Exception('error'));
-      expect(await repo.getUserStats(), isNull);
+      expect(await leaderboardRepo.getUserStats(), isNull);
     });
   });
 
@@ -261,7 +264,7 @@ void main() {
   group('getDetailedProfileStats', () {
     test('Returns empty when not logged in', () async {
       when(() => mockAuth.currentUser).thenReturn(null);
-      expect(await repo.getDetailedProfileStats(), isEmpty);
+      expect(await leaderboardRepo.getDetailedProfileStats(), isEmpty);
     });
 
     test('Handles null basicStats', () async {
@@ -269,7 +272,7 @@ void main() {
       when(() => mockService.rpc(any(), params: any(named: 'params'))).thenThrow(Exception('error'));
       when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([]));
 
-      final result = await repo.getDetailedProfileStats();
+      final result = await leaderboardRepo.getDetailedProfileStats();
       expect(result['exams_completed'], equals(0));
       expect(result['avg_score'], equals(0.0));
       expect(result['total_score'], equals(0));

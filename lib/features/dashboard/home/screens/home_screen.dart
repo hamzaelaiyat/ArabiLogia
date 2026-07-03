@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
-import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
+import 'package:arabilogia/features/dashboard/leaderboard/repositories/leaderboard_repository.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
@@ -22,6 +23,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final ScoreRepository _scoreRepository = ScoreRepository();
+  final LeaderboardRepository _leaderboardRepository = LeaderboardRepository();
   Map<String, dynamic>? _userStats;
   List<Map<String, dynamic>> _recentActivities = [];
   bool _isLoadingActivities = true;
@@ -53,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
   Future<void> _fetchRank() async {
     try {
-      final stats = await _scoreRepository.getUserStats();
+      final stats = await _leaderboardRepository.getUserStats();
       if (mounted) {
         setState(() {
           _userStats = stats;

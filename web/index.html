@@ -742,10 +742,6 @@
       gap: 32px;
     }
 
-    #loading-screen.active {
-      display: flex;
-    }
-
     .islamic-spinner {
       position: relative;
       width: 80px;
@@ -1368,7 +1364,7 @@
       track.appendChild(createContentBlock());
     }
 
-    // MutationObserver to automatically hide the loading screen when Flutter renders
+    // MutationObserver to hide the loading screen when Flutter renders
     const flutterViewObserver = new MutationObserver(function (mutations) {
       for (let mutation of mutations) {
         for (let node of mutation.addedNodes) {
@@ -1392,12 +1388,18 @@
 
     // Launch Flutter app to a specific route
     function launchApp(route) {
-      window.location.hash = route || '/login';
+      window.location.href = route || '/login';
       if (landingContent) landingContent.style.display = 'none';
-      if (loadingScreen) {
-        loadingScreen.style.display = 'flex';
-        loadingScreen.classList.add('active');
-      }
+    }
+
+    // Load Flutter dynamically (avoids freezing the landing page)
+    function loadFlutter() {
+      var existing = document.querySelector('script[src="flutter_bootstrap.js"]');
+      if (existing) return;
+      var s = document.createElement('script');
+      s.src = 'flutter_bootstrap.js';
+      s.defer = true;
+      document.body.appendChild(s);
     }
 
     // Route-based bootstrapping logic
@@ -1409,14 +1411,11 @@
       currentPath === '/web';
 
     if (!isLandingRoute) {
-      // App route: hide landing, show loading, let Flutter handle the hash
+      // App route: hide landing content, load Flutter dynamically
       if (landingContent) landingContent.style.display = 'none';
-      if (loadingScreen) {
-        loadingScreen.style.display = 'flex';
-        loadingScreen.classList.add('active');
-      }
+      loadFlutter();
     } else {
-      // Landing page route: show static page UI and wait for manual launch
+      // Landing page route: show static page UI, Flutter NOT loaded
       if (landingContent) landingContent.style.display = 'block';
 
       fetchLatestRelease();

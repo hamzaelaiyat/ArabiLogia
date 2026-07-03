@@ -7,7 +7,7 @@ import 'package:arabilogia/features/dashboard/exams/models/exam_session.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/services/exam_session_service.dart';
-import 'package:arabilogia/providers/exam_provider.dart';
+import 'package:arabilogia/features/dashboard/exams/providers/exam_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:arabilogia/features/dashboard/exams/utils/score_calculator.dart';

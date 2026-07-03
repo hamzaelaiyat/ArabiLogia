@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/widgets/potato_switch.dart';
 
 class NotificationSettings extends StatelessWidget {

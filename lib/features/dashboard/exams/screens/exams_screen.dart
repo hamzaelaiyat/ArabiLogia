@@ -11,6 +11,7 @@ import 'package:arabilogia/features/dashboard/exams/widgets/exam_empty_state.dar
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_error_state.dart';
 import 'package:arabilogia/core/widgets/skeletons.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
+import 'package:arabilogia/core/widgets/animated_wrapper.dart';
 import 'package:arabilogia/core/services/potato_mode_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';

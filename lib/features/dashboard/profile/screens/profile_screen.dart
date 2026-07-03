@@ -1,28 +1,25 @@
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'dart:io' show Platform;
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
 import 'package:arabilogia/core/utils/auth_error_mapper.dart';
 import 'package:go_router/go_router.dart';
-import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
-import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
+import 'package:arabilogia/core/widgets/animated_wrapper.dart';
+import 'package:arabilogia/features/dashboard/leaderboard/repositories/leaderboard_repository.dart';
 import 'package:arabilogia/features/dashboard/profile/widgets/profile_header.dart';
 import 'package:arabilogia/features/dashboard/profile/widgets/profile_stats_grid.dart';
 import 'package:arabilogia/features/dashboard/profile/widgets/profile_info_section.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
-import 'package:image/image.dart' as img;
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 import 'package:arabilogia/features/dashboard/profile/widgets/switch_accounts_sheet.dart';
-import 'package:arabilogia/providers/accounts_provider.dart';
+import 'package:arabilogia/features/dashboard/profile/providers/accounts_provider.dart';
 import 'package:arabilogia/core/services/accounts_service.dart';
+import 'package:arabilogia/features/dashboard/profile/services/avatar_picker_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -32,7 +29,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
-  final ScoreRepository _scoreRepository = ScoreRepository();
+  final LeaderboardRepository _leaderboardRepository = LeaderboardRepository();
   Map<String, dynamic> _stats = {
     'exams_count': 0,
     'exams_completed': 0, // fallback
@@ -45,6 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
   };
   bool _isLoadingStats = true;
   bool _isUploading = false;
+  final AvatarPickerService _avatarPickerService = AvatarPickerService();
 
   @override
   void initState() {
@@ -71,7 +69,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
 
   Future<void> _fetchStats() async {
     try {
-      final stats = await _scoreRepository.getDetailedProfileStats();
+      final stats = await _leaderboardRepository.getDetailedProfileStats();
       if (mounted) {
         setState(() {
           _stats = stats;
@@ -98,76 +96,9 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       return;
     }
 
-    final picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery,
-    );
-
-    if (image == null) return;
-
-    // Platform-specific cropping: use image_cropper for Android/iOS/Web, auto-center-crop for desktop
-    final bool isWeb = kIsWeb;
-    final bool isDesktop = !isWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
-    Uint8List? croppedBytes;
+    Uint8List? bytes;
     try {
-      if (!isDesktop && !isWeb) {
-        // Mobile: Crop to 1:1 aspect ratio using native cropper
-        final croppedFile = await ImageCropper().cropImage(
-          sourcePath: image.path,
-          aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-          compressFormat: ImageCompressFormat.jpg,
-          compressQuality: 90,
-          uiSettings: [
-            AndroidUiSettings(
-              toolbarTitle: 'اقتصاص الصورة',
-              toolbarColor: Colors.white,
-              toolbarWidgetColor: Colors.black,
-              initAspectRatio: CropAspectRatioPreset.square,
-              lockAspectRatio: true,
-            ),
-            IOSUiSettings(
-              title: 'اقتصاص الصورة',
-              aspectRatioLockEnabled: true,
-            ),
-            WebUiSettings(
-              context: context,
-              presentStyle: WebPresentStyle.dialog,
-              size: const CropperSize(width: 520, height: 520),
-              initialAspectRatio: 1,
-              checkOrientation: true,
-              rotatable: true,
-              scalable: true,
-              zoomable: true,
-            ),
-          ],
-        );
-
-        if (croppedFile == null) return;
-        croppedBytes = await croppedFile.readAsBytes();
-      } else {
-        // Desktop or Web fallback: auto center-crop to 1:1
-        if (mounted && !isWeb) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('جاري تجهيز الصورة...')),
-          );
-        }
-        final originalBytes = await image.readAsBytes();
-        final decoded = img.decodeImage(originalBytes);
-        if (decoded == null) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('غير قادر على قراءة الصورة')),
-            );
-          }
-          return;
-        }
-        // Center crop to 1:1
-        final size = decoded.width < decoded.height ? decoded.width : decoded.height;
-        final x = (decoded.width - size) ~/ 2;
-        final y = (decoded.height - size) ~/ 2;
-        final cropped = img.copyCrop(decoded, x: x, y: y, width: size, height: size);
-        croppedBytes = Uint8List.fromList(img.encodeJpg(cropped, quality: 90));
-      }
+      bytes = await _avatarPickerService.pickAndProcessAvatar();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -176,39 +107,23 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       }
       return;
     }
+    if (bytes == null) return;
+
+    if (bytes.length > 50 * 1024) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('حجم الصورة كبير جداً (الحد الأقصى 50 كيلوبايت)'),
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() => _isUploading = true);
 
     try {
-      final originalBytes = croppedBytes;
-
-      // Decode and resize to 100x100 before size validation
-      final decoded = img.decodeImage(originalBytes);
-      if (decoded == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('غير قادر على قراءة الصورة')),
-          );
-        }
-        return;
-      }
-      final resized = img.copyResize(decoded, width: 100, height: 100);
-      final resizedBytes = Uint8List.fromList(img.encodeJpg(resized, quality: 85));
-
-      // Validate file size after resize (50KB limit — enforced server-side too)
-      if (resizedBytes.length > 50 * 1024) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('حجم الصورة كبير جداً (الحد الأقصى 50 كيلوبايت)'),
-            ),
-          );
-        }
-        return;
-      }
-
-      // Upload via Edge Function
-      final result = await authProvider.uploadAvatar(resizedBytes);
+      final result = await authProvider.uploadAvatar(bytes);
 
       if (!mounted) return;
 

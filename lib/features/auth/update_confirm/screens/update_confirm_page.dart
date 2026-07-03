@@ -87,12 +87,58 @@ class _UpdateConfirmPageState extends State<UpdateConfirmPage> {
 
   Future<void> _startUpdate() async {
     if (Platform.isAndroid) {
+      final hasInstallPermission = await _platform.invokeMethod<bool>(
+        'canRequestPackageInstalls',
+      );
+      if (hasInstallPermission != true) {
+        final granted = await _requestInstallPermission();
+        if (granted != true) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('يرجى السماح بتثبيت التطبيقات من مصادر غير معروفة'),
+            ),
+          );
+          return;
+        }
+      }
       await _updateAndroid();
     } else if (Platform.isWindows) {
       await _updateWindows();
     } else if (Platform.isLinux) {
       await _updateLinux();
     }
+  }
+
+  Future<bool?> _requestInstallPermission() async {
+    if (!mounted) return false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('السماح بتثبيت التطبيقات'),
+        content: const Text(
+          'للتحديث، يجب السماح بتثبيت التطبيقات من مصادر غير معروفة.\n'
+          'سيتم فتح إعدادات الجهاز. يرجى تفعيل الخيار ثم العودة.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('فتح الإعدادات'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return false;
+
+    await _platform.invokeMethod('requestPackageInstallPermission');
+    return true;
   }
 
   Future<void> _updateAndroid() async {

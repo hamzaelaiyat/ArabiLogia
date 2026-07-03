@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
-import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';

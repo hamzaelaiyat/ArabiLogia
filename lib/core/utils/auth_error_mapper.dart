@@ -1,5 +1,7 @@
 String getArabicAuthError(String message) {
-  if (message.contains('Invalid login credentials')) {
+  if (message.toLowerCase().contains('captcha')) {
+    return 'خطأ في التحقق الأمني، يرجى المحاولة مرة أخرى';
+  } else if (message.contains('Invalid login credentials')) {
     return 'بيانات الدخول غير صحيحة';
   } else if (message.contains('Email not confirmed')) {
     return 'يرجى تأكيد البريد الإلكتروني';
@@ -37,7 +39,9 @@ class FieldError {
 }
 
 FieldError getArabicAuthFieldError(String message) {
-  if (message.contains('Invalid login credentials')) {
+  if (message.toLowerCase().contains('captcha')) {
+    return const FieldError(message: 'خطأ في التحقق الأمني، يرجى المحاولة مرة أخرى');
+  } else if (message.contains('Invalid login credentials')) {
     return const FieldError(message: 'بيانات الدخول غير صحيحة');
   } else if (message.contains('Email not confirmed')) {
     return const FieldError(field: 'email', message: 'يرجى تأكيد البريد الإلكتروني');

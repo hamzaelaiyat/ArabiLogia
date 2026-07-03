@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
-import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
-import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
+import 'package:arabilogia/core/widgets/potato_mode_wrapper.dart';
+import 'package:arabilogia/features/dashboard/leaderboard/repositories/leaderboard_repository.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 import 'package:arabilogia/core/widgets/skeletons.dart';
@@ -22,7 +23,7 @@ class LeaderboardScreen extends StatefulWidget {
 }
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
-  final ScoreRepository _scoreRepository = ScoreRepository();
+  final LeaderboardRepository _leaderboardRepository = LeaderboardRepository();
   int _userGrade = 0;
   int _selectedGrade = 0;
   String _selectedPeriod = 'all';
@@ -43,7 +44,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   Future<void> _fetchLeaderboard() async {
     setState(() => _isLoading = true);
     try {
-      final data = await _scoreRepository.getLeaderboard(
+      final data = await _leaderboardRepository.getLeaderboard(
         grade: _selectedGrade,
         period: _selectedPeriod,
       );

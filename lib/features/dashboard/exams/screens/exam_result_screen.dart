@@ -7,7 +7,7 @@ import 'package:arabilogia/features/dashboard/exams/widgets/stats_row_widget.dar
 import 'package:arabilogia/features/dashboard/exams/widgets/question_review_widget.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/action_buttons_widget.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
-import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';

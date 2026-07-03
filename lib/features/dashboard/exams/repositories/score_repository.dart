@@ -1,10 +1,8 @@
-import 'dart:async';
-import 'package:realtime_client/realtime_client.dart';
 import 'package:arabilogia/core/services/supabase_service_interface.dart';
 import 'package:arabilogia/core/services/supabase_service_wrapper.dart';
 import 'package:arabilogia/data/local/database.dart';
 import 'package:arabilogia/data/local/daos/score_dao.dart';
-import 'package:arabilogia/features/dashboard/exams/utils/grade_mapper.dart';
+import 'package:flutter/foundation.dart';
 
 class ScoreRepository {
   static final ScoreRepository _instance = ScoreRepository._internal();
@@ -57,7 +55,9 @@ class ScoreRepository {
         if (existing != null) {
           return true;
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('ScoreRepository error: $e');
+      }
     }
 
     try {
@@ -161,7 +161,9 @@ class ScoreRepository {
                 'wrong_answers': [],
               });
               await _scoreDao.markSynced(entry.examId);
-            } catch (e) {}
+            } catch (e) {
+              debugPrint('ScoreRepository error: $e');
+            }
           }
         }
 
@@ -175,53 +177,13 @@ class ScoreRepository {
 
         return;
       } catch (e) {
+        debugPrint('ScoreRepository error: $e');
         if (attempt == maxRetries) {
           return;
         }
         await Future.delayed(delay);
         delay *= 2;
       }
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> getLeaderboard({
-    int? grade,
-    String period = 'all',
-  }) async {
-    try {
-      var query = _supabaseService.rpc(
-        'get_leaderboard_by_period',
-        params: {'period_filter': period},
-      );
-
-      if (grade != null && grade != 0) {
-        query = query.eq('grade', grade);
-      }
-
-      final response = await query
-          .order('total_score', ascending: false)
-          .limit(100);
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
-    }
-  }
-
-  Future<Map<String, dynamic>?> getUserStats() async {
-    final user = _supabaseService.auth.currentUser;
-    if (user == null) return null;
-
-    try {
-      final response = await _supabaseService
-          .rpc('get_leaderboard_by_period', params: {'period_filter': 'all'})
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-      if (response == null) {}
-
-      return response;
-    } catch (e) {
-      return null;
     }
   }
 
@@ -243,198 +205,4 @@ class ScoreRepository {
     }
   }
 
-  Future<Map<String, dynamic>> getDetailedProfileStats() async {
-    final user = _supabaseService.auth.currentUser;
-    if (user == null) return {};
-
-    final basicStats = await getUserStats();
-
-    final recentExamResponse = await _supabaseService
-        .from('exam_results')
-        .select('subject, score, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', ascending: false)
-        .limit(1);
-
-    Map<String, dynamic>? lastExam;
-    if (recentExamResponse.isNotEmpty) {
-      lastExam = Map<String, dynamic>.from(recentExamResponse.first);
-    }
-
-    return {
-      'exams_completed': basicStats?['exams_completed'] ?? 0,
-      'avg_score': basicStats?['avg_score'] ?? 0.0,
-      'total_score': basicStats?['total_score'] ?? 0,
-      'rank': basicStats?['rank'] ?? 0,
-      'last_exam': lastExam,
-    };
-  }
-
-  Stream<List<Map<String, dynamic>>> streamExamsManagedRealtime() {
-    final controller = StreamController<List<Map<String, dynamic>>>.broadcast();
-
-    Future<void> fetchExams() async {
-      if (controller.isClosed) return;
-      try {
-        final response = await _supabaseService
-            .from('exams')
-            .select('id, title, subject_id, grade, created_at, data')
-            .order('created_at', ascending: false);
-        if (!controller.isClosed) {
-          controller.add(List<Map<String, dynamic>>.from(response));
-        }
-      } catch (e) {}
-    }
-
-    fetchExams();
-
-    final channel = _supabaseService.realtimeClient.channel('exams-managed');
-    channel
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'exams',
-          callback: (_) => fetchExams(),
-        )
-        .subscribe();
-
-    controller.onCancel = () async {
-      await channel.unsubscribe();
-      await controller.close();
-    };
-
-    return controller.stream;
-  }
-
-  Stream<List<Map<String, dynamic>>> streamExamsManaged({
-    Duration interval = const Duration(seconds: 3),
-  }) {
-    return streamExamsManagedRealtime();
-  }
-
-  Future<List<Map<String, dynamic>>> getExamsManaged() async {
-    try {
-      final response = await _supabaseService
-          .from('exams')
-          .select('id, title, subject_id, grade, created_at, data')
-          .order('created_at', ascending: false);
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
-    }
-  }
-
-  Stream<List<Map<String, dynamic>>> streamExamParticipantsRealtime(
-    String examId,
-  ) {
-    final controller = StreamController<List<Map<String, dynamic>>>.broadcast();
-
-    Future<void> fetchAndAdd() async {
-      if (controller.isClosed) return;
-      try {
-        final response = await _supabaseService
-            .from('exam_results')
-            .select('*')
-            .eq('exam_id', examId)
-            .eq('status', 'completed')
-            .order('created_at', ascending: false);
-        if (!controller.isClosed) {
-          final results = List<Map<String, dynamic>>.from(response);
-          if (results.isNotEmpty) {
-            final allProfiles = await _supabaseService
-                .from('profiles')
-                .select('id, full_name, username, grade');
-            final profileMap = {
-              for (var p in allProfiles) p['id'] as String: p,
-            };
-            for (var row in results) {
-              row['profile'] = profileMap[row['user_id'] as String];
-            }
-          }
-          controller.add(results);
-        }
-      } catch (e) {
-        if (!controller.isClosed) {
-          controller.add([]);
-        }
-      }
-    }
-
-    final channel = _supabaseService.realtimeClient.channel(
-      'exam-participants-$examId',
-    );
-    channel.onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'exam_results',
-      filter: PostgresChangeFilter(
-        type: PostgresChangeFilterType.eq,
-        column: 'exam_id',
-        value: examId,
-      ),
-      callback: (payload) {
-        fetchAndAdd();
-      },
-    );
-    channel.subscribe();
-
-    fetchAndAdd();
-
-    controller.onCancel = () {
-      channel.unsubscribe();
-      controller.close();
-    };
-
-    return controller.stream;
-  }
-
-  Future<List<Map<String, dynamic>>> getExamParticipants(String examId) async {
-    try {
-      final response = await _supabaseService
-          .from('exam_results')
-          .select('*')
-          .eq('exam_id', examId)
-          .eq('status', 'completed')
-          .order('created_at', ascending: false);
-      final results = List<Map<String, dynamic>>.from(response);
-      if (results.isNotEmpty) {
-        final allProfiles = await _supabaseService
-            .from('profiles')
-            .select('id, full_name, username, grade');
-        final profileMap = {for (var p in allProfiles) p['id'] as String: p};
-        for (var row in results) {
-          row['profile'] = profileMap[row['user_id'] as String];
-        }
-      }
-      final seen = <String>{};
-      final deduplicated = <Map<String, dynamic>>[];
-      for (final row in results) {
-        final uid = row['user_id'] as String;
-        if (seen.add(uid)) {
-          deduplicated.add(Map<String, dynamic>.from(row));
-        }
-      }
-      return deduplicated;
-    } catch (e) {
-      return [];
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> getGradeProfiles(int grade) async {
-    try {
-      final dbGrade = mapUiGradeToDbGrade(grade);
-      var query = _supabaseService
-          .from('profiles')
-          .select('id, full_name, username, grade');
-
-      if (dbGrade != 0) {
-        query = query.eq('grade', dbGrade);
-      }
-
-      final response = await query.order('full_name');
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
-    }
-  }
 }

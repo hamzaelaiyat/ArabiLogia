@@ -53,9 +53,7 @@ class AnonymousNameGenerator {
   static String _randomNumber() {
     final random = Random();
     final n = 2 + random.nextInt(998);
-    final num = _toArabicIndic(n);
-    final stars = '⭐' * (random.nextInt(3) + 1);
-    return '$stars $num $stars';
+    return _toArabicIndic(n);
   }
 
   static Future<String> generate({required SupabaseClient supabase}) async {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:arabilogia/core/constants/routes.dart';
-import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/auth/login/screens/login_screen.dart';
 import 'package:arabilogia/features/auth/register/screens/register_screen.dart';
@@ -95,6 +95,11 @@ class AppRouter {
     observers: [routeObserver],
     debugLogDiagnostics: true,
     redirect: (context, state) {
+      final uri = state.uri;
+      if (uri.path == '/landing.html') {
+        return AppRoutes.register;
+      }
+
       final authProvider = context.read<AuthProvider>();
       final isAuthenticated = authProvider.state.isAuthenticated;
       final isTeacher = authProvider.isTeacher;

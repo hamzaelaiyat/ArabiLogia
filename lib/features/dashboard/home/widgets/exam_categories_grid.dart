@@ -3,6 +3,7 @@ import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
+import 'package:arabilogia/core/widgets/animated_wrapper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 

@@ -6,7 +6,7 @@ import 'package:arabilogia/features/auth/forgot_password/widgets/forgot_password
 import 'package:arabilogia/features/auth/forgot_password/widgets/error_banner.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
-import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 
 class ForgotPasswordOverlay extends StatefulWidget {
   const ForgotPasswordOverlay({super.key});

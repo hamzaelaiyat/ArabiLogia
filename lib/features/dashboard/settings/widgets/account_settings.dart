@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/widgets/solid_bottom_sheet.dart';
-import 'package:arabilogia/providers/auth_provider.dart';
+import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/features/dashboard/settings/widgets/privacy_section.dart';
 
 class AccountSettings extends StatelessWidget {

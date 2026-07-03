@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:arabilogia/core/utils/version_utils.dart';
 
 /// Represents an available update
 class AppUpdate {
@@ -103,7 +104,7 @@ class UpdateService {
       }
 
       final data = json.decode(response.body);
-      final latestVersion = _extractVersion(
+      final latestVersion = VersionUtils.extractVersion(
         data['tag_name'] ?? 'v$currentVersion',
       );
       final assets = data['assets'] as List? ?? [];
@@ -123,7 +124,7 @@ class UpdateService {
       }
 
       // Check if update is needed
-      if (!_isVersionNewer(latestVersion, currentVersion)) {
+      if (!VersionUtils.isVersionNewer(latestVersion, currentVersion)) {
         _updateStreamController.add(null);
         return;
       }
@@ -139,7 +140,7 @@ class UpdateService {
       final update = AppUpdate(
         version: latestVersion,
         downloadUrl: targetAsset['browser_download_url'],
-        releaseNotes: _cleanReleaseNotes(body),
+        releaseNotes: VersionUtils.cleanReleaseNotes(body),
         isMandatory: isMandatory,
         fileSize: targetAsset['size'] ?? 0,
         fileName: targetAsset['name'] ?? 'app.apk',
@@ -196,48 +197,6 @@ class UpdateService {
     return assets.isNotEmpty ? assets.first : null;
   }
 
-  /// Clean release notes
-  static String _cleanReleaseNotes(String body) {
-    return body
-        .replaceAll(RegExp(r'\[MANDATORY\]', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\[إلزامي\]', caseSensitive: false), '')
-        .replaceAll(RegExp(r'mandatory:\s*true', caseSensitive: false), '')
-        .trim();
-  }
-
-  /// Extract numeric version from tag (strips leading v and suffix)
-  static String _extractVersion(String tag) {
-    String version = tag.replaceFirst(RegExp(r'^v'), '').trim();
-    version = version.replaceAll(RegExp(r'[^0-9.].*$'), '');
-    return version;
-  }
-
-  /// Compare versions
-  static bool _isVersionNewer(String newVersion, String currentVersion) {
-    String cleanNew = newVersion.replaceAll(RegExp(r'[^0-9.].*$'), '');
-    String cleanCurrent = currentVersion.replaceAll(
-      RegExp(r'[^0-9.].*$'),
-      '',
-    );
-
-    final newParts = cleanNew
-        .split('.')
-        .map((e) => int.tryParse(e) ?? 0)
-        .toList();
-    final currentParts = cleanCurrent
-        .split('.')
-        .map((e) => int.tryParse(e) ?? 0)
-        .toList();
-
-    for (int i = 0; i < 3; i++) {
-      final newVal = i < newParts.length ? newParts[i] : 0;
-      final currentVal = i < currentParts.length ? currentParts[i] : 0;
-      if (newVal > currentVal) return true;
-      if (newVal < currentVal) return false;
-    }
-    return false;
-  }
-
   /// Skip this version
   static Future<void> skipVersion(String version) async {
     final prefs = await SharedPreferences.getInstance();
@@ -255,13 +214,6 @@ class UpdateService {
 
   /// Get the current update
   static AppUpdate? get currentUpdate => _currentUpdate;
-
-  /// Force check now (bypass cooldown)
-  static Future<void> forceCheckNow() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_lastCheckKey, 0);
-    await checkForUpdatesInBackground();
-  }
 
   /// Check if should show What's New dialog
   static Future<bool> shouldShowWhatsNew() async {
@@ -291,49 +243,5 @@ class UpdateService {
   static Future<void> markAsInstalled(String version) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_installedVersionKey, version);
-  }
-}
-
-/// Platform-specific update installer
-class PlatformUpdateInstaller {
-  static Future<void> installUpdate(AppUpdate update) async {
-    if (Platform.isAndroid) {
-      await _installAndroid(update);
-    } else if (Platform.isWindows) {
-      await _installWindows(update);
-    } else if (Platform.isLinux) {
-      await _installLinux(update);
-    }
-  }
-
-  /// Android: Use DownloadManager and request unknown sources
-  static Future<void> _installAndroid(AppUpdate update) async {
-    // For now, we'll use a simpler approach with the system browser
-    // A full implementation would use DownloadManager and PackageManager
-    // Note: Full Android implementation requires:
-    // 1. DownloadManager API for background downloads
-    // 2. REQUEST_INSTALL_PACKAGES permission (already added)
-    // 3. PackageManager to install silently
-
-    // For demonstration, we'll use the URL launcher approach
-    // which opens the browser and lets user download
-    throw UnimplementedError('Use UpdateConfirmPage for Android update flow');
-  }
-
-  /// Windows: Download and run installer
-  static Future<void> _installWindows(AppUpdate update) async {
-    // Implementation would:
-    // 1. Download the .exe to temp folder
-    // 2. Run the installer with elevated privileges
-    // 3. Restart app after update
-    throw UnimplementedError('Use UpdateConfirmPage for Windows update flow');
-  }
-
-  /// Linux: Download and run installer/AppImage
-  static Future<void> _installLinux(AppUpdate update) async {
-    // Implementation would:
-    // 1. Download AppImage/deb
-    // 2. Make executable and run
-    throw UnimplementedError('Use UpdateConfirmPage for Linux update flow');
   }
 }
