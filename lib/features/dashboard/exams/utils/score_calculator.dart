@@ -2,14 +2,14 @@ import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 
 class ScoreResult {
   final int correctCount;
-  final List<String> wrongAnswers;
+  final int wrongMask;
   final double accuracy;
   final double speedBonus;
   final double finalScore;
 
   const ScoreResult({
     required this.correctCount,
-    required this.wrongAnswers,
+    required this.wrongMask,
     required this.accuracy,
     this.speedBonus = 0,
     required this.finalScore,
@@ -23,7 +23,7 @@ ScoreResult calculateScore({
   int? totalDurationSeconds,
 }) {
   int correctCount = 0;
-  final List<String> wrongAnswers = [];
+  int wrongMask = 0;
 
   for (int i = 0; i < questions.length; i++) {
     final question = questions[i];
@@ -34,7 +34,7 @@ ScoreResult calculateScore({
     if (selectedId == correctOption.id) {
       correctCount++;
     } else {
-      wrongAnswers.add(question.id);
+      wrongMask |= 1 << i;
     }
   }
 
@@ -52,7 +52,7 @@ ScoreResult calculateScore({
 
   return ScoreResult(
     correctCount: correctCount,
-    wrongAnswers: wrongAnswers,
+    wrongMask: wrongMask,
     accuracy: accuracy,
     speedBonus: speedBonus,
     finalScore: finalScore,

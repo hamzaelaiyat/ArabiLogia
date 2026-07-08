@@ -161,7 +161,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     final accuracy = scoreResult.accuracy;
     final speedBonus = scoreResult.speedBonus;
     final finalScore = scoreResult.finalScore;
-    final wrongAnswers = scoreResult.wrongAnswers;
+    final wrongMask = scoreResult.wrongMask;
 
     try {
       await _scoreRepository
@@ -170,7 +170,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
             subject: widget.subjectName,
             score: finalScore,
             points: correctCount,
-            wrongAnswers: wrongAnswers,
+            wrongMask: wrongMask,
             isCompleted: true,
           )
           .timeout(const Duration(seconds: 10));
@@ -206,7 +206,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     final correctCount = scoreResult.correctCount;
     final accuracy = scoreResult.accuracy;
     final finalScore = scoreResult.finalScore;
-    final wrongAnswers = scoreResult.wrongAnswers;
+    final wrongMask = scoreResult.wrongMask;
 
     try {
       await _scoreRepository
@@ -215,7 +215,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
             subject: widget.subjectName,
             score: finalScore,
             points: correctCount,
-            wrongAnswers: wrongAnswers,
+            wrongMask: wrongMask,
             isCompleted: false,
           )
           .timeout(const Duration(seconds: 10));

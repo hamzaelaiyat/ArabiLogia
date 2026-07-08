@@ -20,6 +20,7 @@ import 'package:arabilogia/features/dashboard/profile/widgets/switch_accounts_sh
 import 'package:arabilogia/features/dashboard/profile/providers/accounts_provider.dart';
 import 'package:arabilogia/core/services/accounts_service.dart';
 import 'package:arabilogia/features/dashboard/profile/services/avatar_picker_service.dart';
+import 'package:arabilogia/features/dashboard/profile/screens/image_editor_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -96,9 +97,16 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       return;
     }
 
-    Uint8List? bytes;
+    late final Uint8List bytes;
     try {
-      bytes = await _avatarPickerService.pickAndProcessAvatar();
+      final pickedBytes = await _avatarPickerService.pickBytes();
+      if (pickedBytes == null) return;
+
+      if (!mounted) return;
+      final cropped = await ImageEditorScreen.show(context, pickedBytes);
+      if (cropped == null) return;
+
+      bytes = await _avatarPickerService.processCropped(cropped);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,7 +115,6 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       }
       return;
     }
-    if (bytes == null) return;
 
     if (bytes.length > 50 * 1024) {
       if (mounted) {

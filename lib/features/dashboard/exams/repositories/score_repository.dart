@@ -32,7 +32,7 @@ class ScoreRepository {
     required String examId,
     required String subject,
     required double score,
-    List<String> wrongAnswers = const [],
+    int wrongMask = 0,
     bool isCompleted = true,
     int points = 0,
   }) async {
@@ -67,7 +67,7 @@ class ScoreRepository {
         'subject': subject,
         'score': score,
         'points': points,
-        'wrong_answers': wrongAnswers.toList(),
+        'wrong_mask': wrongMask,
         'status': isCompleted ? 'completed' : 'abandoned',
       };
       final result = await _supabaseService
@@ -158,7 +158,7 @@ class ScoreRepository {
                 'score': entry.score,
                 'points': entry.points,
                 'subject': 'unknown',
-                'wrong_answers': [],
+                'wrong_mask': 0,
               });
               await _scoreDao.markSynced(entry.examId);
             } catch (e) {

@@ -68,7 +68,7 @@ Map<String, dynamic> createTestScoreData({
     'user_id': userId,
     'status': status,
     'subject': 'subject_1',
-    'wrong_answers': [],
+    'wrong_mask': 0,
     'created_at': DateTime.now().toIso8601String(),
   };
 }

@@ -1,7 +1,7 @@
 name: arabilogia
 description: "منصة عربيلوجيا - منصة لغة عربية للثانوية العامة"
 publish_to: 'none'
-version: 26.7.3+1
+version: 26.7.8+1
 
 environment:
   sdk: ^3.11.4
@@ -20,7 +20,7 @@ dependencies:
   flutter_svg: ^2.0.17
   cached_network_image: ^3.4.1
   image_picker: ^1.2.1
-  image_cropper: ^9.0.0
+
   shared_preferences: ^2.5.3
   intl: ^0.20.2
   flutter_local_notifications: ^18.0.1
