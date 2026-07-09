@@ -74,6 +74,8 @@ A Flutter mobile application for learning Arabic language, featuring grammar, mo
 
 ```bash
 flutter build apk --release
+flutter build windows --release # Exe (requires Windows)
+flutter build linux --release # .tar.xz (requires WSL or Linux)
 flutter build ipa --release  # iOS (requires macOS)
 ```
 
