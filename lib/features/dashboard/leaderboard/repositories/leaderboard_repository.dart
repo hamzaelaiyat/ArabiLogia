@@ -62,10 +62,7 @@ class LeaderboardRepository {
     final basicStats = await getUserStats();
 
     final recentExamResponse = await _supabaseService
-        .from('exam_results')
-        .select('subject, score, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', ascending: false)
+        .rpc('get_all_user_results', params: {'p_user_id': user.id})
         .limit(1);
 
     Map<String, dynamic>? lastExam;

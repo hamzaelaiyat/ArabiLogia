@@ -124,9 +124,7 @@ class ScoreRepository {
             );
 
         final remoteData = await _supabaseService
-            .from('exam_results')
-            .select('exam_id, score, points, subject')
-            .eq('user_id', user.id);
+            .rpc('get_all_user_results', params: {'p_user_id': user.id});
 
         final List<dynamic> results = remoteData;
         final Map<String, Map<String, dynamic>> remoteBestScores = {};
@@ -193,10 +191,7 @@ class ScoreRepository {
 
     try {
       final response = await _supabaseService
-          .from('exam_results')
-          .select('subject, score, created_at, exam_id')
-          .eq('user_id', user.id)
-          .order('created_at', ascending: false)
+          .rpc('get_all_user_results', params: {'p_user_id': user.id})
           .limit(limit);
 
       return List<Map<String, dynamic>>.from(response);

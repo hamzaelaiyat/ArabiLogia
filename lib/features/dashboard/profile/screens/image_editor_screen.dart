@@ -167,25 +167,18 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
           if (_uiImage == null) {
             return const Center(child: CircularProgressIndicator(color: Colors.white));
           }
-          return SizedBox(
-            width: constraints.maxWidth,
-            height: constraints.maxHeight,
+          return SizedBox.expand(
             child: GestureDetector(
               onScaleStart: _onScaleStart,
               onScaleUpdate: _onScaleUpdate,
               child: Stack(
                 children: [
-                  ClipRect(
-                    child: SizedBox(
-                      width: constraints.maxWidth,
-                      height: constraints.maxHeight,
-                      child: CustomPaint(
-                        painter: _ImagePainter(
-                          image: _uiImage!,
-                          imageRect: _imageRect,
-                        ),
-                      ),
+                  CustomPaint(
+                    painter: _ImagePainter(
+                      image: _uiImage!,
+                      imageRect: _imageRect,
                     ),
+                    size: Size(constraints.maxWidth, constraints.maxHeight),
                   ),
                   Positioned.fill(
                     child: IgnorePointer(
@@ -194,17 +187,22 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                       ),
                     ),
                   ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _buildZoomSlider(),
+                  ),
                 ],
               ),
             ),
           );
         },
       ),
-      bottomNavigationBar: _buildBottomBar(),
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildZoomSlider() {
     return Container(
       color: Colors.black,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
