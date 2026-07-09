@@ -74,6 +74,8 @@
 
 ```bash
 flutter build apk --release
+flutter build windows --release # Exe (يتطلب Windows)
+flutter build linux --release # .tar.xz (يتطلب WSL أو Linux)
 flutter build ipa --release  # iOS (يتطلب macOS)
 ```
 
