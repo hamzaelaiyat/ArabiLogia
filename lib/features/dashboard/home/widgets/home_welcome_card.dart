@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
-import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/core/widgets/animated_wrapper.dart';
 
 class HomeWelcomeCard extends StatelessWidget {

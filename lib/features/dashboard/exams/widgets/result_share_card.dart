@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
-import 'dart:ui' as ui;
 
 class ResultShareCard extends StatelessWidget {
   final String studentName;
@@ -166,7 +165,7 @@ class ResultShareCard extends StatelessWidget {
                     children: [
                       _buildMiniStat('الدقة', '$accuracy%'),
                       Container(width: 1, height: 20, color: Colors.white24),
-                      _buildMiniStat('مكافأة السرعة', '+$speedBonus'),
+                      _buildMiniStat('النقاط', '+$speedBonus'),
                     ],
                   ),
                 ),
@@ -193,10 +192,11 @@ class ResultShareCard extends StatelessWidget {
                 ),
               ],
             ),
-      );
-    }
-  );
-}
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildMiniStat(String label, String value) {
     return Column(

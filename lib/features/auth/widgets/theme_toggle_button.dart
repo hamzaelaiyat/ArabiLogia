@@ -52,15 +52,4 @@ class ThemeToggleButton extends StatelessWidget {
       ),
     );
   }
-
-  String _getThemeName(ThemeModeOption option) {
-    switch (option) {
-      case ThemeModeOption.light:
-        return 'الوضع النهاري';
-      case ThemeModeOption.dark:
-        return 'الوضع الليلي';
-      case ThemeModeOption.system:
-        return 'تلقائي (حسب النظام)';
-    }
-  }
 }

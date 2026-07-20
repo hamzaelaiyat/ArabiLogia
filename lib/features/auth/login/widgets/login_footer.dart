@@ -4,9 +4,10 @@ import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/core/constants/routes.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 
 class LoginFooter extends StatelessWidget {
-  const LoginFooter({super.key});
+  const LoginFooter({super.key = TestKeys.loginGoToRegister});
 
   @override
   Widget build(BuildContext context) {

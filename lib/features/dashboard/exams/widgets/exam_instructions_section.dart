@@ -2,21 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
+import 'package:arabilogia/features/dashboard/exams/models/exam_level.dart';
 
 class ExamInstructionsSection extends StatelessWidget {
   final String subjectName;
   final int? durationMinutes;
   final String subjectId;
+  final int level;
 
   const ExamInstructionsSection({
     super.key,
     required this.subjectName,
     required this.durationMinutes,
     required this.subjectId,
+    this.level = 1,
   });
 
   @override
   Widget build(BuildContext context) {
+    final examLevel = ExamLevel.fromValue(level);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -44,6 +48,10 @@ class ExamInstructionsSection extends StatelessWidget {
         _buildInstructionItem(
           context,
           'سيتم احتساب الدرجة من المحاولة الأولى فقط (للمتصدرين).',
+        ),
+        _buildInstructionItem(
+          context,
+          'نسبة النجاح المطلوبة: ${examLevel.passPercentage}% (${examLevel.label}).',
         ),
       ],
     );

@@ -24,18 +24,18 @@ class AppVersion {
         }
       }
     } catch (_) {
-      _cachedVersion = '2.8.0-b';
+      _cachedVersion = '26.7.20';
       _cachedBuildNumber = '1';
     }
 
-    _cachedVersion ??= '2.8.0-b';
+    _cachedVersion ??= '26.7.20';
     _cachedBuildNumber ??= '1';
     return _cachedVersion!;
   }
 
   /// Get version synchronously (returns cached or fallback)
   static String get versionSync {
-    return _cachedVersion ?? '2.8.0-b';
+    return _cachedVersion ?? '26.7.20';
   }
 
   /// Get build number
@@ -45,9 +45,7 @@ class AppVersion {
 
   /// Full version string for display
   static String get displayVersion {
-    final v = versionSync;
-    final b = buildNumberSync;
-    return 'v$v+$b';
+    return versionSync;
   }
 
   /// Preload version at app startup

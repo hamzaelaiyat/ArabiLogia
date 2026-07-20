@@ -84,7 +84,10 @@ class QuestionReviewCardWidget extends StatelessWidget {
           const SizedBox(height: 8),
           RichText(
             text: TextSpan(
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.foreground(context),
+              ),
               children: parseQuestionText(
                 question.text,
                 isDark: Theme.of(context).brightness == Brightness.dark,

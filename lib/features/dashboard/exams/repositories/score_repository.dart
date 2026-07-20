@@ -70,7 +70,7 @@ class ScoreRepository {
         'wrong_mask': wrongMask,
         'status': isCompleted ? 'completed' : 'abandoned',
       };
-      final result = await _supabaseService
+      await _supabaseService
           .from('exam_results')
           .insert(data)
           .select();
@@ -182,6 +182,15 @@ class ScoreRepository {
         await Future.delayed(delay);
         delay *= 2;
       }
+    }
+  }
+
+  Future<void> recordExamPoints(int points) async {
+    if (points <= 0) return;
+    try {
+      await _supabaseService.rpc('record_exam_points', params: {'p_points': points});
+    } catch (e) {
+      debugPrint('ScoreRepository recordExamPoints error: $e');
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 
 class ActionButtonsWidget extends StatelessWidget {
   final VoidCallback onHomePressed;
@@ -16,6 +17,7 @@ class ActionButtonsWidget extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton(
+            key: TestKeys.examResultExit,
             onPressed: onHomePressed,
             child: const Text('العودة للرئيسية'),
           ),
@@ -23,6 +25,7 @@ class ActionButtonsWidget extends StatelessWidget {
         const SizedBox(width: 16),
         Expanded(
           child: ElevatedButton(
+            key: TestKeys.examResultRetry,
             onPressed: onRetakePressed,
             child: const Text('إعادة الاختبار'),
           ),

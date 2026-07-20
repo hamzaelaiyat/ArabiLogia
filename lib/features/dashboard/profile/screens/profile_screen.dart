@@ -1,13 +1,13 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
 import 'package:arabilogia/core/utils/auth_error_mapper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
-import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/core/widgets/animated_wrapper.dart';
 import 'package:arabilogia/features/dashboard/leaderboard/repositories/leaderboard_repository.dart';
 import 'package:arabilogia/features/dashboard/profile/widgets/profile_header.dart';
@@ -21,6 +21,9 @@ import 'package:arabilogia/features/dashboard/profile/providers/accounts_provide
 import 'package:arabilogia/core/services/accounts_service.dart';
 import 'package:arabilogia/features/dashboard/profile/services/avatar_picker_service.dart';
 import 'package:arabilogia/features/dashboard/profile/screens/image_editor_screen.dart';
+import 'package:arabilogia/core/utils/arabic_date_formatter.dart';
+import 'package:arabilogia/core/utils/grade_utils.dart';
+import 'package:arabilogia/core/widgets/confirmation_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -41,7 +44,6 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     'rank': 0,
     'last_exam': null,
   };
-  bool _isLoadingStats = true;
   bool _isUploading = false;
   final AvatarPickerService _avatarPickerService = AvatarPickerService();
 
@@ -54,7 +56,10 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    AppRouter.routeObserver.subscribe(this, ModalRoute.of(context)!);
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      AppRouter.routeObserver.subscribe(this, route);
+    }
   }
 
   @override
@@ -74,11 +79,10 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       if (mounted) {
         setState(() {
           _stats = stats;
-          _isLoadingStats = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoadingStats = false);
+      // Stats will keep defaults on error
     }
   }
 
@@ -193,30 +197,13 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
   Future<void> _removeAvatar() async {
     final authProvider = context.read<AuthProvider>();
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await ConfirmationDialog.show(
       context: context,
-      builder: (context) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('إزالة الصورة الشخصية'),
-          content: const Text('هل أنت متأكد من إزالة صورتك الشخصية؟'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('إزالة'),
-            ),
-          ],
-        ),
-      ),
-    ) ?? false;
+      title: 'إزالة الصورة الشخصية',
+      content: 'هل أنت متأكد من إزالة صورتك الشخصية؟',
+      confirmLabel: 'إزالة',
+      confirmColor: AppColors.error,
+    );
 
     if (!confirmed) return;
 
@@ -242,70 +229,9 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     }
   }
 
-  void _showEditProfileDialog() {
-    final authProvider = context.read<AuthProvider>();
-    final user = authProvider.state.user;
-    final nameController = TextEditingController(
-      text: user?.userMetadata?['full_name'],
-    );
-    final usernameController = TextEditingController(
-      text: user?.userMetadata?['username'],
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('تعديل الملف الشخصي'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'الاسم الكامل'),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: usernameController,
-                decoration: const InputDecoration(labelText: 'اسم المستخدم'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('إلغاء'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final scaffold = ScaffoldMessenger.of(context);
-                final nav = Navigator.of(context);
-
-                final success = await authProvider.updateProfile(
-                  fullName: nameController.text.trim(),
-                  username: usernameController.text.trim(),
-                );
-
-                if (success) {
-                  scaffold.showSnackBar(
-                    const SnackBar(content: Text('تم تحديث البيانات بنجاح')),
-                  );
-                  nav.pop();
-                }
-              },
-              child: const Text('حفظ'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final potato = context.watch<PotatoModeProvider>();
     final user = authProvider.state.user;
     final fullName = user?.userMetadata?['full_name'] ?? 'طالب عربيلوجيا';
     final username = user?.userMetadata?['username'] ?? 'user';
@@ -316,15 +242,15 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
         : rawAvatarUrl;
     final email = user?.email ?? '---';
     final grade = user?.userMetadata?['grade'];
-    final gradeText = _getGradeText(grade);
+    final gradeText = getGradeText(grade, fallback: 'رحلتك الدراسية');
     final description = user?.userMetadata?['description'] as String? ?? '';
     final createdAt = user?.createdAt != null
-        ? _formatArabicDate(user!.createdAt)
+        ? formatArabicDate(user!.createdAt)
         : '---';
 
     final lastExam = _stats['last_exam'] as Map<String, dynamic>?;
     final lastExamSubject = lastExam?['subject'] ?? 'لا يوجد';
-    final lastExamTime = _formatLastExamDate(lastExam?['created_at']);
+    final lastExamTime = formatLastExamDate(lastExam?['created_at']);
     final lastExamLabel = lastExamSubject != 'لا يوجد'
         ? '$lastExamSubject ($lastExamTime)'
         : lastExamTime;
@@ -348,6 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        key: TestKeys.profileScreen,
         extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
           title: const ResponsiveAppBarTitle('الملف الشخصي'),
@@ -448,61 +375,6 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
         ),
       ),
     );
-  }
-
-  String _getGradeText(dynamic grade) {
-    if (grade == null) return 'رحلتك الدراسية';
-    final g = grade is int ? grade : int.tryParse(grade.toString()) ?? 0;
-    switch (g) {
-      case 10:
-        return 'الأولى باكالوريا';
-      case 11:
-        return 'الثانية ثانوي';
-      case 12:
-        return 'الثالثة ثانوي';
-      default:
-        return 'صفك الدراسي';
-    }
-  }
-
-  String _formatArabicDate(String isoDate) {
-    try {
-      final date = DateTime.parse(isoDate);
-      final months = [
-        'يناير',
-        'فبراير',
-        'مارس',
-        'أبريل',
-        'مايو',
-        'يونيو',
-        'يوليو',
-        'أغسطس',
-        'سبتمبر',
-        'أكتوبر',
-        'نوفمبر',
-        'ديسمبر',
-      ];
-      return '${date.day} ${months[date.month - 1]} ${date.year}';
-    } catch (e) {
-      return isoDate;
-    }
-  }
-
-  String _formatLastExamDate(String? isoDate) {
-    if (isoDate == null) return 'لم تؤدِّ أي امتحان بعد';
-    try {
-      final date = DateTime.parse(isoDate);
-      final now = DateTime.now();
-      final diff = now.difference(date);
-
-      if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} دقيقة';
-      if (diff.inHours < 24) return 'منذ ${diff.inHours} ساعة';
-      if (diff.inDays < 30) return 'منذ ${diff.inDays} يوم';
-
-      return _formatArabicDate(isoDate);
-    } catch (e) {
-      return isoDate ?? '';
-    }
   }
 }
 

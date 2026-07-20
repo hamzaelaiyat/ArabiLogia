@@ -79,7 +79,8 @@ class CategoryMetadata {
     CategoryMetadata(id: 'nisf_shamil', name: 'نصف شامل', icon: Icons.pie_chart, color: Color(0xFF03A9F4)),
   ];
 
-  static CategoryMetadata? getByName(String name) {
+  static CategoryMetadata? getByName(String? name) {
+    if (name == null) return null;
     if (!_isLoaded) loadCategories();
     try {
       return _categories.firstWhere((c) => c.name == name);

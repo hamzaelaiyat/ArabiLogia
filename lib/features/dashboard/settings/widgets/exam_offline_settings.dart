@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/widgets/potato_switch.dart';
 
 class ExamOfflineSettings extends StatelessWidget {
@@ -8,6 +9,7 @@ class ExamOfflineSettings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      key: TestKeys.settingsExamOffline,
       child: FutureBuilder<SharedPreferences>(
         future: SharedPreferences.getInstance(),
         builder: (context, snapshot) {
@@ -21,7 +23,7 @@ class ExamOfflineSettings extends StatelessWidget {
                 children: [
                   PotatoSwitchListTile(
                     secondary: const Icon(Icons.download_for_offline_outlined),
-                    title: const Text('تنزيل الامتحانات تلقائياً'),
+                    title: const Text('تنزيل المحاضرات تلقائياً'),
                     subtitle: const Text('للحصول على تجربة سلسة بدون إنترنت'),
                     value: autoDownload,
                     onChanged: (value) async {
@@ -35,7 +37,7 @@ class ExamOfflineSettings extends StatelessWidget {
                       Icons.delete_sweep_outlined,
                       color: Colors.orange,
                     ),
-                    title: const Text('مسح الامتحانات المحملة'),
+                    title: const Text('مسح المحاضرات المحملة'),
                     onTap: () async {
                       final keys = prefs.getKeys().where(
                         (k) => k.startsWith('offline_exam_'),

@@ -4,6 +4,7 @@ import 'package:arabilogia/core/widgets/solid_container.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/core/constants/routes.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/features/dashboard/profile/providers/accounts_provider.dart';
@@ -51,6 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       setState(() => _showSuccess = false);
       final role = await authProvider.getUserRole();
+      if (!mounted) return;
       if (role == 'admin' || role == 'teacher') {
         context.go(AppRoutes.teacherPanel);
       } else {
@@ -83,6 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        key: TestKeys.loginScreen,
         body: Stack(
           children: [
             // Background Image/Solid Color
@@ -176,6 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
           LoginHeader(isMobile: isMobile),
           const SizedBox(height: AppTokens.spacing24),
           TextFormField(
+            key: TestKeys.loginEmailField,
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             style: TextStyle(color: colorScheme.onSurface),
@@ -199,8 +203,9 @@ class _LoginScreenState extends State<LoginScreen> {
               fieldErrors['email']!,
               style: TextStyle(color: colorScheme.error, fontSize: 12),
             ),
-            if (fieldErrors['email'] == 'يرجى تأكيد البريد الإلكتروني')
+              if (fieldErrors['email'] == 'يرجى تأكيد البريد الإلكتروني')
               TextButton(
+                key: TestKeys.loginResendVerification,
                 onPressed: () => _handleResendVerification(auth),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 2),
@@ -219,6 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
           const SizedBox(height: AppTokens.spacing12),
           TextFormField(
+            key: TestKeys.loginPasswordField,
             controller: _passwordController,
             obscureText: _obscurePassword,
             style: TextStyle(color: colorScheme.onSurface),
@@ -226,6 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
               labelText: AppStrings.password,
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
+                key: TestKeys.loginPasswordVisibilityToggle,
                 icon: Icon(
                   _obscurePassword
                       ? Icons.visibility_outlined
@@ -260,6 +267,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
+              key: TestKeys.loginForgotPassword,
               onPressed: () => ForgotPasswordOverlay.show(context),
               child: Text(
                 AppStrings.forgotPassword,

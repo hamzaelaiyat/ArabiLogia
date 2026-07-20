@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import android.util.Log
+import android.view.WindowManager
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -18,6 +19,7 @@ import java.io.File
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.arabilogia.app/download"
+    private val SECURE_CHANNEL = "com.arabilogia.app/secure"
     private var downloadManager: DownloadManager? = null
     private var methodChannel: MethodChannel? = null
 
@@ -64,6 +66,21 @@ class MainActivity : FlutterActivity() {
                 "requestPackageInstallPermission" -> {
                     requestPackageInstallPermission()
                     result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        val secureChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SECURE_CHANNEL)
+        secureChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "enableSecure" -> {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    result.success(true)
+                }
+                "disableSecure" -> {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    result.success(true)
                 }
                 else -> result.notImplemented()
             }

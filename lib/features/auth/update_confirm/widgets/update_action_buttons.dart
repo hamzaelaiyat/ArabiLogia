@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 
 class UpdateActionButtons extends StatelessWidget {
   final VoidCallback onUpdateNow;
@@ -19,6 +20,7 @@ class UpdateActionButtons extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
+            key: TestKeys.updateDownload,
             onPressed: onUpdateNow,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEB8A00),
@@ -38,6 +40,7 @@ class UpdateActionButtons extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
+            key: TestKeys.updateLater,
             onPressed: onRemindLater,
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -54,6 +57,7 @@ class UpdateActionButtons extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         TextButton(
+          key: TestKeys.updateInstall,
           onPressed: onSkip,
           child: Text(
             'تخطي هذه النسخة',

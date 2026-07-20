@@ -5,7 +5,6 @@ import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/core/widgets/potato_mode_wrapper.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
-import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:provider/provider.dart';
 
 class ActivityHistoryScreen extends StatefulWidget {

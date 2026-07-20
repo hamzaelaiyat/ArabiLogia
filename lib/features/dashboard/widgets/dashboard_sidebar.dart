@@ -68,7 +68,7 @@ class DashboardSidebar extends StatelessWidget {
                   isSelected: selectedIndex == 1,
                   icon: Icons.assignment_outlined,
                   selectedIcon: Icons.assignment,
-                  label: 'الامتحانات',
+                  label: 'المحاضرات',
                   onTap: () => onItemTapped(1),
                 ),
                 DashboardSidebarNavItem(

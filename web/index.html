@@ -552,6 +552,91 @@
       }
     }
 
+    /* Mobile 3D Coverflow Gallery */
+    .coverflow-container {
+      position: relative;
+      width: 100%;
+      min-height: 360px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      perspective: 1600px;
+      overflow: hidden;
+      direction: ltr;
+    }
+
+    .coverflow-stage {
+      position: relative;
+      width: 220px;
+      height: 290px;
+      transform-style: preserve-3d;
+    }
+
+    .cf-card {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 220px;
+      height: 290px;
+      border-radius: 12px;
+      overflow: hidden;
+      transform-style: preserve-3d;
+      transform-origin: center center;
+      transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      background: #1a1a1a;
+      will-change: transform, opacity;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+
+    .cf-card img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .cf-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,0.7) 100%);
+      pointer-events: none;
+    }
+
+    .cf-title {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 18px;
+      text-align: right;
+      pointer-events: none;
+      direction: rtl;
+    }
+
+    .cf-title span {
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.3em;
+      letter-spacing: -0.02em;
+      white-space: pre-line;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.4);
+      font-family: 'Estedad', 'Rubik', sans-serif;
+    }
+
+    .cf-dim {
+      position: absolute;
+      inset: 0;
+      background: #000000;
+      opacity: 0.6;
+      transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      pointer-events: none;
+    }
+
     /* Download Section */
     .download {
       padding: 100px 0;
@@ -935,6 +1020,18 @@
         padding: 8px 20px;
         font-size: 14px;
       }
+
+      .album-section {
+        padding: 60px 0;
+      }
+
+      .marquee-track {
+        display: none !important;
+      }
+
+      .coverflow-container {
+        display: flex !important;
+      }
     }
   </style>
 </head>
@@ -1107,6 +1204,11 @@
       <div class="album-slider">
         <div class="marquee-track" id="marqueeTrack">
           <!-- Populated dynamically via JS -->
+        </div>
+        <div class="coverflow-container" id="coverflowContainer">
+          <div class="coverflow-stage" id="coverflowStage">
+            <!-- Populated dynamically via JS -->
+          </div>
         </div>
       </div>
     </section>
@@ -1364,6 +1466,159 @@
       track.appendChild(createContentBlock());
     }
 
+    // Mobile 3D Coverflow Gallery
+    function setupCoverflowMobile() {
+      var albumImages = [
+        "485791907_638713509017390_775771866483108828_n.jpg",
+        "486045275_638713432350731_2253743793140220714_n.jpg",
+        "486081045_638702809018460_7658931723269771210_n.jpg",
+        "486121945_638713362350738_4586673166004798193_n.jpg",
+        "486216602_638702825685125_7360229243126141413_n.jpg",
+        "521228236_731690629719677_5037047839857775172_n.jpg",
+        "525354278_737556065799800_7872842684812497127_n.jpg",
+        "526123352_737556082466465_6867399126565655136_n.jpg",
+        "526620378_737556125799794_8101003257694284326_n.jpg",
+        "590624470_839749925580413_4275391624082000064_n.jpg",
+        "591423421_839749945580411_5026117776686659946_n.jpg",
+        "591456739_839749975580408_2550495911253528909_n.jpg",
+        "594295700_843210218567717_5059294870298463275_n.jpg",
+        "594532689_843208501901222_2412440464149043329_n.jpg",
+        "594964548_846313561590716_6721931374539881717_n.jpg",
+        "596807053_846313938257345_1553939440716834282_n.jpg",
+        "596812429_846314044924001_207264477059728701_n.jpg",
+        "596815486_846314034924002_7270212191565671716_n.jpg",
+        "596953883_846751314880274_4087278841861521682_n.jpg",
+        "597545548_846751254880280_6989014906146519658_n_Edited.jpg",
+        "602494357_885989904289748_2413602575286987659_n_Edited.jpg",
+        "615410628_873876045501134_6938514583093831879_n.jpg",
+        "617656330_877649128457159_4023121466451699369_n.jpg",
+        "618217095_877649255123813_421813332356376804_n.jpg",
+        "619332563_877649125123826_7704816627655128836_n.jpg",
+        "622373148_883369951218410_1489586576161250102_n.jpg",
+        "622653332_885990764289662_3725155506937826972_n.jpg",
+        "623445114_883369947885077_7331065472242748415_n.jpg",
+        "673883538_951805597708178_3676183158133156276_n.jpg",
+        "674395376_951805591041512_7371181102297422668_n.jpg",
+        "678278711_955818653973539_6676515568733782605_n.jpg",
+        "678465217_955818770640194_2596401437582107264_n.jpg",
+        "679831904_955818623973542_7211739239666954843_n.jpg",
+        "679859404_955818607306877_8739552286049830360_n.jpg",
+        "682518386_955818660640205_8176697648994662818_n.jpg",
+        "682525117_955818720640199_8622116451925099152_n.jpg"
+      ];
+
+      var stage = document.getElementById('coverflowStage');
+      if (!stage) return;
+
+      var n = albumImages.length;
+      var active = 0;
+      var locked = false;
+      var GAP = 7;
+      var TILT = 7;
+      var SIDE_TILT = 7;
+      var DEPTH = 240;
+      var MAX_VISIBLE = 2;
+      var SCALE_STEP = 0.16;
+
+      function lock(dur) {
+        locked = true;
+        setTimeout(function () { locked = false; }, dur || 650);
+      }
+
+      function render() {
+        var cards = stage.children;
+        for (var i = 0; i < cards.length; i++) {
+          var card = cards[i];
+          var rel = i - active;
+          if (rel > n / 2) rel -= n;
+          if (rel < -n / 2) rel += n;
+
+          var ax = Math.abs(rel);
+          var visible = ax <= MAX_VISIBLE;
+          var sc = Math.max(0.4, 1 - ax * SCALE_STEP);
+          var tx = rel * (GAP * 30);
+          var tz = -ax * DEPTH;
+          var ry = -rel * TILT;
+          var rz = rel * SIDE_TILT;
+
+          card.style.transform = 'translate(-50%, -50%) translateX(' + tx + 'px) translateZ(' + tz + 'px) rotateY(' + ry + 'deg) rotateZ(' + rz + 'deg) scale(' + sc + ')';
+          card.style.opacity = visible ? '1' : '0';
+          card.style.pointerEvents = visible ? 'auto' : 'none';
+          card.style.cursor = rel === 0 ? 'auto' : 'pointer';
+          var dim = card.querySelector('.cf-dim');
+          if (dim) dim.style.opacity = rel === 0 ? '0' : '0.6';
+        }
+      }
+
+      function goTo(idx) {
+        if (locked) return;
+        lock(650);
+        if (idx === active) idx = (active + 1) % n;
+        if (window.innerWidth <= 768) {
+          active = ((idx % n) + n) % n;
+          render();
+        }
+      }
+
+      // Build cards
+      for (var i = 0; i < n; i++) {
+        (function (idx) {
+          var card = document.createElement('div');
+          card.className = 'cf-card';
+
+          var img = document.createElement('img');
+          img.src = 'assets/assets/images/album/' + albumImages[idx];
+          img.alt = '\u0634\u0647\u0627\u062F\u0629 \u062A\u0641\u0648\u0642';
+          img.loading = 'lazy';
+          img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;user-select:none';
+          img.onerror = function () {
+            this.src = 'assets/images/album/' + albumImages[idx];
+            this.onerror = null;
+          };
+          card.appendChild(img);
+
+          var dim = document.createElement('div');
+          dim.className = 'cf-dim';
+          card.appendChild(dim);
+
+          card.addEventListener('click', function () { goTo(idx); });
+          stage.appendChild(card);
+        })(i);
+      }
+
+      render();
+
+      // Touch/swipe support
+      var startX = 0;
+      stage.addEventListener('touchstart', function (e) {
+        startX = e.touches[0].clientX;
+      }, { passive: true });
+
+      stage.addEventListener('touchend', function (e) {
+        if (locked) return;
+        var diff = e.changedTouches[0].clientX - startX;
+        if (Math.abs(diff) > 40) {
+          lock(650);
+          if (diff < 0) active = (active + 1) % n;
+          else active = ((active - 1) % n + n) % n;
+          render();
+        }
+      }, { passive: true });
+
+      // Autoplay
+      var autoplayTimer = setInterval(function () {
+        if (locked) return;
+        lock(650);
+        active = (active + 1) % n;
+        render();
+      }, 3000);
+
+      // Stop autoplay on first touch
+      stage.addEventListener('touchstart', function () {
+        clearInterval(autoplayTimer);
+      }, { once: true, passive: true });
+    }
+
     // MutationObserver to hide the loading screen when Flutter renders
     const flutterViewObserver = new MutationObserver(function (mutations) {
       for (let mutation of mutations) {
@@ -1420,6 +1675,7 @@
 
       fetchLatestRelease();
       setupAlbumSlider();
+      setupCoverflowMobile();
     }
   </script>
 </body>

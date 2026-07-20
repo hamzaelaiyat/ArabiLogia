@@ -13,6 +13,7 @@ class AuthTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
   final List<TextInputFormatter>? inputFormatters;
+  final Key? fieldKey;
 
   const AuthTextField({
     super.key,
@@ -25,6 +26,7 @@ class AuthTextField extends StatelessWidget {
     this.keyboardType,
     this.validator,
     this.inputFormatters,
+    this.fieldKey,
   });
 
   @override
@@ -33,6 +35,7 @@ class AuthTextField extends StatelessWidget {
     final isDark = colorScheme.brightness == Brightness.dark;
 
     return TextFormField(
+      key: fieldKey,
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,

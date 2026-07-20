@@ -21,8 +21,19 @@ abstract class AppRoutes {
   // Admin Routes
   static const String teacherPanel = '/admin/teacher-panel';
   static const String teacherSettings = '/admin/teacher-settings';
-  static const String examPreview = '/admin/exam-preview';
+  static const String lecturePreview = '/admin/lecture-preview';
   static const String examEditor = '/admin/exam-editor';
+  static const String pointsEditor = '/admin/points-editor';
+
+  // Lecture Routes
+  static const String lectures = '/lectures';
+  static const String lectureDetail = '/lecture/:id';
+  static const String lecturePattern = '/lecture';
+  static const String practiceQuiz = '/lecture/:id/practice';
+  static const String practiceResult = '/practice-result';
+
+  // Admin Lecture Routes
+  static const String lectureEditor = '/admin/lecture-editor';
 
   // Update Routes
   static const String updateConfirm = '/update-confirm';

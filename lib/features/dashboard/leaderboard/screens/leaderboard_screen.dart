@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
@@ -156,20 +155,4 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     );
   }
 
-  Widget _buildFilterChip(BuildContext context, String label, String value) {
-    final isSelected =
-        _selectedGrade.toString() == value ||
-        (value == 'all' && _selectedGrade == 0);
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        setState(() {
-          _selectedGrade = value == 'all' ? 0 : int.parse(value);
-        });
-        _fetchLeaderboard();
-      },
-      selectedColor: AppColors.chipSelectedColor(context),
-    );
-  }
 }

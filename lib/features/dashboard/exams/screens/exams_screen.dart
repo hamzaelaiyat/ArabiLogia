@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/widgets/native_ad_widget.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
@@ -95,7 +96,7 @@ class _ExamsScreenState extends State<ExamsScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorByTab[index] = 'فشل تحميل الامتحانات'; // Error message
+          _errorByTab[index] = 'فشل تحميل المحاضرات'; // Error message
           _isLoadingByTab[index] = false;
         });
       }
@@ -115,8 +116,9 @@ class _ExamsScreenState extends State<ExamsScreen>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        key: TestKeys.examsScreen,
         appBar: GlassAppBar(
-          title: const ResponsiveAppBarTitle('الامتحانات'),
+          title: const ResponsiveAppBarTitle('المحاضرات'),
           bottom: potato.blurEffectsEnabled
               ? TabBar(
                   controller: _tabController,

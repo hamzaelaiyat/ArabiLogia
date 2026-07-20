@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 
@@ -31,6 +32,7 @@ class RegistrationFooter extends StatelessWidget {
         children: [
           if (!isFirstStep) ...[
             TextButton(
+              key: TestKeys.registerBackButton,
               onPressed: (isLoading || showSuccess) ? null : onBack,
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
@@ -57,6 +59,7 @@ class RegistrationFooter extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppTokens.radiusFull),
               ),
               child: ElevatedButton(
+                key: TestKeys.registerNextButton,
                 onPressed: (isLoading || showSuccess) ? null : onNext,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
