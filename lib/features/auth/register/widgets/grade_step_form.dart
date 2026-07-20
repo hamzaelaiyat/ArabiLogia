@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/auth/register/widgets/step_header.dart';
 import 'package:arabilogia/features/auth/register/widgets/grade_selector.dart';
@@ -31,6 +32,7 @@ class GradeStepForm extends StatelessWidget {
         ),
         const SizedBox(height: AppTokens.spacing12),
         GradeSelector(
+          key: TestKeys.registerGradeSelector,
           selectedGrade: selectedGrade,
           onChanged: onGradeChanged,
         ),

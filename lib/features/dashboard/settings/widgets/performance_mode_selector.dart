@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/services/potato_mode_service.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
@@ -21,6 +22,7 @@ class PerformanceModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      key: TestKeys.settingsPerformanceMode,
       child: Consumer<PotatoModeProvider>(
         builder: (context, potato, child) {
           return Column(

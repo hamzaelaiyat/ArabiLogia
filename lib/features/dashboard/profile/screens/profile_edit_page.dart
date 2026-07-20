@@ -1,7 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/core/widgets/section_title.dart';
+import 'package:arabilogia/core/widgets/confirmation_dialog.dart';
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
+import 'package:arabilogia/features/dashboard/profile/widgets/grade_selector.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
@@ -25,35 +30,36 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   @override
   void initState() {
     super.initState();
+    final authProvider = context.read<AuthProvider>();
+    final user = authProvider.state.user;
+    _nameController = TextEditingController(text: user?.userMetadata?['full_name']);
+    _usernameController = TextEditingController(text: user?.userMetadata?['username']);
+    _descriptionController = TextEditingController(text: user?.userMetadata?['description']);
     _loadInitialData();
   }
 
   Future<void> _loadInitialData() async {
     final authProvider = context.read<AuthProvider>();
     final user = authProvider.state.user;
-
-    _nameController = TextEditingController(
-      text: user?.userMetadata?['full_name'],
-    );
-    _usernameController = TextEditingController(
-      text: user?.userMetadata?['username'],
-    );
-    _descriptionController = TextEditingController(
-      text: user?.userMetadata?['description'],
-    );
+    if (user == null) {
+      if (mounted) setState(() => _isInitialLoading = false);
+      return;
+    }
 
     try {
       final profileResponse = await Supabase.instance.client
           .from('profiles')
           .select('description')
-          .eq('id', user!.id)
+          .eq('id', user.id)
           .single();
       if (profileResponse['description'] != null && mounted) {
         _descriptionController.text = profileResponse['description'] as String;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Failed to load description: $e');
+    }
 
-    final gradeVal = user?.userMetadata?['grade'];
+    final gradeVal = user.userMetadata?['grade'];
     if (gradeVal is int) {
       _selectedGrade = gradeVal;
     } else if (gradeVal != null) {
@@ -62,20 +68,23 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       _selectedGrade = 0;
     }
 
+    if (!mounted) return;
+
     try {
       final response = await Supabase.instance.client
           .from('profiles')
           .select('grade_updated_at')
-          .eq('id', user!.id)
+          .eq('id', user.id)
           .single();
-
       if (mounted) {
+        final rawDate = response['grade_updated_at'];
         setState(() {
-          _gradeUpdatedAt = DateTime.parse(response['grade_updated_at']);
+          _gradeUpdatedAt = rawDate is String ? DateTime.tryParse(rawDate) : null;
           _isInitialLoading = false;
         });
       }
     } catch (e) {
+      debugPrint('Failed to load grade_updated_at: $e');
       if (mounted) setState(() => _isInitialLoading = false);
     }
   }
@@ -107,7 +116,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   Future<void> _save() async {
     final authProvider = context.read<AuthProvider>();
 
-    // Check if grade changed
     final user = authProvider.state.user;
     final currentGradeVal = user?.userMetadata?['grade'];
     final int currentGrade = currentGradeVal is int
@@ -115,7 +123,14 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         : int.tryParse(currentGradeVal?.toString() ?? '') ?? 0;
 
     if (_selectedGrade != currentGrade && !_isGradeLocked) {
-      final confirmed = await _showGradeChangeConfirmation();
+      final confirmed = await ConfirmationDialog.show(
+        context: context,
+        title: 'تأكيد تغيير الصف',
+        content:
+            'هل أنت متأكد من تغيير الصف الدراسي؟\n\nبمجرد التأكيد، لن تتمكن من تغيير الصف مرة أخرى لمدة 3 أيام لضمان استقرار سجلاتك الدراسية.',
+        confirmLabel: 'تأكيد التغيير',
+        confirmColor: AppColors.primary,
+      );
       if (!confirmed) return;
     }
 
@@ -138,36 +153,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
   }
 
-  Future<bool> _showGradeChangeConfirmation() async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => Directionality(
-            textDirection: TextDirection.rtl,
-            child: AlertDialog(
-              title: const Text('تأكيد تغيير الصف'),
-              content: const Text(
-                'هل أنت متأكد من تغيير الصف الدراسي؟\n\nبمجرد التأكيد، لن تتمكن من تغيير الصف مرة أخرى لمدة 3 أيام لضمان استقرار سجلاتك الدراسية.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('إلغاء'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('تأكيد التغيير'),
-                ),
-              ],
-            ),
-          ),
-        ) ??
-        false;
-  }
-
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
@@ -175,6 +160,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        key: TestKeys.profileEditScreen,
         extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
           title: const Text(
@@ -213,7 +199,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     bottom: MediaQuery.paddingOf(context).bottom + 100,
                   ),
                   children: [
-                    _buildSectionHeader('المعلومات الأساسية'),
+                    const SectionTitle(title: 'المعلومات الأساسية'),
                     const SizedBox(height: AppTokens.spacing16),
                     TextFormField(
                       controller: _nameController,
@@ -251,10 +237,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                       maxLength: 200,
                     ),
                     const SizedBox(height: AppTokens.spacing32),
-                    _buildSectionHeader('الدراسة'),
+                    const SectionTitle(title: 'الدراسة'),
                     const SizedBox(height: AppTokens.spacing16),
-                    _buildGradeSelector(),
-                    _buildGradeNotice(),
+                    GradeSelector(
+                      selectedGrade: _selectedGrade,
+                      isGradeLocked: _isGradeLocked,
+                      onSelect: (grade) =>
+                          setState(() => _selectedGrade = grade),
+                    ),
+                    const GradeChangeNotice(),
                     if (_isGradeLocked)
                       Padding(
                         padding: const EdgeInsets.only(top: 8, right: 12),
@@ -279,86 +270,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   ],
                 ),
               ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-        color: AppColors.primary,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-  }
-
-  Widget _buildGradeSelector() {
-    final grades = [
-      {'value': 10, 'label': 'الأولى باكالوريا'},
-      {'value': 11, 'label': 'الثانية ثانوي'},
-      {'value': 12, 'label': 'الثالثة ثانوي'},
-    ];
-
-    return Column(
-      children: grades.map((g) {
-        final isSelected = _selectedGrade == g['value'];
-        final isLocked = _isGradeLocked && !isSelected;
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.05)
-                : AppColors.surface(context),
-            borderRadius: AppTokens.radiusMdAll,
-            border: Border.all(
-              color: isSelected ? AppColors.primary : Colors.transparent,
-              width: 1,
-            ),
-          ),
-          child: Material(
-            type: MaterialType.transparency,
-            child: ListTile(
-              title: Text(g['label'] as String),
-              trailing: isSelected
-                  ? const Icon(Icons.check_circle, color: AppColors.primary)
-                  : isLocked
-                  ? const Icon(Icons.lock_outline, size: 20)
-                  : null,
-              onTap: isLocked
-                  ? null
-                  : () {
-                      setState(() => _selectedGrade = g['value'] as int);
-                    },
-              enabled: !isLocked,
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildGradeNotice() {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.05),
-        borderRadius: AppTokens.radiusMdAll,
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.info_outline, size: 18, color: AppColors.primary),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'تنبيه: يمكنك تغيير الصف الدراسي مرة واحدة كل 3 أيام فقط.',
-              style: TextStyle(fontSize: 12, color: AppColors.primary),
-            ),
-          ),
-        ],
       ),
     );
   }

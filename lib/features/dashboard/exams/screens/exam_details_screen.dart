@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:go_router/go_router.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
@@ -55,7 +56,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
     final savedSession = await _sessionService.getSession();
 
     if (savedSession != null && savedSession.examId == widget.examId) {
-      if (!context.mounted) return;
+      if (!mounted) return;
 
       final remainingSeconds = savedSession.getRemainingSeconds();
       final remainingTime = _sessionService.formatRemainingTime(
@@ -94,7 +95,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
       );
 
       if (shouldResume == true) {
-        if (!context.mounted) return;
+        if (!mounted) return;
         context.pushNamed(
           'exam-interaction',
           pathParameters: {'id': widget.examId},
@@ -109,7 +110,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
       }
     }
 
-    if (!context.mounted) return;
+    if (!mounted) return;
     context.pushNamed(
       'exam-interaction',
       pathParameters: {'id': widget.examId},
@@ -142,6 +143,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        key: TestKeys.examDetailsScreen,
         body: Stack(
           children: [
             Positioned(
@@ -196,6 +198,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                         subjectName: _exam!.subject,
                         durationMinutes: _exam!.durationMinutes,
                         subjectId: widget.subjectId,
+                        level: _exam!.level,
                       ),
                       const SizedBox(height: 100),
                     ]),

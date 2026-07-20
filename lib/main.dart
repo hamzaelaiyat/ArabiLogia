@@ -23,13 +23,26 @@ import 'package:arabilogia/features/dashboard/exams/models/grade_metadata.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+/// Load environment, Supabase and any shared non-UI dependencies.
+///
+/// Patrol tests call this directly; the Flutter binding is managed by
+/// Patrol's own binding layer.  Set [skipBinding] to `true` when
+/// Patrol's binding already initialized [WidgetsFlutterBinding].
+Future<void> initializeApp({
+  bool enableAds = true,
+  bool skipBinding = false,
+}) async {
+  if (!skipBinding) {
+    WidgetsFlutterBinding.ensureInitialized();
+  }
   if (kIsWeb) usePathUrlStrategy();
 
   await dotenv.load(fileName: ".env");
   await AppVersion.preload();
-  unawaited(_initializeMobileAds());
+
+  if (enableAds && !kIsWeb) {
+    unawaited(_initializeMobileAds());
+  }
 
   if (SupabaseConfig.isConfigured) {
     await Supabase.initialize(
@@ -37,7 +50,10 @@ void main() async {
       anonKey: SupabaseConfig.supabaseAnonKey,
     );
   }
+}
 
+void main() async {
+  await initializeApp();
   runApp(const ArabiLogiaApp());
 }
 
@@ -86,9 +102,9 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
       GradeMetadata.loadGrades(),
     ]);
 
-    if (mounted) {
-      AppRouter.router.refresh();
-    }
+    if (!context.mounted) return;
+
+    AppRouter.router.refresh();
 
     // Check for updates only after auth is initialized
     if (authProvider.state.isAuthenticated &&

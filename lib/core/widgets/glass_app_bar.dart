@@ -34,7 +34,6 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final potato = context.watch<PotatoModeProvider>();
     final effectiveColor = backgroundColor ?? AppColors.background(context);
-    final topPadding = MediaQuery.paddingOf(context).top;
 
     // In potato mode: SOLID background (no glassmorphism)
     // Normal mode: Apply glassmorphism effect

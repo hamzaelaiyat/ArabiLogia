@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
@@ -84,6 +85,7 @@ class _PrivacySectionState extends State<PrivacySection> {
     } catch (e) {
       if (mounted) {
         await _loadProfile();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(getArabicDbError(e.toString())),
@@ -107,6 +109,7 @@ class _PrivacySectionState extends State<PrivacySection> {
     );
 
     return Column(
+      key: TestKeys.settingsPrivacy,
       children: [
         header,
         const SizedBox(height: AppTokens.spacing8),

@@ -10,6 +10,7 @@ import 'package:arabilogia/features/auth/register/widgets/registration_footer.da
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/core/constants/routes.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/features/dashboard/profile/providers/accounts_provider.dart';
@@ -145,6 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        key: TestKeys.registerScreen,
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
@@ -289,6 +291,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               TextButton(
+                key: TestKeys.registerGoToLogin,
                 onPressed: () => context.go(AppRoutes.login),
                 child: const Text(
                   AppStrings.login,

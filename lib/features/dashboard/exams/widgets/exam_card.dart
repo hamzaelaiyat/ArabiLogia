@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/features/dashboard/exams/models/exam_level.dart';
 
 class ExamCard extends StatelessWidget {
   final Map<String, dynamic> exam;
@@ -18,6 +19,7 @@ class ExamCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final level = ExamLevel.fromValue(exam['level'] as int?);
     return Container(
       margin: const EdgeInsets.only(bottom: AppTokens.spacing8),
       child: Card(
@@ -71,6 +73,25 @@ class ExamCard extends StatelessWidget {
                           Text(
                             '${exam['duration'] ?? 30} دقيقة',
                             style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(width: AppTokens.spacing12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: level.color.withValues(alpha: 0.1),
+                              borderRadius: AppTokens.radiusSmAll,
+                            ),
+                            child: Text(
+                              level.label,
+                              style: TextStyle(
+                                color: level.color,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ],
                       ),

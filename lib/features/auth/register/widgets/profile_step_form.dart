@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/constants/strings.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/auth/widgets/auth_text_field.dart';
 import 'package:arabilogia/features/auth/register/widgets/step_header.dart';
@@ -51,6 +52,7 @@ class ProfileStepForm extends StatelessWidget {
         ),
         const SizedBox(height: AppTokens.spacing12),
         AuthTextField(
+          key: TestKeys.registerUsernameField,
           controller: usernameController,
           label: AppStrings.username,
           icon: Icons.alternate_email,

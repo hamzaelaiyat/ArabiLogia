@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/providers/theme_provider.dart';
 
@@ -10,8 +11,9 @@ class ThemeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+    return Padding(
+      key: TestKeys.settingsThemeSelector,
+      padding: const EdgeInsets.symmetric(vertical: 4),
           child: SegmentedButton<ThemeModeOption>(
             segments: const [
               ButtonSegment<ThemeModeOption>(

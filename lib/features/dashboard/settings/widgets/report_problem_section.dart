@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/features/dashboard/settings/widgets/report_problem_bottom_sheet.dart';
 
 class ReportProblemSection extends StatelessWidget {
@@ -7,6 +8,7 @@ class ReportProblemSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      key: TestKeys.settingsReportProblem,
       child: Column(
         children: [
           ListTile(

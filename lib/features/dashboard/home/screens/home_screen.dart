@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
@@ -96,6 +97,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        key: TestKeys.homeScreen,
         extendBodyBehindAppBar: true,
         appBar: const GlassAppBar(
           title: ResponsiveAppBarTitle('الرئيسية'),

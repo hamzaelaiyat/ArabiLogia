@@ -1,15 +1,17 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:arabilogia/core/models/account.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
-import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/features/dashboard/profile/providers/accounts_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
+import 'package:arabilogia/features/dashboard/profile/widgets/account_tile.dart';
+import 'package:arabilogia/core/utils/grade_utils.dart';
+import 'package:arabilogia/core/widgets/confirmation_dialog.dart';
 
 class SwitchAccountsSheet extends StatefulWidget {
   const SwitchAccountsSheet({super.key});
@@ -36,7 +38,9 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AccountsProvider>().loadAccounts();
+      if (mounted) {
+        context.read<AccountsProvider>().loadAccounts();
+      }
     });
   }
 
@@ -82,31 +86,15 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
       return;
     }
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await ConfirmationDialog.show(
       context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('إضافة حساب جديد'),
-          content: const Text('سيتم تسجيل الخروج من الحساب الحالي للسماح لك بتسجيل الدخول بحساب آخر.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('إلغاء'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('تسجيل الخروج'),
-            ),
-          ],
-        ),
-      ),
+      title: 'إضافة حساب جديد',
+      content: 'سيتم تسجيل الخروج من الحساب الحالي للسماح لك بتسجيل الدخول بحساب آخر.',
+      confirmLabel: 'تسجيل الخروج',
+      confirmColor: AppColors.primary,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
+    if (!mounted) return;
 
     final authProvider = context.read<AuthProvider>();
     await accountsProvider.saveCurrentSession(authProvider);
@@ -117,7 +105,7 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
     await authProvider.signOut();
   }
 
-  void _removeAccount(SavedAccount account) {
+  Future<void> _removeAccount(SavedAccount account) async {
     if (context.read<AuthProvider>().state.user?.id == account.id) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('لا يمكن إزالة الحساب الحالي')),
@@ -125,46 +113,17 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
       return;
     }
 
-    showDialog(
+    final confirmed = await ConfirmationDialog.show(
       context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('إزالة الحساب'),
-          content: Text('هل أنت متأكد من إزالة حساب "${account.fullName}"؟'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                context.read<AccountsProvider>().removeAccount(account);
-                Navigator.pop(ctx);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('إزالة'),
-            ),
-          ],
-        ),
-      ),
+      title: 'إزالة الحساب',
+      content: 'هل أنت متأكد من إزالة حساب "${account.fullName}"؟',
+      confirmLabel: 'إزالة',
+      confirmColor: AppColors.error,
     );
-  }
+    if (!confirmed) return;
+    if (!mounted) return;
 
-  String _getGradeText(int grade) {
-    switch (grade) {
-      case 10:
-        return 'الأولى باكالوريا';
-      case 11:
-        return 'الثانية ثانوي';
-      case 12:
-        return 'الثالثة ثانوي';
-      default:
-        return 'صفك الدراسي';
-    }
+    context.read<AccountsProvider>().removeAccount(account);
   }
 
   @override
@@ -176,6 +135,7 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
     final hasBlur = potato.blurEffectsEnabled;
 
     final container = Container(
+      key: TestKeys.switchAccountsSheet,
       decoration: BoxDecoration(
         color: hasBlur
             ? AppColors.glassBackgroundColor(context).withValues(alpha: 0.8)
@@ -244,10 +204,10 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
                 itemBuilder: (context, index) {
                   final account = accountsProvider.accounts[index];
                   final isCurrent = account.id == currentUserId;
-                  return _AccountTile(
+                  return AccountTile(
                     account: account,
                     isCurrent: isCurrent,
-                    gradeText: _getGradeText(account.grade),
+                    gradeText: getGradeText(account.grade),
                     isSwitching: _isSwitching,
                     onTap: () => _switchTo(account),
                     onRemove: () => _removeAccount(account),
@@ -262,6 +222,7 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
                 horizontal: AppTokens.spacing16,
               ),
               child: TextButton.icon(
+                key: TestKeys.switchAccountsAdd,
                 onPressed: _addAccount,
                 icon: const Icon(Icons.add_circle_outline, size: 20),
                 label: Text(
@@ -294,139 +255,6 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       child: container,
-    );
-  }
-}
-
-class _AccountTile extends StatelessWidget {
-  final SavedAccount account;
-  final bool isCurrent;
-  final String gradeText;
-  final bool isSwitching;
-  final VoidCallback onTap;
-  final VoidCallback onRemove;
-
-  const _AccountTile({
-    required this.account,
-    required this.isCurrent,
-    required this.gradeText,
-    required this.isSwitching,
-    required this.onTap,
-    required this.onRemove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Opacity(
-      opacity: isSwitching ? 0.5 : 1.0,
-      child: Material(
-        type: MaterialType.transparency,
-        child: ListTile(
-          onTap: isSwitching ? null : onTap,
-          leading: Stack(
-            children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: AppColors.surface(context),
-                child: account.avatarUrl != null
-                    ? ClipOval(
-                        child: Image.network(
-                          account.avatarUrl!,
-                          width: 52,
-                          height: 52,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Text(
-                                account.fullName.isNotEmpty ? account.fullName[0] : '?',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : Text(
-                        account.fullName.isNotEmpty ? account.fullName[0] : '?',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
-              if (isCurrent)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check,
-                      size: 12,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          title: Text(
-            account.fullName.isNotEmpty ? account.fullName : account.email,
-            style: TextStyle(
-              fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-              color: isCurrent ? AppColors.primary : null,
-            ),
-          ),
-          subtitle: Row(
-            children: [
-              Text(
-                '@${account.username}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.mutedColor(context),
-                ),
-              ),
-              if (account.grade > 0) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-                  ),
-                  child: Text(
-                    gradeText,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          trailing: isCurrent
-              ? null
-              : IconButton(
-                  icon: Icon(
-                    Icons.remove_circle_outline,
-                    size: 20,
-                    color: AppColors.error.withValues(alpha: 0.7),
-                  ),
-                  onPressed: onRemove,
-                ),
-        ),
-      ),
     );
   }
 }

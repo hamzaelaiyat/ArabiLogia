@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 
 class LoginButton extends StatelessWidget {
   final bool isLoading;
@@ -8,7 +9,7 @@ class LoginButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
   const LoginButton({
-    super.key,
+    super.key = TestKeys.loginButton,
     required this.isLoading,
     this.showSuccess = false,
     this.onPressed,

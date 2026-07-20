@@ -12,35 +12,32 @@ import 'package:arabilogia/core/services/supabase_service.dart';
 import 'package:arabilogia/core/utils/auth_error_mapper.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/features/auth/providers/auth_state.dart';
+import 'package:arabilogia/features/auth/providers/avatar_provider.dart';
+import 'package:arabilogia/features/auth/providers/profile_provider.dart';
 
 class AuthProvider extends ChangeNotifier {
   GoTrueClient? _auth;
   late final AuthService _authService;
   late final ProfileService _profileService;
   late final AvatarService _avatarService;
+  late final AvatarProvider _avatarProvider;
+  late final ProfileProvider _profileProvider;
 
   AuthState _state = const AuthState();
   AuthState get state => _state;
 
-  String? _role;
+  StreamSubscription<dynamic>? _authSub;
+
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
-  // ---------------------------------------------------------------------------
-  // Violation state
-  // ---------------------------------------------------------------------------
+  bool get isTeacher => _profileProvider.isTeacher;
+  bool get isAdmin => _profileProvider.isAdmin;
 
-  int _imageViolationCount = 0;
-  DateTime? _imageBlockedUntil;
-  bool _hasBadTag = false;
-
-  bool get canUploadAvatar =>
-      !_hasBadTag &&
-      (_imageBlockedUntil == null ||
-          _imageBlockedUntil!.isBefore(DateTime.now()));
-  int get imageViolationCount => _imageViolationCount;
-  DateTime? get imageBlockedUntil => _imageBlockedUntil;
-  bool get hasBadTag => _hasBadTag;
+  bool get canUploadAvatar => _avatarProvider.canUploadAvatar;
+  int get imageViolationCount => _avatarProvider.imageViolationCount;
+  DateTime? get imageBlockedUntil => _avatarProvider.imageBlockedUntil;
+  bool get hasBadTag => _avatarProvider.hasBadTag;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -58,6 +55,13 @@ class AuthProvider extends ChangeNotifier {
     _authService = AuthService(supabase);
     _profileService = ProfileService(supabase);
     _avatarService = AvatarService(supabase, http.Client());
+    _avatarProvider = AvatarProvider(
+      avatarService: _avatarService,
+      profileService: _profileService,
+    );
+    _profileProvider = ProfileProvider(
+      profileService: _profileService,
+    );
   }
 
   Future<void> initializeAfterSupabase() async {
@@ -71,6 +75,9 @@ class AuthProvider extends ChangeNotifier {
       await SupabaseService.instance.initialize();
       _initServices();
       _auth = Supabase.instance.client.auth;
+      _avatarProvider.auth = _auth;
+      _profileProvider.auth = _auth;
+
       _state = _state.copyWith(
         isAuthenticated: _auth!.currentSession != null,
         user: _auth!.currentUser,
@@ -79,12 +86,13 @@ class AuthProvider extends ChangeNotifier {
 
       if (_auth!.currentSession != null) {
         await Future.wait([
-          _loadViolationState(),
-          _syncRoleFromDb(),
+          _avatarProvider.initialize(),
+          _profileProvider.syncRoleFromDb(),
         ]);
       }
 
-      _auth!.onAuthStateChange.listen((event) async {
+      await _authSub?.cancel();
+      _authSub = _auth!.onAuthStateChange.listen((event) async {
         _state = _state.copyWith(
           isAuthenticated: event.session != null,
           user: event.session?.user,
@@ -92,11 +100,11 @@ class AuthProvider extends ChangeNotifier {
         );
         if (event.session != null) {
           await Future.wait([
-            _loadViolationState(),
-            _syncRoleFromDb(),
+            _avatarProvider.initialize(),
+            _profileProvider.syncRoleFromDb(),
           ]);
         } else {
-          _role = null;
+          _profileProvider.setRoleFromUser(null);
         }
         notifyListeners();
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -109,6 +117,12 @@ class AuthProvider extends ChangeNotifier {
 
     _isInitialized = true;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 
   // ---------------------------------------------------------------------------
@@ -129,7 +143,7 @@ class AuthProvider extends ChangeNotifier {
         session: result.session,
       );
 
-      await _syncRoleFromDb();
+      await _profileProvider.syncRoleFromDb();
 
       unawaited(ScoreRepository().syncScoresWithSupabase());
 
@@ -224,7 +238,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (result.isAuthenticated) {
-        await _syncRoleFromDb();
+        await _profileProvider.syncRoleFromDb();
       }
 
       notifyListeners();
@@ -287,7 +301,7 @@ class AuthProvider extends ChangeNotifier {
         session: result.session,
       );
 
-      await _syncRoleFromDb();
+      await _profileProvider.syncRoleFromDb();
 
       unawaited(ScoreRepository().syncScoresWithSupabase());
 
@@ -365,14 +379,16 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    _avatarProvider.auth = null;
+    _profileProvider.auth = null;
     await _authService.signOut();
     _state = const AuthState();
-    _role = null;
+    _profileProvider.setRoleFromUser(null);
     notifyListeners();
   }
 
   // ---------------------------------------------------------------------------
-  // Profile
+  // Profile (delegated)
   // ---------------------------------------------------------------------------
 
   Future<bool> updateProfile({
@@ -467,7 +483,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------------
-  // Avatar
+  // Avatar (delegated)
   // ---------------------------------------------------------------------------
 
   Future<Map<String, dynamic>> uploadAvatar(Uint8List bytes) async {
@@ -480,9 +496,9 @@ class AuthProvider extends ChangeNotifier {
 
     if (result.accepted && result.avatarUrl != null) {
       await updateProfile(avatarUrl: result.avatarUrl);
-      await _loadViolationState();
+      await _avatarProvider.initialize();
     } else if (result.rejected) {
-      await _loadViolationState();
+      await _avatarProvider.initialize();
     }
 
     if (result.accepted) {
@@ -517,37 +533,5 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Violations (internal)
-  // ---------------------------------------------------------------------------
-
-  Future<void> _loadViolationState() async {
-    final state = await _profileService.loadViolationState();
-    _imageViolationCount = state.imageViolationCount;
-    _imageBlockedUntil = state.imageBlockedUntil;
-    _hasBadTag = state.hasBadTag;
-    notifyListeners();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Role helpers
-  // ---------------------------------------------------------------------------
-
-  Future<void> _syncRoleFromDb() async {
-    _role = await _profileService.getUserRole();
-  }
-
-  bool get isTeacher {
-    final effectiveRole =
-        _role ?? _state.user?.userMetadata?['role'] as String?;
-    return effectiveRole == 'teacher' || effectiveRole == 'admin';
-  }
-
-  bool get isAdmin {
-    final effectiveRole =
-        _role ?? _state.user?.userMetadata?['role'] as String?;
-    return effectiveRole == 'admin';
   }
 }

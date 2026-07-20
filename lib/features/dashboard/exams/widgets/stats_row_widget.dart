@@ -38,7 +38,7 @@ class StatsRowWidget extends StatelessWidget {
         const SizedBox(width: 8),
         _buildStatCard(
           context,
-          'المكافأة',
+          'النقاط',
           '+$speedBonus',
           Icons.bolt,
           color: AppColors.warning,

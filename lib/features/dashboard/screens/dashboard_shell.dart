@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/constants/app_version.dart';
@@ -22,7 +23,11 @@ class DashboardShell extends StatelessWidget {
   int _calculateSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith(AppRoutes.home)) return 0;
-    if (location.startsWith(AppRoutes.exams)) return 1;
+    if (location.startsWith(AppRoutes.lectures) ||
+        location.startsWith(AppRoutes.lecturePattern) ||
+        location.startsWith(AppRoutes.exams)) {
+      return 1;
+    }
     if (location.startsWith(AppRoutes.leaderboard)) return 2;
     if (location.startsWith(AppRoutes.profile)) return 3;
     if (location.startsWith(AppRoutes.settings)) return 4;
@@ -47,7 +52,7 @@ class DashboardShell extends StatelessWidget {
         context.go(AppRoutes.home);
         break;
       case 1:
-        context.go(AppRoutes.exams);
+        context.go(AppRoutes.lectures);
         break;
       case 2:
         context.go(AppRoutes.leaderboard);
@@ -113,6 +118,7 @@ class DashboardShell extends StatelessWidget {
         : AppColors.background(context);
 
     return Scaffold(
+      key: TestKeys.dashboardShell,
       extendBody: true,
       body: child,
       bottomNavigationBar: potato.blurEffectsEnabled
@@ -141,6 +147,7 @@ class DashboardShell extends StatelessWidget {
     final version = kIsWeb ? '' : AppVersion.displayVersion;
 
     return Scaffold(
+      key: TestKeys.dashboardShell,
       body: Container(
         color: AppColors.background(context),
         child: Row(

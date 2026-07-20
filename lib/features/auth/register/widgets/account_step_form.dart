@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/constants/strings.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/auth/widgets/auth_text_field.dart';
 import 'package:arabilogia/features/auth/register/widgets/step_header.dart';
@@ -37,6 +38,7 @@ class AccountStepForm extends StatelessWidget {
         ),
         const SizedBox(height: AppTokens.spacing12),
         AuthTextField(
+          fieldKey: TestKeys.registerEmailField,
           controller: emailController,
           label: AppStrings.email,
           icon: Icons.email_outlined,
@@ -61,6 +63,7 @@ class AccountStepForm extends StatelessWidget {
           ),
         const SizedBox(height: AppTokens.spacing12),
         AuthTextField(
+          fieldKey: TestKeys.registerPasswordField,
           controller: passwordController,
           label: AppStrings.password,
           icon: Icons.lock_outline,
@@ -87,6 +90,7 @@ class AccountStepForm extends StatelessWidget {
           ),
         const SizedBox(height: AppTokens.spacing12),
         AuthTextField(
+          fieldKey: TestKeys.registerConfirmPasswordField,
           controller: confirmPasswordController,
           label: AppStrings.confirmPassword,
           icon: Icons.lock_outline,

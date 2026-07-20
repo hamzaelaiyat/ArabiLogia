@@ -1,8 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/services/device_info_service.dart';
+import 'package:arabilogia/core/widgets/drag_handle.dart';
+import 'package:arabilogia/features/dashboard/settings/widgets/report_success_view.dart';
+import 'package:arabilogia/features/dashboard/settings/widgets/attachment_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as p;
@@ -51,40 +55,19 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
   final _stepsController = TextEditingController();
   final _whatsappController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _picker = ImagePicker();
-  final List<XFile> _attachments = [];
+  final _attachmentKey = GlobalKey<AttachmentPickerState>();
   bool _isSubmitting = false;
   bool _submitted = false;
   String? _error;
 
-  Future<void> _pickAttachment() async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1920,
-      maxHeight: 1920,
-      imageQuality: 80,
-    );
-    if (image != null && _attachments.length < 5) {
-      setState(() {
-        _attachments.add(image);
-      });
-    }
-  }
-
-  void _removeAttachment(int index) {
-    setState(() {
-      _attachments.removeAt(index);
-    });
-  }
-
-  Future<List<String>> _uploadAttachments() async {
-    if (_attachments.isEmpty) return [];
+  Future<List<String>> _uploadAttachments(List<XFile> attachments) async {
+    if (attachments.isEmpty) return [];
 
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
     final uploadedUrls = <String>[];
 
-    for (final attachment in _attachments) {
+    for (final attachment in attachments) {
       try {
         final file = File(attachment.path);
         final extension = p.extension(attachment.path);
@@ -97,6 +80,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
             supabase.storage.from('reports').getPublicUrl(fileName);
         uploadedUrls.add(publicUrl);
       } catch (e) {
+        debugPrint('Failed to upload attachment: $e');
       }
     }
 
@@ -124,7 +108,8 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
 
       final deviceInfo = await DeviceInfoService.getDeviceInfoString();
       final appVersion = await DeviceInfoService.getAppVersion();
-      final attachmentUrls = await _uploadAttachments();
+      final attachments = _attachmentKey.currentState?.attachments ?? [];
+      final attachmentUrls = await _uploadAttachments(attachments);
 
       final reportData = {
         if (user != null) 'user_id': user.id,
@@ -169,6 +154,8 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
     _titleController.dispose();
     _descriptionController.dispose();
     _stepsController.dispose();
+    _whatsappController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -185,6 +172,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxHeight),
           child: Container(
+            key: TestKeys.reportProblemSheet,
             padding: EdgeInsets.fromLTRB(
               AppTokens.spacing24,
               0,
@@ -195,42 +183,10 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
               color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             ),
-            child: _submitted ? _buildSuccessView() : _buildFormView(),
+            child: _submitted ? const ReportSuccessView() : _buildFormView(),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildSuccessView() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildDragHandle(),
-        const SizedBox(height: AppTokens.spacing24),
-        const Icon(
-          Icons.check_circle,
-          size: 80,
-          color: AppColors.success,
-        ),
-        const SizedBox(height: AppTokens.spacing24),
-        Text(
-          'تم إرسال التقرير بنجاح',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppTokens.spacing8),
-        Text(
-          'شكراً لمساعدتنا في تحسين التطبيق، سنتعامل مع المشكلة في أقرب وقت.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.mutedColor(context),
-              ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppTokens.spacing24),
-      ],
     );
   }
 
@@ -238,7 +194,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildDragHandle(),
+        const DragHandle(),
         Text(
           'الإبلاغ عن مشكلة',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -264,6 +220,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildTextField(
+                  fieldKey: TestKeys.reportProblemMessage,
                   controller: _titleController,
                   label: 'عنوان المشكلة',
                   hint: 'مثال: مشكلة في تسجيل الدخول',
@@ -278,6 +235,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
                 ),
                 const SizedBox(height: AppTokens.spacing20),
                 _buildTextField(
+                  fieldKey: TestKeys.reportProblemWhatsapp,
                   controller: _whatsappController,
                   label: 'رقم الواتساب *',
                   hint: 'أدخل رقم الواتساب',
@@ -286,6 +244,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
                 ),
                 const SizedBox(height: AppTokens.spacing20),
                 _buildTextField(
+                  fieldKey: TestKeys.reportProblemPhone,
                   controller: _phoneController,
                   label: 'رقم الهاتف',
                   hint: 'أدخل رقم الهاتف',
@@ -302,7 +261,10 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
                   optional: true,
                 ),
                 const SizedBox(height: AppTokens.spacing20),
-                _buildAttachmentsSection(),
+                AttachmentPicker(
+                  key: _attachmentKey,
+                  onAttachmentsChanged: (_) {},
+                ),
                 if (_error != null) ...[
                   const SizedBox(height: AppTokens.spacing16),
                   Text(
@@ -323,6 +285,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
           width: double.infinity,
           height: AppTokens.buttonHeightMd,
           child: ElevatedButton(
+            key: TestKeys.reportProblemSubmit,
             onPressed: _isSubmitting ? null : _submitReport,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEB8A00),
@@ -354,22 +317,8 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
     );
   }
 
-  Widget _buildDragHandle() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 12),
-        width: 40,
-        height: 4,
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white30 : Colors.black26,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
-
   Widget _buildTextField({
+    Key? fieldKey,
     required TextEditingController controller,
     required String label,
     required String hint,
@@ -404,6 +353,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          key: fieldKey,
           controller: controller,
           maxLines: maxLines,
           minLines: 1,
@@ -426,107 +376,6 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
               vertical: 14,
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAttachmentsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Text(
-              'مرفقات (لقطات شاشة أو فيديو)',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: AppTokens.fontSizeMd,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              '(${_attachments.length}/5)',
-              style: TextStyle(
-                fontSize: AppTokens.fontSizeXs,
-                color: AppColors.mutedColor(context),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            ..._attachments.asMap().entries.map((entry) {
-              final index = entry.key;
-              final file = entry.value;
-              return Stack(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: AppTokens.radiusMdAll,
-                      color: Colors.black12,
-                    ),
-                    child: ClipRRect(
-                      borderRadius: AppTokens.radiusMdAll,
-                      child: Image.file(
-                        File(file.path),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.image,
-                          size: 32,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 4,
-                    left: 4,
-                    child: GestureDetector(
-                      onTap: () => _removeAttachment(index),
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: AppColors.error,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
-            if (_attachments.length < 5)
-              GestureDetector(
-                onTap: _pickAttachment,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    borderRadius: AppTokens.radiusMdAll,
-                    border: Border.all(
-                      color: AppColors.mutedColor(context),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.add_photo_alternate_outlined,
-                    size: 32,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-          ],
         ),
       ],
     );

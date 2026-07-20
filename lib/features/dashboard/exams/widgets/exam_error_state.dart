@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 
 class ExamErrorState extends StatelessWidget {
@@ -26,6 +27,7 @@ class ExamErrorState extends StatelessWidget {
           Text(message, style: TextStyle(color: AppColors.error)),
           const SizedBox(height: 8),
           TextButton(
+            key: TestKeys.examErrorRetry,
             onPressed: onRetry,
             child: const Text('إعادة المحاولة'),
           ),

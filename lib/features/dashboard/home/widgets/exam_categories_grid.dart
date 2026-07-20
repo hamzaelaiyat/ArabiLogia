@@ -25,7 +25,7 @@ class ExamCategoriesGrid extends StatelessWidget {
           addAnimation: true,
           delay: Duration.zero,
           child: Text(
-            'الامتحانات',
+            'المحاضرات',
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
@@ -49,7 +49,7 @@ class ExamCategoriesGrid extends StatelessWidget {
               ),
               child: InkWell(
                 onTap: () => context.go(
-                  AppRoutes.exams,
+                  AppRoutes.lectures,
                   extra: {'initialTabIndex': index},
                 ),
                 borderRadius: AppTokens.radiusLgAll,

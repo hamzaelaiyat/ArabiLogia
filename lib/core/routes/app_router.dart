@@ -22,7 +22,15 @@ import 'package:arabilogia/features/dashboard/profile/screens/profile_edit_page.
 import 'package:arabilogia/features/admin/screens/teacher_panel_screen.dart';
 import 'package:arabilogia/features/admin/screens/teacher_settings_screen.dart';
 import 'package:arabilogia/features/admin/screens/exam_editor_screen.dart';
-import 'package:arabilogia/features/admin/screens/exam_preview_screen.dart';
+import 'package:arabilogia/features/admin/screens/lecture_preview_screen.dart';
+import 'package:arabilogia/features/admin/screens/points_editor_screen.dart';
+import 'package:arabilogia/features/admin/providers/points_provider.dart';
+import 'package:arabilogia/features/dashboard/lectures/screens/lectures_screen.dart';
+import 'package:arabilogia/features/dashboard/lectures/screens/lecture_detail_screen.dart';
+import 'package:arabilogia/features/dashboard/lectures/screens/practice_quiz_screen.dart';
+import 'package:arabilogia/features/dashboard/lectures/widgets/practice_result_screen.dart';
+import 'package:arabilogia/features/dashboard/lectures/models/lecture.dart';
+import 'package:arabilogia/features/admin/screens/lecture_editor_screen.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
@@ -112,7 +120,9 @@ class AppRouter {
 
       // Teacher panel is NOT public - requires teacher role
       if (matched == AppRoutes.teacherPanel ||
-          matched == AppRoutes.examPreview) {
+          matched == AppRoutes.lecturePreview ||
+          matched == AppRoutes.lectureEditor ||
+          matched == AppRoutes.pointsEditor) {
         if (!isAuthenticated) {
           return AppRoutes.login;
         }
@@ -183,14 +193,14 @@ class AppRouter {
         ),
       ),
       GoRoute(
-        path: AppRoutes.examPreview,
-        name: 'exam-preview',
+        path: AppRoutes.lecturePreview,
+        name: 'lecture-preview',
         pageBuilder: (context, state) {
           final exam = state.extra as Exam;
           return AppRouter._buildPage(
             context: context,
             state: state,
-            child: ExamPreviewScreen(exam: exam),
+            child: LecturePreviewScreen(exam: exam),
           );
         },
       ),
@@ -198,11 +208,95 @@ class AppRouter {
         path: AppRoutes.examEditor,
         name: 'exam-editor',
         pageBuilder: (context, state) {
-          final exam = state.extra as Exam?;
+          final extra = state.extra;
+          Exam? exam;
+          bool hideCategoryAndGrade = false;
+          bool hidePoints = false;
+          bool hideTimer = false;
+          bool hideLevel = false;
+          if (extra is Exam) {
+            exam = extra;
+          } else if (extra is Map<String, dynamic>) {
+            exam = extra['exam'] as Exam?;
+            hideCategoryAndGrade = extra['hideCategoryAndGrade'] as bool? ?? false;
+            hidePoints = extra['hidePoints'] as bool? ?? false;
+            hideTimer = extra['hideTimer'] as bool? ?? false;
+            hideLevel = extra['hideLevel'] as bool? ?? false;
+          }
           return AppRouter._buildPage(
             context: context,
             state: state,
-            child: ExamEditorScreen(existingExam: exam),
+            child: ExamEditorScreen(
+              existingExam: exam,
+              hideCategoryAndGrade: hideCategoryAndGrade,
+              hidePoints: hidePoints,
+              hideTimer: hideTimer,
+              hideLevel: hideLevel,
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.lectureEditor,
+        name: 'lecture-editor',
+        pageBuilder: (context, state) {
+          final lecture = state.extra as Lecture?;
+          return AppRouter._buildPage(
+            context: context,
+            state: state,
+            child: LectureEditorScreen(existingLecture: lecture),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.pointsEditor,
+        name: 'points-editor',
+        pageBuilder: (context, state) => AppRouter._buildPage(
+          context: context,
+          state: state,
+          child: ChangeNotifierProvider(
+            create: (_) => PointsProvider(),
+            child: const PointsEditorScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.practiceQuiz,
+        name: 'practice-quiz',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          final extra = state.extra as Map<String, dynamic>?;
+          final examId = extra?['examId'] as String? ?? id;
+          final subjectId = extra?['subjectId'] as String? ?? 'nahw';
+          final subjectName = extra?['subjectName'] as String? ?? 'النحو';
+          final lectureId = extra?['lectureId'] as String? ?? '';
+          return AppRouter._buildPage(
+            context: context,
+            state: state,
+            child: PracticeQuizScreen(
+              examId: examId,
+              subjectId: subjectId,
+              subjectName: subjectName,
+              lectureId: lectureId,
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.practiceResult,
+        name: 'practice-result',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return AppRouter._buildPage(
+            context: context,
+            state: state,
+            child: PracticeResultScreen(
+              exam: extra['exam'] as Exam,
+              userAnswers: extra['userAnswers'] as Map<int, String?>,
+              correctCount: extra['correctCount'] as int,
+            ),
           );
         },
       ),
@@ -331,6 +425,27 @@ class AppRouter {
               state: state,
               child: const ActivityHistoryScreen(),
             ),
+          ),
+          GoRoute(
+            path: AppRoutes.lectures,
+            name: 'lectures',
+            pageBuilder: (context, state) => AppRouter._buildPage(
+              context: context,
+              state: state,
+              child: const LecturesScreen(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.lectureDetail,
+            name: 'lecture-detail',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              return AppRouter._buildPage(
+                context: context,
+                state: state,
+                child: LectureDetailScreen(lectureId: id),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.profileEdit,

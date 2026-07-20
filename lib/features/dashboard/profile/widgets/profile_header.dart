@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 
@@ -92,6 +93,7 @@ class _AvatarSection extends StatelessWidget {
     return Stack(
       children: [
         GestureDetector(
+          key: TestKeys.profileEditAvatar,
           onTap: canUpload ? onPickImage : null,
           child: Container(
             decoration: BoxDecoration(

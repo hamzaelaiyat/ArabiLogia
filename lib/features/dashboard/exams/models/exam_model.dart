@@ -6,6 +6,7 @@ class Exam {
   final int? durationMinutes;
   final int grade; // 0 for all, 1, 2, 3 for secondary
   final int sortOrder; // Controls exam ordering for sequential unlocking
+  final int level; // 1=easy(85%), 2=medium(75%), 3=hard(60%)
   final List<Question> questions;
   final bool isPublished; // false = draft, true = published
 
@@ -17,9 +18,21 @@ class Exam {
     this.durationMinutes,
     this.grade = 1,
     this.sortOrder = 0,
+    this.level = 1,
     required this.questions,
     this.isPublished = false,
   });
+
+  int get passPercentage {
+    switch (level) {
+      case 2:
+        return 75;
+      case 3:
+        return 60;
+      default:
+        return 85;
+    }
+  }
 
   Exam copyWith({
     String? id,
@@ -30,6 +43,7 @@ class Exam {
     bool clearDuration = false,
     int? grade,
     int? sortOrder,
+    int? level,
     List<Question>? questions,
     bool? isPublished,
   }) {
@@ -43,6 +57,7 @@ class Exam {
           : (durationMinutes ?? this.durationMinutes),
       grade: grade ?? this.grade,
       sortOrder: sortOrder ?? this.sortOrder,
+      level: level ?? this.level,
       questions: questions ?? this.questions,
       isPublished: isPublished ?? this.isPublished,
     );
@@ -56,6 +71,7 @@ class Exam {
       'si': subjectId,
       'g': grade,
       'so': sortOrder,
+      'lv': level,
       'q': questions.map((q) => q.toMinifiedJson()).toList(),
       'p': isPublished ? 1 : 0,
     };
@@ -74,6 +90,7 @@ class Exam {
       durationMinutes: json['d'] as int?,
       grade: json['g'] as int? ?? 0,
       sortOrder: json['so'] as int? ?? 0,
+      level: json['lv'] as int? ?? 1,
       questions: (json['q'] as List)
           .map((q) => Question.fromMinifiedJson(q as Map<String, dynamic>))
           .toList(),

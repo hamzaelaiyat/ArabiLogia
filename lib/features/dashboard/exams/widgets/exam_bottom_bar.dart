@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +21,7 @@ class ExamBottomBar extends StatelessWidget {
     final hasBlur = potato.blurEffectsEnabled;
 
     final button = ElevatedButton(
+      key: TestKeys.examDetailsStart,
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size(double.infinity, 56),
