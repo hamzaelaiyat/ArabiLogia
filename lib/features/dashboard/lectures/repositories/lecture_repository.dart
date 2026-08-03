@@ -1,6 +1,5 @@
 import 'package:arabilogia/core/services/supabase_service_interface.dart';
 import 'package:arabilogia/core/services/supabase_service_wrapper.dart';
-import 'package:arabilogia/features/dashboard/exams/utils/grade_mapper.dart';
 import '../models/lecture.dart';
 
 class LectureRepository {
@@ -12,16 +11,14 @@ class LectureRepository {
   Future<List<Map<String, dynamic>>> getLecturesByCategory(
     String categoryId,
   ) async {
-    final user = _supabaseService.auth.currentUser;
-    final studentGradeRaw = user?.userMetadata?['grade'] as int? ?? 10;
-    final examGrade = mapStudentGradeToExamGrade(studentGradeRaw);
-
     try {
+      // Grade filtering is enforced server-side by the
+      // "Students view published lectures for their grade" RLS policy
+      // (uses lectures.grade_ids).
       final response = await _supabaseService
           .from('lectures')
           .select()
           .eq('course_id', categoryId)
-          .eq('grade', examGrade)
           .eq('is_published', true)
           .order('sort_order');
 

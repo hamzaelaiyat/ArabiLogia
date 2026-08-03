@@ -1,8 +1,49 @@
+import 'dart:convert';
 import 'package:arabilogia/core/services/supabase_service_interface.dart';
 import 'package:arabilogia/core/services/supabase_service_wrapper.dart';
 import 'package:arabilogia/data/local/database.dart';
 import 'package:arabilogia/data/local/daos/score_dao.dart';
 import 'package:flutter/foundation.dart';
+
+class ExamStartInfo {
+  final String sessionId;
+  final DateTime startedAt;
+  final int durationSeconds;
+  const ExamStartInfo({
+    required this.sessionId,
+    required this.startedAt,
+    required this.durationSeconds,
+  });
+}
+
+class ExamGradingResult {
+  final String examId;
+  final double score;
+  final int correctCount;
+  final int totalCount;
+  final int wrongMask;
+  final double accuracy;
+  final double speedBonus;
+  final int points;
+  final String status;
+  const ExamGradingResult({
+    required this.examId,
+    required this.score,
+    required this.correctCount,
+    required this.totalCount,
+    required this.wrongMask,
+    required this.accuracy,
+    required this.speedBonus,
+    required this.points,
+    required this.status,
+  });
+}
+
+class ExamReview {
+  final Map<String, dynamic> data;
+  final Map<String, dynamic> answers;
+  const ExamReview({required this.data, required this.answers});
+}
 
 class ScoreRepository {
   static final ScoreRepository _instance = ScoreRepository._internal();
@@ -28,66 +69,98 @@ class ScoreRepository {
   final ScoreDao _scoreDao;
   Future<void>? _syncFuture;
 
-  Future<bool> submitScore({
+  /// Issues a server-side exam session. The returned session id is later
+  /// passed to [submitExamAnswer] so the server can compute an accurate
+  /// speed bonus from its own clock.
+  Future<ExamStartInfo?> startExam(String examId) async {
+    final user = _supabaseService.auth.currentUser;
+    if (user == null) return null;
+    try {
+      final res = await _supabaseService.rpc(
+        'start_exam',
+        params: {'p_exam_id': examId},
+      );
+      if (res is! Map) return null;
+      return ExamStartInfo(
+        sessionId: res['session_id'] as String,
+        startedAt: DateTime.parse(res['started_at'] as String),
+        durationSeconds: res['duration_seconds'] as int,
+      );
+    } catch (e) {
+      debugPrint('ScoreRepository.startExam error: $e');
+      return null;
+    }
+  }
+
+  /// Server-side grading. `answers` is keyed by question index with
+  /// option ids ("o0", "o1", ...). Returns null on auth/transport
+  /// failure (the screen treats that as "could not submit").
+  Future<ExamGradingResult?> submitExamAnswer({
     required String examId,
-    required String subject,
-    required double score,
-    int wrongMask = 0,
-    bool isCompleted = true,
-    int points = 0,
+    required Map<int, String?> answers,
+    String? sessionId,
   }) async {
     final user = _supabaseService.auth.currentUser;
-    if (user == null) {
-      return false;
-    }
+    if (user == null) return null;
 
-    await _scoreDao.upsertScore(examId, score, points);
-
-    if (isCompleted) {
-      try {
-        final existing = await _supabaseService
-            .from('exam_results')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('exam_id', examId)
-            .eq('status', 'completed')
-            .maybeSingle();
-        if (existing != null) {
-          return true;
-        }
-      } catch (e) {
-        debugPrint('ScoreRepository error: $e');
-      }
-    }
+    final encoded = jsonEncode(
+      answers.map((k, v) => MapEntry(k.toString(), v)),
+    );
+    final params = <String, dynamic>{
+      'p_exam_id': examId,
+      'p_answers': encoded,
+    };
+    if (sessionId != null) params['p_session_id'] = sessionId;
 
     try {
-      final data = {
-        'user_id': user.id,
-        'exam_id': examId,
-        'subject': subject,
-        'score': score,
-        'points': points,
-        'wrong_mask': wrongMask,
-        'status': isCompleted ? 'completed' : 'abandoned',
-      };
-      await _supabaseService
-          .from('exam_results')
-          .insert(data)
-          .select();
-      return true;
-    } catch (e) {
+      final res = await _supabaseService.rpc(
+        'submit_exam_answer',
+        params: params,
+      );
+      if (res is! Map) return null;
+      final result = ExamGradingResult(
+        examId: res['exam_id'] as String,
+        score: (res['score'] as num).toDouble(),
+        correctCount: res['correct_count'] as int,
+        totalCount: res['total_count'] as int,
+        wrongMask: (res['wrong_mask'] as num).toInt(),
+        accuracy: (res['accuracy'] as num).toDouble(),
+        speedBonus: (res['speed_bonus'] as num).toDouble(),
+        points: res['points'] as int,
+        status: res['status'] as String,
+      );
+      // Local cache best-effort: a sqflite failure must not block the
+      // server-graded submission from reaching the caller.
       try {
-        final minimalData = {
-          'user_id': user.id,
-          'exam_id': examId,
-          'score': score,
-          'points': points,
-        };
-        await _supabaseService.from('exam_results').insert(minimalData);
-        return true;
-      } catch (e2) {
-        return false;
+        await _scoreDao.upsertScore(examId, result.score, result.points);
+      } catch (e) {
+        debugPrint('ScoreRepository local upsert ignored: $e');
       }
+      return result;
+    } catch (e) {
+      debugPrint('ScoreRepository.submitExamAnswer error: $e');
+      return null;
+    }
+  }
+
+  /// Returns the exam data + answer key for review. Only available
+  /// after the user has completed the exam.
+  Future<ExamReview?> getExamReview(String examId) async {
+    final user = _supabaseService.auth.currentUser;
+    if (user == null) return null;
+    try {
+      final res = await _supabaseService.rpc(
+        'get_exam_review',
+        params: {'p_exam_id': examId},
+      );
+      if (res is! Map) return null;
+      return ExamReview(
+        data: Map<String, dynamic>.from(res['data'] as Map),
+        answers: Map<String, dynamic>.from(res['answers'] as Map),
+      );
+    } catch (e) {
+      debugPrint('ScoreRepository.getExamReview error: $e');
+      return null;
     }
   }
 
@@ -115,14 +188,6 @@ class ScoreRepository {
 
     for (int attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        final existingExams = await _supabaseService
-            .from('exams')
-            .select('id')
-            .then(
-              (res) =>
-                  (res as List<dynamic>).map((e) => e['id'] as String).toSet(),
-            );
-
         final remoteData = await _supabaseService
             .rpc('get_all_user_results', params: {'p_user_id': user.id});
 
@@ -143,26 +208,12 @@ class ScoreRepository {
 
         final unsynced = await _scoreDao.getUnsyncedScores();
 
+        // Local-only scores from before server-side grading don't have
+        // the answers needed to replay them. Clear the unsynced flag so
+        // the loop stops retrying; the remote results (if any) already
+        // won via the upsert below.
         for (final entry in unsynced) {
-          if (!existingExams.contains(entry.examId)) {
-            continue;
-          }
-
-          if (!remoteExamIds.contains(entry.examId)) {
-            try {
-              await _supabaseService.from('exam_results').insert({
-                'user_id': user.id,
-                'exam_id': entry.examId,
-                'score': entry.score,
-                'points': entry.points,
-                'subject': 'unknown',
-                'wrong_mask': 0,
-              });
-              await _scoreDao.markSynced(entry.examId);
-            } catch (e) {
-              debugPrint('ScoreRepository error: $e');
-            }
-          }
+          await _scoreDao.markSynced(entry.examId);
         }
 
         for (final entry in remoteBestScores.entries) {
@@ -185,15 +236,6 @@ class ScoreRepository {
     }
   }
 
-  Future<void> recordExamPoints(int points) async {
-    if (points <= 0) return;
-    try {
-      await _supabaseService.rpc('record_exam_points', params: {'p_points': points});
-    } catch (e) {
-      debugPrint('ScoreRepository recordExamPoints error: $e');
-    }
-  }
-
   Future<List<Map<String, dynamic>>> getRecentActivity({int limit = 3}) async {
     final user = _supabaseService.auth.currentUser;
     if (user == null) return [];
@@ -208,5 +250,4 @@ class ScoreRepository {
       return [];
     }
   }
-
 }

@@ -12,7 +12,6 @@ import 'package:arabilogia/features/dashboard/exams/services/exam_session_servic
 import 'package:arabilogia/features/dashboard/exams/providers/exam_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:arabilogia/features/dashboard/exams/utils/score_calculator.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_interaction_body.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_timer.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exit_confirmation_dialog.dart';
@@ -46,6 +45,8 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
   bool _isSubmitting = false;
   bool _isFirstAttempt = true;
   DateTime? _backgroundTimestamp;
+  // In-memory only; server anchors the speed bonus.
+  String? _serverSessionId;
 
   @override
   void initState() {
@@ -88,7 +89,8 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     final elapsed = DateTime.now().difference(_backgroundTimestamp!).inSeconds;
     _backgroundTimestamp = null;
     if (elapsed > 0) {
-      _timerNotifier.value = (_timerNotifier.value - elapsed).clamp(0, _timerNotifier.value);
+      _timerNotifier.value =
+          (_timerNotifier.value - elapsed).clamp(0, _timerNotifier.value);
     }
     if (_timerNotifier.value <= 0) {
       _submitExam();
@@ -105,130 +107,103 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
 
     if (!mounted) return;
 
-    if (exam != null) {
-      if (mounted) {
-        context.read<ExamProvider>().startExam();
-        final localScores = await _scoreRepository.getLocalScores();
-
-        if (savedSession != null && savedSession.examId == widget.examId) {
-          setState(() {
-            _isFirstAttempt = !localScores.containsKey(widget.examId);
-            _exam = exam;
-
-            _selectedAnswers.addAll(savedSession.selectedAnswers);
-            _timerNotifier.value = savedSession.getRemainingSeconds();
-            _isLoading = false;
-          });
-
-          await _sessionService.clearSession();
-        } else {
-          final shuffledQuestions = (List<Question>.from(
-            exam.questions,
-          )..shuffle()).map((q) => q.shuffled()).toList();
-
-          setState(() {
-            _isFirstAttempt = !localScores.containsKey(widget.examId);
-            _exam = exam.copyWith(questions: shuffledQuestions);
-
-            if (savedSession != null && savedSession.examId == widget.examId) {
-              _selectedAnswers.addAll(savedSession.selectedAnswers);
-              _timerNotifier.value = savedSession.getRemainingSeconds();
-            } else {
-              _timerNotifier.value = (exam.durationMinutes ?? 30) * 60;
-            }
-            _isLoading = false;
-          });
-        }
-      }
-    } else {
+    if (exam == null) {
       context.pop();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('خطأ في تحميل الامتحان')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('خطأ في تحميل الامتحان')),
+      );
+      return;
     }
+
+    final localScores = await _scoreRepository.getLocalScores();
+    context.read<ExamProvider>().startExam();
+
+    final ExamSession? restoredSession =
+        savedSession != null && savedSession.examId == widget.examId
+            ? savedSession
+            : null;
+
+    final shuffledQuestions = (List<Question>.from(exam.questions)..shuffle())
+        .map((q) => q.shuffled())
+        .toList();
+
+    // Start a server session unless we're resuming one we already own.
+    if (restoredSession == null) {
+      final startInfo = await _scoreRepository.startExam(widget.examId);
+      _serverSessionId = startInfo?.sessionId;
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _isFirstAttempt = !localScores.containsKey(widget.examId);
+      _exam = exam.copyWith(questions: shuffledQuestions);
+
+      if (restoredSession != null) {
+        _selectedAnswers.addAll(restoredSession.selectedAnswers);
+        _timerNotifier.value = restoredSession.getRemainingSeconds();
+      } else {
+        _timerNotifier.value = (exam.durationMinutes ?? 30) * 60;
+      }
+      _isLoading = false;
+    });
   }
 
   Future<void> _submitExam() async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 
-    final scoreResult = calculateScore(
-      questions: _exam!.questions,
-      selectedAnswers: _selectedAnswers,
-      remainingSeconds: _timerNotifier.value,
-      totalDurationSeconds: (_exam!.durationMinutes ?? 30) * 60,
-    );
-
-    final correctCount = scoreResult.correctCount;
-    final accuracy = scoreResult.accuracy;
-    final speedBonus = scoreResult.speedBonus;
-    final finalScore = scoreResult.finalScore;
-    final wrongMask = scoreResult.wrongMask;
-
     try {
-      await _scoreRepository
-          .submitScore(
+      final result = await _scoreRepository
+          .submitExamAnswer(
             examId: widget.examId,
-            subject: widget.subjectName,
-            score: finalScore,
-            points: correctCount,
-            wrongMask: wrongMask,
-            isCompleted: true,
+            answers: _selectedAnswers,
+            sessionId: _serverSessionId,
           )
           .timeout(const Duration(seconds: 10));
 
-      final earnedPoints = correctCount + speedBonus.round();
-      if (earnedPoints > 0) {
-        await _scoreRepository.recordExamPoints(earnedPoints);
+      if (!mounted) return;
+
+      if (result == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر إرسال الإجابات، حاول مرة أخرى')),
+        );
+        setState(() => _isSubmitting = false);
+        return;
       }
-    } catch (e) {
+
+      await _sessionService.clearSession();
+      context.read<ExamProvider>().endExam();
+
+      // Pull the answer key so the result screen can highlight the
+      // correct option for each question.
+      final review = await _scoreRepository.getExamReview(widget.examId);
+      if (!mounted) return;
+
+      final reviewExam = review == null
+          ? _exam!
+          : Exam.fromMinifiedJson(review.data).applyAnswers(review.answers);
+
+      context.pushReplacementNamed(
+        'exam-result',
+        extra: {
+          'exam': reviewExam,
+          'userAnswers': _selectedAnswers,
+          'score': result.score.round(),
+          'accuracy': result.accuracy.round(),
+          'speedBonus': result.speedBonus.round(),
+          'correctCount': result.correctCount,
+          'isFirstAttempt': _isFirstAttempt,
+        },
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
     }
-
-    if (!mounted) return;
-
-    await _sessionService.clearSession();
-
-    if (!mounted) return;
-
-    context.read<ExamProvider>().endExam();
-
-    context.pushReplacementNamed(
-      'exam-result',
-      extra: {
-        'exam': _exam,
-        'userAnswers': _selectedAnswers,
-        'score': finalScore.round(),
-        'accuracy': accuracy.round(),
-        'speedBonus': speedBonus.round(),
-        'correctCount': correctCount,
-        'isFirstAttempt': _isFirstAttempt,
-      },
-    );
   }
 
   Future<void> _submitAbandonedExam() async {
-    final scoreResult = calculateScore(
-      questions: _exam!.questions,
-      selectedAnswers: _selectedAnswers,
-    );
-
-    final correctCount = scoreResult.correctCount;
-    final finalScore = scoreResult.finalScore;
-    final wrongMask = scoreResult.wrongMask;
-
-    try {
-      await _scoreRepository
-          .submitScore(
-            examId: widget.examId,
-            subject: widget.subjectName,
-            score: finalScore,
-            points: correctCount,
-            wrongMask: wrongMask,
-            isCompleted: false,
-          )
-          .timeout(const Duration(seconds: 10));
-    } catch (e) {
-    }
+    await _sessionService.clearSession();
   }
 
   @override
@@ -256,11 +231,12 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
           children: [
             child!,
             if (isCaptured)
-              Positioned.fill(
+              const Positioned.fill(
                 child: ColoredBox(
                   color: AppColors.bgDark,
-                  child: const Center(
-                    child: Icon(Icons.screen_lock_portrait, color: Colors.white54, size: 64),
+                  child: Center(
+                    child: Icon(Icons.screen_lock_portrait,
+                        color: Colors.white54, size: 64),
                   ),
                 ),
               ),
@@ -317,8 +293,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
                     }
                   : null,
               onNext: () {
-                if (_currentQuestionIndex <
-                    _exam!.questions.length - 1) {
+                if (_currentQuestionIndex < _exam!.questions.length - 1) {
                   setState(() {
                     _currentQuestionIndex++;
                   });

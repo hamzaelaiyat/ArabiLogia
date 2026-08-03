@@ -4,7 +4,6 @@ import 'package:arabilogia/core/services/supabase_service_interface.dart';
 import 'package:arabilogia/core/services/supabase_service_wrapper.dart';
 import 'package:arabilogia/data/local/database.dart';
 import '../models/exam_model.dart';
-import '../utils/grade_mapper.dart';
 import 'score_repository.dart';
 
 class StudentExamRepository {
@@ -25,16 +24,18 @@ class StudentExamRepository {
     final autoDownload = prefs.getBool('auto_download_exams') ?? true;
 
     final user = _supabaseService.auth.currentUser;
-    final studentGradeRaw = user?.userMetadata?['grade'] as int? ?? 10;
-    final examGrade = mapStudentGradeToExamGrade(studentGradeRaw);
+    final studentGradeRaw = user?.userMetadata?['grade'] as int? ?? 1;
+    final examGrade = studentGradeRaw;
 
     final Set<String> remoteExamIds = {};
     try {
+      // Grade filtering is enforced server-side by the
+      // "Students view published exams for their grade" RLS policy
+      // (uses exams.grade_ids + exam_available_for_grade).
       final remoteData = await _supabaseService
           .from('exams')
           .select()
-          .eq('subject_id', subjectId)
-          .eq('grade', examGrade);
+          .eq('subject_id', subjectId);
 
       for (final data in remoteData) {
         final examData = data['data'] as Map<String, dynamic>;

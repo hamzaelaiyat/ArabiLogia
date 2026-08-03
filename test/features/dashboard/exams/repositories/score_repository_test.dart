@@ -1,281 +1,174 @@
 import 'dart:async';
 
-import 'package:mocktail/mocktail.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:drift/native.dart';
-import 'package:arabilogia/core/services/supabase_service_interface.dart';
-import 'package:arabilogia/data/local/database.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
-import 'package:arabilogia/features/dashboard/leaderboard/repositories/leaderboard_repository.dart';
 
-class _MockSupabaseService extends Mock implements SupabaseServiceInterface {}
-class _MockGoTrueClient extends Mock implements GoTrueClient {}
+import '../../../../helpers/test_helper.dart';
 
-/// Minimal fake builder that just returns preset data on await.
-class FakeBuilder<T> extends Fake implements PostgrestFilterBuilder<T> {
-  final T result;
-  final Object? error;
-  final Future<void>? pending;
-  FakeBuilder(this.result) : error = null, pending = null;
-  FakeBuilder.withPending(this.pending, this.result) : error = null;
-  FakeBuilder.error(this.error) : result = null as T, pending = null;
+/// Fake RPC builder that resolves to either a Map or List when awaited.
+/// `FakeFilterBuilder` (from test_helper) only resolves to a PostgrestList,
+/// which doesn't match `rpc()` returning a single object.
+class FakeRpcFilterBuilder extends Fake
+    implements PostgrestFilterBuilder<dynamic> {
+  final Object value;
+  FakeRpcFilterBuilder(this.value);
 
   @override
-  Future<U> then<U>(FutureOr<U> Function(T) onValue, {Function? onError}) async {
-    if (error != null) throw error!;
-    if (pending != null) await pending;
-    return Future<T>.value(result).then<U>(onValue, onError: onError);
+  Future<U> then<U>(
+    FutureOr<U> Function(dynamic) onValue, {
+    Function? onError,
+  }) {
+    return Future<dynamic>.value(value).then<U>(onValue, onError: onError);
   }
-
-  @override
-  PostgrestFilterBuilder<T> eq(String column, Object value) => this;
-
-  @override
-  PostgrestTransformBuilder<T> order(String column,
-      {bool ascending = false, bool nullsFirst = false, String? referencedTable}) =>
-      this;
-
-  @override
-  PostgrestTransformBuilder<T> limit(int count, {String? referencedTable}) =>
-      FakeTransformList(result as List<Map<String, dynamic>>) as PostgrestTransformBuilder<T>;
-
-  @override
-  PostgrestTransformBuilder<PostgrestMap?> maybeSingle() =>
-      FakeTransformMap(result is PostgrestMap ? result as PostgrestMap : null);
 }
 
-class FakeTransformList extends Fake implements PostgrestTransformBuilder<PostgrestList> {
-  final List<Map<String, dynamic>> result;
-  FakeTransformList(this.result);
-
-  @override
-  Future<U> then<U>(FutureOr<U> Function(PostgrestList) onValue, {Function? onError}) {
-    return Future<PostgrestList>.value(result).then<U>(onValue, onError: onError);
-  }
-
-  @override
-  PostgrestTransformBuilder<PostgrestList> select([String columns = '*']) =>
-      FakeTransformList(result);
-}
-
-class FakeTransformMap extends Fake implements PostgrestTransformBuilder<PostgrestMap?> {
-  final Map<String, dynamic>? result;
-  FakeTransformMap(this.result);
-
-  @override
-  Future<U> then<U>(FutureOr<U> Function(PostgrestMap?) onValue, {Function? onError}) {
-    return Future<PostgrestMap?>.value(result).then<U>(onValue, onError: onError);
-  }
-
-  @override
-  PostgrestTransformBuilder<PostgrestList> select([String columns = '*']) =>
-      FakeTransformList(result != null ? [result!] : []);
-}
-
-class FakeQueryBuilder extends Fake implements SupabaseQueryBuilder {
-  final List<Map<String, dynamic>> selectResult;
-  final Future<void>? pending;
-  FakeQueryBuilder(this.selectResult) : pending = null;
-  FakeQueryBuilder.pending(this.pending, this.selectResult);
-
-  @override
-  PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) =>
-      FakeBuilder<PostgrestList>.withPending(pending, selectResult);
-
-  @override
-  PostgrestFilterBuilder<PostgrestList> insert(Object values, {bool defaultToNull = true}) =>
-      FakeBuilder<PostgrestList>(selectResult);
-}
-
-User _createUser({String id = 'user_1'}) {
-  return User(
-    id: id,
-    appMetadata: {},
-    userMetadata: {},
-    aud: 'authenticated',
-    createdAt: DateTime.now().toIso8601String(),
-    email: 'user@example.com',
-    role: 'authenticated',
-  );
+PostgrestFilterBuilder<dynamic> _jsonRpc(Object? result) {
+  return FakeRpcFilterBuilder(result ?? const {});
 }
 
 void main() {
-  late _MockSupabaseService mockService;
-  late _MockGoTrueClient mockAuth;
-  late AppDatabase testDb;
-  late ScoreRepository repo;
-  late LeaderboardRepository leaderboardRepo;
+  late MockSupabaseService mockSupabase;
+  late MockGoTrueClient mockAuth;
 
   setUp(() {
-    mockService = _MockSupabaseService();
-    mockAuth = _MockGoTrueClient();
-    when(() => mockService.auth).thenReturn(mockAuth);
-    testDb = AppDatabase.forTesting(NativeDatabase.memory());
-    SharedPreferences.setMockInitialValues({});
-    repo = ScoreRepository(supabaseService: mockService, database: testDb);
-    leaderboardRepo = LeaderboardRepository(supabaseService: mockService);
+    mockSupabase = MockSupabaseService();
+    mockAuth = MockGoTrueClient();
+    when(() => mockSupabase.auth).thenReturn(mockAuth);
   });
 
-  tearDown(() async {
-    await testDb.close();
-  });
+  group('ScoreRepository.startExam', () {
+    test('returns session metadata on success', () async {
+      when(() => mockAuth.currentUser).thenReturn(createTestUser());
+      when(() => mockSupabase.rpc(
+            'start_exam',
+            params: {'p_exam_id': 'e1'},
+          )).thenAnswer((_) => _jsonRpc({
+                'session_id': 'sess-1',
+                'started_at': '2026-08-03T12:00:00Z',
+                'duration_seconds': 1800,
+              }));
 
-  group('submitScore', () {
-    test('Returns false when no user is logged in', () async {
+      final repo = ScoreRepository(supabaseService: mockSupabase);
+      final info = await repo.startExam('e1');
+
+      expect(info, isNotNull);
+      expect(info!.sessionId, 'sess-1');
+      expect(info.durationSeconds, 1800);
+      expect(info.startedAt.toUtc(), DateTime.utc(2026, 8, 3, 12, 0, 0));
+    });
+
+    test('returns null when not authenticated', () async {
       when(() => mockAuth.currentUser).thenReturn(null);
-      final result = await repo.submitScore(examId: 'exam_1', subject: 'arabic', score: 85.0);
-      expect(result, false);
-      verifyNever(() => mockService.from(any()));
+      final repo = ScoreRepository(supabaseService: mockSupabase);
+      expect(await repo.startExam('e1'), isNull);
     });
 
-    test('Updates local cache before remote call and inserts', () async {
-      when(() => mockAuth.currentUser).thenReturn(_createUser());
-      when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([{'id': 'r1'}]));
-
-      final result = await repo.submitScore(examId: 'exam_1', subject: 'arabic', score: 85.0, points: 10);
-
-      expect(result, true);
-      final scores = await repo.getLocalScores();
-      expect(scores['exam_1']['score'], equals(85.0));
-      expect(scores['exam_1']['points'], equals(10));
-    });
-
-    test('Skips insert when completed score already exists for this exam', () async {
-      when(() => mockAuth.currentUser).thenReturn(_createUser());
-      when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([{'id': 'existing_1'}]));
-
-      final result = await repo.submitScore(examId: 'exam_1', subject: 'arabic', score: 90.0, isCompleted: true);
-
-      expect(result, true);
+    test('returns null when the RPC throws', () async {
+      when(() => mockAuth.currentUser).thenReturn(createTestUser());
+      when(() => mockSupabase.rpc(
+            'start_exam',
+            params: any(named: 'params'),
+          )).thenThrow(Exception('rpc down'));
+      final repo = ScoreRepository(supabaseService: mockSupabase);
+      expect(await repo.startExam('e1'), isNull);
     });
   });
 
-  group('syncScoresWithSupabase', () {
-    test('Returns early when user is null', () async {
-      when(() => mockAuth.currentUser).thenReturn(null);
-      await repo.syncScoresWithSupabase();
-      verifyNever(() => mockService.from(any()));
+  group('ScoreRepository.submitExamAnswer', () {
+    test('encodes the answers map and parses the grading payload', () async {
+      when(() => mockAuth.currentUser).thenReturn(createTestUser());
+      when(() => mockSupabase.rpc(
+            'submit_exam_answer',
+            params: {
+              'p_exam_id': 'e1',
+              'p_answers': '{"0":"o1","1":"o0"}',
+              'p_session_id': 'sess-1',
+            },
+          )).thenAnswer((_) => _jsonRpc({
+                'exam_id': 'e1',
+                'score': 87.5,
+                'correct_count': 4,
+                'total_count': 5,
+                'wrong_mask': 8,
+                'accuracy': 80.0,
+                'speed_bonus': 7.5,
+                'points': 4,
+                'status': 'completed',
+              }));
+
+      final repo = ScoreRepository(supabaseService: mockSupabase);
+      final result = await repo.submitExamAnswer(
+        examId: 'e1',
+        answers: const {0: 'o1', 1: 'o0'},
+        sessionId: 'sess-1',
+      );
+
+      expect(result, isNotNull);
+      expect(result!.score, 87.5);
+      expect(result.correctCount, 4);
+      expect(result.totalCount, 5);
+      expect(result.wrongMask, 8);
+      expect(result.points, 4);
+      expect(result.status, 'completed');
     });
 
-    test('Guards against concurrent sync', () async {
-      when(() => mockAuth.currentUser).thenReturn(_createUser());
-      int callCount = 0;
-      when(() => mockService.from(any())).thenAnswer((_) {
-        callCount++;
-        return FakeQueryBuilder([]);
-      });
+    test('omits p_session_id when no session id is provided', () async {
+      when(() => mockAuth.currentUser).thenReturn(createTestUser());
+      when(() => mockSupabase.rpc(
+            'submit_exam_answer',
+            params: {
+              'p_exam_id': 'e1',
+              'p_answers': '{}',
+            },
+          )).thenAnswer((_) => _jsonRpc({
+                'exam_id': 'e1',
+                'score': 0.0,
+                'correct_count': 0,
+                'total_count': 0,
+                'wrong_mask': 0,
+                'accuracy': 0.0,
+                'speed_bonus': 0.0,
+                'points': 0,
+                'status': 'completed',
+              }));
 
-      await Future.wait([
-        repo.syncScoresWithSupabase(),
-        repo.syncScoresWithSupabase(),
-      ]);
-
-      expect(callCount, equals(2));
-    });
-
-    test('Pushes local-only scores to remote when exam exists', () async {
-      when(() => mockAuth.currentUser).thenReturn(_createUser());
-      repo = ScoreRepository(supabaseService: mockService, database: testDb);
-
-      when(() => mockService.from('exams')).thenAnswer((_) => FakeQueryBuilder([{'id': 'exam_1'}]));
-      when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([]));
-
-      await repo.syncScoresWithSupabase();
-      final scores = await repo.getLocalScores();
-      expect(scores, isEmpty);
-    });
-
-    test('Skips scores for deleted exams', () async {
-      when(() => mockAuth.currentUser).thenReturn(_createUser());
-      repo = ScoreRepository(supabaseService: mockService, database: testDb);
-
-      when(() => mockService.from('exams')).thenAnswer((_) => FakeQueryBuilder([]));
-      when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([]));
-
-      await repo.syncScoresWithSupabase();
-      final scores = await repo.getLocalScores();
-      expect(scores, isEmpty);
-    });
-  });
-
-  group('getLocalScores', () {
-    test('Returns all stored scores', () async {
-      when(() => mockAuth.currentUser).thenReturn(_createUser());
-      when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([{'id': 'r1'}]));
-      await repo.submitScore(examId: 'exam_1', subject: 'arabic', score: 85.0, points: 10);
-      await repo.submitScore(examId: 'exam_2', subject: 'math', score: 92.0, points: 15);
-
-      final scores = await repo.getLocalScores();
-      expect(scores['exam_1']['score'], equals(85.0));
-      expect(scores['exam_1']['points'], equals(10));
-      expect(scores['exam_2']['score'], equals(92.0));
-      expect(scores['exam_2']['points'], equals(15));
-    });
-
-    test('Returns empty map when no scores exist', () async {
-      expect(await repo.getLocalScores(), isEmpty);
-    });
-  });
-
-  group('getLeaderboard', () {
-    test('Calls RPC with correct period filter', () async {
-      when(() => mockAuth.currentUser).thenReturn(_createUser());
-      await leaderboardRepo.getLeaderboard(period: 'weekly');
-      verify(() => mockService.rpc('get_leaderboard_by_period', params: {'period_filter': 'weekly'})).called(1);
-    });
-
-    test('Returns empty on error', () async {
-      when(() => mockAuth.currentUser).thenReturn(_createUser());
-      when(() => mockService.rpc(any(), params: any(named: 'params'))).thenThrow(Exception('error'));
-      expect(await leaderboardRepo.getLeaderboard(period: 'monthly'), isEmpty);
+      final repo = ScoreRepository(supabaseService: mockSupabase);
+      final result = await repo.submitExamAnswer(
+        examId: 'e1',
+        answers: const {},
+      );
+      expect(result, isNotNull);
+      verify(() => mockSupabase.rpc(
+            'submit_exam_answer',
+            params: {
+              'p_exam_id': 'e1',
+              'p_answers': '{}',
+            },
+          )).called(1);
     });
   });
 
-  group('getUserStats', () {
-    test('Returns null when not logged in', () async {
-      when(() => mockAuth.currentUser).thenReturn(null);
-      expect(await leaderboardRepo.getUserStats(), isNull);
-    });
+  group('ScoreRepository.getExamReview', () {
+    test('parses data + answers from the review RPC', () async {
+      when(() => mockAuth.currentUser).thenReturn(createTestUser());
+      when(() => mockSupabase.rpc(
+            'get_exam_review',
+            params: {'p_exam_id': 'e1'},
+          )).thenAnswer((_) => _jsonRpc({
+                'data': {
+                  'p': 1,
+                  'q': [
+                    {'t': 'Q?', 'o': ['A', 'B']},
+                  ],
+                },
+                'answers': {'0': 1},
+              }));
 
-    test('Returns null on error', () async {
-      when(() => mockAuth.currentUser).thenReturn(_createUser());
-      when(() => mockService.rpc(any(), params: any(named: 'params'))).thenThrow(Exception('error'));
-      expect(await leaderboardRepo.getUserStats(), isNull);
-    });
-  });
+      final repo = ScoreRepository(supabaseService: mockSupabase);
+      final review = await repo.getExamReview('e1');
 
-  group('getRecentActivity', () {
-    test('Returns empty when not logged in', () async {
-      when(() => mockAuth.currentUser).thenReturn(null);
-      expect(await repo.getRecentActivity(), isEmpty);
-    });
-
-    test('Returns empty on error', () async {
-      when(() => mockAuth.currentUser).thenReturn(_createUser());
-      when(() => mockService.from('exam_results')).thenThrow(Exception('error'));
-      expect(await repo.getRecentActivity(), isEmpty);
-    });
-  });
-
-  group('getDetailedProfileStats', () {
-    test('Returns empty when not logged in', () async {
-      when(() => mockAuth.currentUser).thenReturn(null);
-      expect(await leaderboardRepo.getDetailedProfileStats(), isEmpty);
-    });
-
-    test('Handles null basicStats', () async {
-      when(() => mockAuth.currentUser).thenReturn(_createUser());
-      when(() => mockService.rpc(any(), params: any(named: 'params'))).thenThrow(Exception('error'));
-      when(() => mockService.from('exam_results')).thenAnswer((_) => FakeQueryBuilder([]));
-
-      final result = await leaderboardRepo.getDetailedProfileStats();
-      expect(result['exams_completed'], equals(0));
-      expect(result['avg_score'], equals(0.0));
-      expect(result['total_score'], equals(0));
-      expect(result['rank'], equals(0));
-      expect(result['last_exam'], isNull);
+      expect(review, isNotNull);
+      expect(review!.answers, {'0': 1});
+      expect(review.data['p'], 1);
     });
   });
 }

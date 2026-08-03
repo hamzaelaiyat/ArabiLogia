@@ -98,6 +98,22 @@ class Exam {
     );
   }
 
+  /// Rebuilds this exam with the server's answer key so the result
+  /// screen can highlight the correct options. Pass the `answers`
+  /// jsonb returned by get_exam_review: {questionIndex: correctOptionIndex}.
+  Exam applyAnswers(Map<String, dynamic> answers) {
+    final updatedQuestions = <Question>[];
+    for (int i = 0; i < questions.length; i++) {
+      final correctIndex = answers[i.toString()] as int?;
+      if (correctIndex == null) {
+        updatedQuestions.add(questions[i]);
+        continue;
+      }
+      updatedQuestions.add(questions[i].withCorrectOptionId('o$correctIndex'));
+    }
+    return copyWith(questions: updatedQuestions);
+  }
+
 }
 
 class Question {
@@ -136,6 +152,16 @@ class Question {
     return copyWith(options: shuffledOptions);
   }
 
+  /// Marks the option whose id matches the given correct option id as
+  /// correct and clears isCorrect on every other option. Used to build
+  /// a reviewable Exam from the server's answer key (no client scoring).
+  Question withCorrectOptionId(String correctOptionId) {
+    final updated = options
+        .map((o) => Option(id: o.id, text: o.text, isCorrect: o.id == correctOptionId))
+        .toList();
+    return copyWith(options: updated);
+  }
+
   Map<String, dynamic> toMinifiedJson() {
     final correctIndex = options.indexWhere((o) => o.isCorrect);
     return {
@@ -150,7 +176,7 @@ class Question {
 
   factory Question.fromMinifiedJson(Map<String, dynamic> json) {
     final optionsList = (json['o'] as List).cast<String>();
-    final correctIndex = json['a'] as int;
+    final correctIndex = json['a'] as int?;
 
     return Question(
       id: json['id'] as String,
@@ -161,7 +187,7 @@ class Question {
         return Option(
           id: 'o$index',
           text: optionsList[index],
-          isCorrect: index == correctIndex,
+          isCorrect: correctIndex != null && index == correctIndex,
         );
       }),
     );

@@ -24,6 +24,8 @@ node_modules/
 lib/features/admin/
 lib/features/legal/
 lib/features/reusables/
+lib/features/gate/
+test/features/gate/
 
 # Backend & infrastructure
 supabase/
@@ -57,7 +59,8 @@ memory/
 .tmp/
 .kilocode/
 .opencode/
-
+.pi
+opencode.json
 # IntelliJ related
 *.iml
 *.ipr
