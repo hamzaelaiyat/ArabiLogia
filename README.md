@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">ArabiLogia Platform</h1>
 
-A Flutter mobile application for learning Arabic language, featuring grammar, morphology, literature, poetry, and reading comprehension exercises for high school students (Grades 10-12).
+A Flutter mobile application for **learning Arabic language**, featuring *grammar*, *morphology*, *literature*, *poetry*, and reading comprehension exercises for high school students.
 
 ## Features
 
@@ -13,8 +13,9 @@ A Flutter mobile application for learning Arabic language, featuring grammar, mo
   - الصرف (Morphology)
   - الأدب (Literature)
   - الشعر (Poetry)
-  - القراءة والنصوص (Reading & Texts)
-- **Dashboard** - Home, Tasks, Leaderboard, and Profile sections
+  - القراءة (Reading)
+  - النصوص(Text) 
+- **Dashboard** - Home, Lectures, Leaderboard, Profile, and Settings sections
 - **Exam System** - Interactive exams with multiple question styles, timer, instant results
 - **Admin Panel** - Teacher/Admin exam management, question editor, passage manager, results viewer
 - **Activity History** - Track completed exams and performance over time
@@ -29,8 +30,7 @@ A Flutter mobile application for learning Arabic language, featuring grammar, mo
 - **State Management**: Provider
 - **Routing**: GoRouter
 - **Backend**: Supabase (Auth, Database)
-- **Ads**: Google Mobile Ads
-- **Architecture**: Feature-based clean architecture
+- *Architecture**: Feature-based clean architecture
 
 ## Getting Started
 
@@ -43,29 +43,31 @@ A Flutter mobile application for learning Arabic language, featuring grammar, mo
 ### Installation
 
 1. Clone the repository:
+   
    ```bash
    git clone https://github.com/hamzaelaiyat/ArabiLogia.git
    cd ArabiLogia
    ```
 
 2. Install dependencies:
+   
    ```bash
    flutter pub get
    ```
 
-3. Configure Supabase:
-   - Create a Supabase project
-   - Copy `.env.example` to `.env`:
+3. - Copy `.env.example` to `.env`:
      ```bash
      cp .env.example .env
-     ```
+    ```
+   
    - Update `.env` with your Supabase credentials:
      ```
      SUPABASE_URL=https://your-project.supabase.co
      SUPABASE_ANON_KEY=your-anon-key
      ```
 
-4. Run the app:
+1. Run the app:
+   
    ```bash
    flutter run
    ```
@@ -74,8 +76,8 @@ A Flutter mobile application for learning Arabic language, featuring grammar, mo
 
 ```bash
 flutter build apk --release
-flutter build windows --release # Exe (requires Windows)
-flutter build linux --release # .tar.xz (requires WSL or Linux)
+flutter build windows --release # EXE (requires Windows)
+flutter build linux --release # global .tar.xz (requires WSL or Linux)
 flutter build ipa --release  # iOS (requires macOS)
 ```
 
@@ -101,14 +103,14 @@ lib/
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `SUPABASE_URL` | Your Supabase project URL |
-| `SUPABASE_ANON_KEY` | Supabase anonymous key |
+| Variable            | Description               |
+| ------------------- | ------------------------- |
+| `SUPABASE_URL`      | Your Supabase project URL |
+| `SUPABASE_ANON_KEY` | Supabase anonymous key    |
 
 ## Version
 
-Current version: **2.7.8b**
+Current version: **26.8.4**
 
 ## License
 

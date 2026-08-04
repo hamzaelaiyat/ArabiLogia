@@ -24,18 +24,18 @@ class AppVersion {
         }
       }
     } catch (_) {
-      _cachedVersion = '26.7.20';
+      _cachedVersion = '26.8.4';
       _cachedBuildNumber = '1';
     }
 
-    _cachedVersion ??= '26.7.20';
+    _cachedVersion ??= '26.8.4';
     _cachedBuildNumber ??= '1';
     return _cachedVersion!;
   }
 
   /// Get version synchronously (returns cached or fallback)
   static String get versionSync {
-    return _cachedVersion ?? '26.7.20';
+    return _cachedVersion ?? '26.8.4';
   }
 
   /// Get build number
