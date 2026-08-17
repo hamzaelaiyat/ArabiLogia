@@ -1,0 +1,352 @@
+# ArabiLogia — Lecture & Exam UX Overhaul
+
+> Self-contained handoff document. Read top-to-bottom; everything needed to scope, design, implement, verify, and ship the work lives here.
+
+---
+
+## 0. Project context
+
+- **App:** Flutter web app for Arabic-speaking students (Arabic-only UI, RTL everywhere). Deployed to Vercel at `https://arabilogia.vercel.app`.
+- **Repo root:** `/mnt/Storage/projects/ArabiLogia`.
+- **Build & deploy:** `flutter build web --release` → `rm -rf web/* && cp -r build/web/. web/` → `npx vercel --yes --prod --force`.
+- **Critical build quirk:** `flutter build web` writes fresh dart2js output to `.dart_tool/flutter_build/<hash>/main.dart.js` but the final `build/web/main.dart.js` copy can stay **byte-identical to the previous build** in this environment. After every build, `md5sum build/web/main.dart.js` and `grep` for a fresh marker. If stale, `cp .dart_tool/flutter_build/*/main.dart.js build/web/main.dart.js` and re-verify.
+- **Verification on Vercel:** `curl -sI https://arabilogia.vercel.app/main.dart.js | grep -iE 'etag|last-modified'` then `curl -s https://arabilogia.vercel.app/main.dart.js | grep -c '<fresh-marker>'`.
+- **Local headless test:** `setsid python3 /tmp/opencode/spa_server.py >/tmp/opencode/spa.log 2>&1 < /dev/null & disown` then `/usr/bin/google-chrome-stable --headless=new --disable-gpu --no-sandbox --enable-logging=stderr --v=0 --virtual-time-budget=30000 --user-data-dir=/tmp/opencode/chrome_<tag> http://127.0.0.1:8899/<route>`.
+- **Private feature rule (still in force):** `lib/features/gate/`, `supabase/`, `scripts/` and any gate-related lines in `lib/core/routes/app_router.dart` must never be committed to public. AGENTS.md rules: no code comments unless asked; preserve existing conventions.
+- **Tests must stay green:** `flutter test` currently reports **46 passing tests** across existing suites.
+- **Lint:** `flutter analyze` currently clean (only pre-existing info-level lints).
+
+---
+
+## 1. Audit — current state of the three target areas
+
+### 1.1 Lecture viewer
+
+**Files:**
+- `lib/features/dashboard/lectures/screens/lecture_detail_screen.dart` (218 lines)
+- `lib/features/dashboard/lectures/screens/lectures_screen.dart` (266 lines)
+- `lib/features/dashboard/lectures/screens/practice_quiz_screen.dart` (200 lines)
+- `lib/features/dashboard/lectures/widgets/text_block_widget.dart` (62 lines)
+- `lib/features/dashboard/lectures/widgets/youtube_block_widget.dart` (133 lines)
+- `lib/features/dashboard/lectures/widgets/quiz_block_widget.dart` (128 lines)
+- `lib/features/dashboard/lectures/widgets/standard_exam_widget.dart` (117 lines)
+- `lib/features/dashboard/lectures/widgets/lecture_card.dart` (95 lines)
+- `lib/features/dashboard/lectures/widgets/progress_bar_card.dart` (61 lines)
+- `lib/features/dashboard/lectures/models/lecture.dart` (`BlockType { text, youtube, exam, quiz }`)
+
+**What works:**
+- Responsive GlassAppBar, single-column scroll, category-tinted progress bar, markdown rendering via `flutter_markdown`, YouTube thumbnails from `img.youtube.com/vi/<id>/hqdefault.jpg`.
+- Sequential exam loading per `lecture.examIds` (N+1 but acceptable for short lists).
+
+**What is wrong / weak:**
+- `progress_bar_card.dart` is a single bar with one label — no segmentation, no per-block breakdown.
+- No table of contents; scrolling back requires manual scroll.
+- `text_block_widget.dart` uses default `MarkdownStyleSheet` — headings, blockquote, code block, lists look generic; no RTL polish; no reading time estimate; no copy action.
+- `youtube_block_widget.dart` redirects to a separate `youtube-player` route; thumbnail is hardcoded fallback duration `'56:59'` when `metadata.duration` missing; no resume position.
+- `quiz_block_widget.dart` and `standard_exam_widget.dart` are visually identical (icon + title + score chip + chevron). No differentiation between in-lecture quiz and final exam.
+- `practice_quiz_screen.dart` lacks timer, anti-cheat, server session — fine, but its result screen duplicates logic from `exam_result_screen.dart`.
+- `lecture_card.dart` is a 40px icon + 1-line title + 1-line description. No thumbnail, no duration, no progress bar.
+- `lectures_screen.dart` has tab-per-subject, ListSkeleton, retry button — but no search, no sort, no grid on desktop, no thumbnail grid.
+- `_loadLectureDetails` blocks on every exam load sequentially — consider `Future.wait` if list grows.
+
+### 1.2 Lecture editor
+
+**Files:**
+- `lib/features/admin/screens/lecture_editor_screen.dart` (945 lines — the big one)
+- `lib/features/admin/screens/exam_editor_screen.dart` (82 lines, thin wrapper)
+- `lib/features/admin/widgets/lecture_editor/` (8 helper widgets: `add_content_sheet.dart`, `block_preview_widget.dart`, `exit_confirmation_sheet.dart`, `lecture_editor_desktop_layout.dart`, `lecture_editor_mobile_app_bar.dart`, `lecture_sub_sidebar.dart`, `text_block_editor_sheet.dart`, `youtube_link_editor_sheet.dart`)
+- `lib/features/admin/widgets/inset_toggle.dart`
+
+**What works:**
+- Responsive mobile/desktop layouts, content+settings toggle on mobile, sidebar tabs on desktop, draft vs publish states, exit-confirmation sheet, ReorderableListView.
+
+**What is wrong / weak:**
+- `_buildContentTab` uses `ExpansionTile` with edit/delete/drag trailing — plain rows; mobile users see all icons cluttering.
+- `text_block_editor_sheet.dart` is likely a plain `TextField` (no markdown toolbar, no live preview).
+- `youtube_link_editor_sheet.dart` doesn't fetch thumbnail inline or expose title/duration fields (writes go to `metadata` but no UI).
+- `_handleSave` derives legacy `youtubeUrl`/`description`/`quizId` from the first matching block — fragile and silent; no UI shows this derivation.
+- `exams` and `contentBlocks` are loosely coupled. No visual link from a quiz block to its underlying exam record.
+- Save flow scattered: `_isPublished` toggled in many callbacks. No autosave to local draft.
+- No keyboard shortcuts, no per-block drag handle on mobile.
+- `_buildExamsSection` uses `ListTile` — fine but bland; could be a card grid with question count + points.
+
+### 1.3 Exam taking
+
+**Files:**
+- `lib/features/dashboard/exams/screens/exam_interaction_screen.dart` (310 lines)
+- `lib/features/dashboard/exams/screens/exam_details_screen.dart` (223 lines)
+- `lib/features/dashboard/exams/screens/exam_result_screen.dart` (196 lines)
+- `lib/features/dashboard/exams/widgets/exam_interaction_body.dart` (128 lines)
+- `lib/features/dashboard/exams/widgets/question_option_tile.dart` (89 lines)
+- `lib/features/dashboard/exams/widgets/exam_navigation_bar.dart` (76 lines)
+- `lib/features/dashboard/exams/widgets/exam_timer.dart` (96 lines)
+- `lib/features/dashboard/exams/widgets/exit_confirmation_dialog.dart` (42 lines)
+- `lib/features/dashboard/exams/widgets/score_summary_widget.dart` (71 lines)
+- `lib/features/dashboard/exams/widgets/stats_row_widget.dart` (81 lines)
+- `lib/features/dashboard/exams/widgets/question_review_widget.dart` (157 lines)
+- `lib/features/dashboard/exams/widgets/action_buttons_widget.dart` (36 lines)
+- `lib/features/dashboard/exams/widgets/exam_header.dart`, `exam_stats_row.dart`, `exam_instructions_section.dart`, `exam_bottom_bar.dart`
+- `lib/features/dashboard/lectures/screens/practice_quiz_screen.dart` + `widgets/practice_result_screen.dart`
+
+**What works:**
+- Server-anchored timer, screen-capture lock overlay, anti-cheat background time tracking, local session resume via `ExamSessionService`, question/option shuffling, PopScope exit confirmation, server-side scoring (no client trust).
+
+**What is wrong / weak:**
+- **Timer:** `exam_timer.dart` shows a red pill; **no color states** (green > 5min, orange 1-5min, red < 1min), no pulse at < 30s, no "باقي 5 دقائق" / "باقي دقيقة" snackbars. `exam_interaction_screen.dart._deductBackgroundTime` overwrites `_timerNotifier.value` based on **a single** `_backgroundTimestamp` — multiple pause/resume cycles are wrong.
+- **Question navigation:** linear Next/Prev only. No question palette. Next button is **disabled until an answer is selected** — frustrating for users who want to skip/return. No "flag for review".
+- **Question body:** hardcoded `flex: 2 / flex: 3` for passage vs question — breaks for long passages. No collapsible passage.
+- **Option tiles:** 24×24 circle indicator, no أ/ب/ج/د letter labels, no haptic feedback. Selected state uses `categoryColor.withValues(alpha:0.1)` — low contrast on dark theme.
+- **Exam details:** solid-color SliverAppBar with a single icon. No gradient, no decorative pattern, no best-score chip on re-entry.
+- **Result screen:** `exam_result_screen.dart` shows only `wrongAnswerIndices` — user can be confused when only wrongs show. 100% case is just a star + one line — weak celebration. `practice_result_screen.dart` duplicates most logic.
+- **Practice quiz:** no timer, no anti-cheat (correct for practice) but the result layout is duplicated and inconsistent with the real exam result.
+- **No confetti / animation reward** for passing or scoring 100%.
+
+---
+
+## 2. Scope (confirmed with user)
+
+All four phases ship, plus three bundled extras:
+
+### Bundled extras (explicit "yes")
+- **Inline YouTube embed** in lecture viewer (replace redirect-to-player with `youtube_player_iframe`).
+- **Confetti** for 100% exam score.
+- **Flag-for-review** per question, surfaced in the question palette.
+
+### Excluded (explicit "no" or out-of-scope)
+- "Show all questions in review" — keep current wrong-only default in `exam_result_screen.dart` and `practice_result_screen.dart`.
+- `ExamEditor` (`lib/features/admin/widgets/exam_editor.dart`) internals — out of scope; only its consumers change.
+- Analytics events — not requested.
+
+---
+
+## 3. Phased plan (execution order)
+
+> Each phase ends with: `flutter analyze` + `flutter test` + `flutter build web --release` + copy intermediate (see §0) + sync `web/` + `npx vercel --yes --prod --force` + headless verify + report to user.
+
+### Phase 4 (Foundation) — **ship first because other phases consume it**
+
+1. **Reusable state widgets** (new files in `lib/core/widgets/`):
+   - `empty_state.dart` — icon + title + message + optional CTA slot.
+   - `loading_skeleton.dart` — extends `lib/core/widgets/skeletons.dart` pattern with a `SkeletonCard`/`SkeletonRow`.
+   - `error_state.dart` — title + retry button + slot for error detail.
+2. **Animation primitives**:
+   - `exam_flip_transition.dart` — `AnimatedSwitcher` with fade+scale for option selection.
+   - `palette_slide_up.dart` — `showModalBottomSheet` wrapper with rounded top + drag handle.
+3. **Semantic colors** (extend `lib/core/theme/app_colors.dart`):
+   - `examPass` (green), `examFail` (red), `examWarning` (orange), `examUrgent` (deep red).
+   - Add `withValues(alpha: …)` helpers if not already present.
+4. **Typography scale** (new `lib/core/theme/app_text_styles.dart`):
+   - `displayLg`, `displayMd`, `headingLg`, `headingMd`, `headingSm`, `bodyLg`, `bodyMd`, `bodySm`, `caption`.
+   - Update `MarkdownStyleSheet` consumer to use the scale.
+5. **Text-scaler cap** (in `MaterialApp.router` builder in `lib/main.dart`):
+   - Wrap `MediaQuery` with `textScaler: TextScaler.linear(scale.clamp(0.85, 1.3))`.
+
+**Verify:** `flutter analyze` clean, all 46 existing tests still pass.
+
+### Phase 1 — Lecture viewer polish
+
+1. **Lecture hero card** (new `lecture_hero_card.dart`):
+   - Category-tinted gradient header, title, description, computed duration (sum of youtube durations or estimate from text length), question count.
+   - "تحديد الكل كمقروء" + "إعادة تعيين التقدم" actions.
+2. **Table of contents** (new `lecture_toc.dart`):
+   - Auto-derived from content blocks; uses `ScrollController` listener to highlight active section.
+   - Tap-to-jump via `Scrollable.ensureVisible`.
+3. **Text block widget** (`text_block_widget.dart`):
+   - Apply new typography scale in `MarkdownStyleSheet`.
+   - Reading-time estimate from `block.content.length / 1000` (~3 chars/sec Arabic).
+   - "نسخ النص" action using `Clipboard.setData`.
+4. **YouTube block widget** (`youtube_block_widget.dart`):
+   - Replace thumbnail+redirect with **inline embed** via `youtube_player_iframe`.
+   - Lazy-mount: only instantiate player when widget is within viewport (use `Visibility` or scroll listener).
+   - Persist `lastPositionSeconds` in `SharedPreferences` keyed `yt_<videoId>`, restore on mount.
+   - Remove hardcoded `'56:59'` fallback — show "غير محدد" when `metadata.duration` is empty/missing.
+5. **Quiz vs Exam differentiation** (`quiz_block_widget.dart`, `standard_exam_widget.dart`):
+   - Distinct icons (quiz = small badge `Icons.help_outline`, final exam = trophy `Icons.emoji_events_outlined`).
+   - Distinct labels ("اختبار قصير" vs "امتحان ختامي").
+   - Add chip: question count + duration.
+6. **Lecture card redesign** (`lecture_card.dart`):
+   - Aspect-ratio thumbnail (first YouTube block's `hqdefault.jpg`, or category-tinted placeholder).
+   - Duration chip + progress bar (read from `SharedPreferences` via `lecture_progress_<id>`).
+   - Subject color stripe.
+7. **Lectures screen** (`lectures_screen.dart`):
+   - Sticky subject chips + search field + sort dropdown (الأحدث / التقدم / الترتيب).
+   - Empty-state widget (from Phase 4).
+   - Desktop: switch to 2-column grid via `LayoutBuilder` (`AppTokens.breakpointTablet`).
+8. **Progress bar** (`progress_bar_card.dart`):
+   - Replace single bar with **segmented** progress (per block type: text / youtube / quiz / final exam).
+
+**Verify:** Build + deploy, hard-refresh `/lectures` and a lecture detail page.
+
+### Phase 2 — Exam-taking overhaul
+
+1. **Question palette** (new `lib/features/dashboard/exams/widgets/question_palette_sheet.dart`):
+   - Grid of dots: answered (filled, primary color), unanswered (outline), flagged (orange flag icon overlay).
+   - Slide-up via `palette_slide_up.dart`.
+   - Tap a dot → `Navigator.pop` then jump to question index.
+2. **State** in `exam_interaction_screen.dart`:
+   - Add `final Map<int, bool> _flagged = {}`; expose setter on palette.
+   - Allow Next/Prev even when no answer selected (remove the `hasSelectedAnswer` guard from `ExamNavigationBar`); show "لم تجب" hint.
+   - Add "وضع علامة للمراجعة" action in the navigation bar.
+3. **Option tile** (`question_option_tile.dart`):
+   - Letter labels (RTL-aware: `'أ'`, `'ب'`, `'ج'`, `'د'`).
+   - `HapticFeedback.selectionClick()` on tap.
+   - Selected state: bump alpha to `0.18`, add subtle elevation (`boxShadow`).
+4. **Exam timer** (`exam_timer.dart`):
+   - Color states: `examPass` (> 5min), `examWarning` (1–5min), `examFail` (< 1min).
+   - Pulse animation via `AnimationController` when < 30s.
+   - Add public `warnings` mechanism — emit "باقي 5 دقائق" once at 5min, "باقي دقيقة" once at 1min. The screen shows snackbars; the widget only signals via `ValueListenable`.
+5. **Background-time correctness** (`exam_interaction_screen.dart`):
+   - Replace single `_backgroundTimestamp` with `final List<DateTime> _pausedAt = []`.
+   - On `paused`, push timestamp; on `resumed`, pop the last and subtract elapsed.
+   - Auto-submit when timer reaches 0 (already done) — keep but verify warning fires first.
+6. **Exam interaction body** (`exam_interaction_body.dart`):
+   - Replace `flex: 2 / flex: 3` with `LayoutBuilder`: passage max-height = `min(contentHeight, 220)`; wrap in scrollable card; add collapse/expand toggle.
+   - Show "سؤال X من Y · تم الإجابة Y / N" chip above the question.
+7. **Exam details** (`exam_details_screen.dart` + sub-widgets):
+   - SliverAppBar background: gradient (`category.color` → `category.color.withValues(alpha:0.6)`) + decorative watermark icon.
+   - Best-score chip from `ScoreRepository.getLocalScores()` if previously attempted.
+   - "معاينة سريعة" preview button → reuse `ExamEditorState` + `ExamPreviewOverlay` pattern (read-only).
+8. **Result unification**:
+   - Extract `lib/features/dashboard/exams/widgets/exam_result_view.dart` taking `Exam + userAnswers + score + accuracy + speedBonus + correctCount + isFirstAttempt`.
+   - `exam_result_screen.dart` and `practice_result_screen.dart` both delegate to it (no public API changes — routes unchanged).
+9. **Confetti** (new `lib/features/dashboard/exams/widgets/celebration_overlay.dart`):
+   - On score == 100% in result view, trigger `confetti` package overlay for 3 seconds.
+   - Cap particle count for mobile perf.
+10. **Practice quiz consistency** (`practice_quiz_screen.dart`):
+    - Update exit dialog to use a glass sheet style matching `exit_confirmation_dialog.dart`.
+    - Add "اعرض الإجابة الصحيحة" toggle after submit (read from `question.metadata['explanation']` if present — optional field).
+
+**Verify:** Build + deploy, walk through: start exam → flag a question → check palette → submit → see confetti at 100%.
+
+### Phase 3 — Lecture editor UX
+
+1. **Block row redesign** (in `lecture_editor_screen.dart` `_buildContentTab`):
+   - Replace `ExpansionTile` with a custom `BlockRowWidget`:
+     - Drag handle (always visible, on both mobile and desktop).
+     - Type icon + title + badge (question count or duration).
+     - Action menu (`PopupMenuButton`) replacing the three trailing icons.
+   - Visual divider between rows.
+2. **Text editor sheet** (`text_block_editor_sheet.dart`):
+   - Split layout on desktop: `TextField` left, live `MarkdownBody` right (use `LayoutBuilder` with breakpoint).
+   - Mobile: tab-switch between "تحرير" and "معاينة".
+   - Toolbar buttons that wrap selection with markdown syntax (`**bold**`, `# heading`, `- list`, `> quote`, ```code```, `[link]()`).
+   - Character/word count + reading time.
+3. **YouTube link sheet** (`youtube_link_editor_sheet.dart`):
+   - Validate URL on change (parse video ID; show red error if invalid).
+   - Inline thumbnail preview using `Image.network`.
+   - Editable `title` + `duration` fields writing to `metadata`.
+4. **Save flow simplification**:
+   - Single toolbar button: "حفظ" with a `SwitchListTile` next to it for publish state.
+   - **Autosave to `SharedPreferences`** every 10 seconds while editing (use the lecture JSON as the draft, keyed by `lecture_draft_<id>` or `lecture_draft_new` for new ones).
+   - Show subtle "تم الحفظ تلقائياً · HH:mm" text.
+5. **Settings tab** (`_buildSettingsFields`):
+   - Group subject/grade selectors in a "details card" with helper text.
+   - Show legacy `youtube_url` / `description` / `quiz_id` derivation preview ("سيتم اشتقاق هذه الحقول تلقائياً من الكتلة الأولى من كل نوع").
+6. **Exam picker** (`_buildExamsSection`):
+   - Replace `ListTile` with card grid showing exam title, question count, points, edit/delete icons.
+
+**Verify:** Build + deploy, create a lecture with mixed blocks, edit a text block with live preview, verify autosave by killing the page and reopening.
+
+### Phase 4 (cont.) — A11y + tests + final polish
+
+1. **Accessibility:**
+   - `Semantics` labels on timer ("الوقت المتبقي: X دقيقة Y ثانية"), palette dots ("سؤال N، {تم الإجابة | لم يتم | مُعلَّم}"), option tiles ("الخيار أ، {محدد | غير محدد}").
+   - Focus traversal: ensure `InkWell` / `IconButton` are reachable via Tab on desktop.
+2. **Tests** (new files):
+   - `test/features/dashboard/exams/widgets/question_option_tile_test.dart` — selected/unselected, letter label.
+   - `test/features/dashboard/exams/widgets/exam_timer_test.dart` — color thresholds (mock `timerNotifier` with 60/300/600s).
+   - `test/features/dashboard/lectures/widgets/progress_bar_card_test.dart` — segmented progress rendering.
+   - `test/core/widgets/empty_state_test.dart` — renders icon + title + message.
+3. **Lint sweep:**
+   - `dart format` all changed files.
+   - `flutter analyze` clean.
+   - Existing 46 tests still pass + new tests pass.
+
+---
+
+## 4. Risks & mitigations
+
+- **`youtube_player_iframe` on web**: needs YouTube IFrame API. May be blocked in corporate networks. Mitigate by lazy-mounting and falling back to a "open externally" button if the iframe fails to load.
+- **Lazy YouTube mount**: use `Visibility(maintainState: true)` or a `ScrollController` listener that mounts the iframe only when within 200px of the viewport.
+- **Confetti perf**: cap particle count, use `BlastDirectionality.explosive` with a low count (~30 particles).
+- **Autosave conflict**: `SharedPreferences` write is async; debounce writes with a `Timer` (cancel + reset on every change) instead of interval-based.
+- **Background time correctness**: multi-pause requires `List<DateTime>` stack — make sure to `pop` on resume, not just overwrite.
+- **Result view unification** is a refactor — keep the existing `exam_result_screen.dart` and `practice_result_screen.dart` public constructors unchanged so route params don't break.
+
+---
+
+## 5. Verification checklist (run after EVERY phase)
+
+```bash
+# Lint
+flutter analyze
+
+# Tests
+flutter test
+
+# Web build + the stale-copy workaround
+flutter build web --release
+md5sum .dart_tool/flutter_build/*/main.dart.js
+md5sum build/web/main.dart.js
+# If md5s differ, copy intermediate:
+cp .dart_tool/flutter_build/*/main.dart.js build/web/main.dart.js
+grep -c '<phase-specific-marker>' build/web/main.dart.js
+
+# Sync to web/ and deploy
+rm -rf web/* && cp -r build/web/. web/
+npx vercel --yes --prod --force
+
+# Verify deployed bundle
+curl -sI https://arabilogia.vercel.app/main.dart.js | grep -iE 'etag|last-modified'
+curl -s https://arabilogia.vercel.app/main.dart.js | grep -c '<phase-specific-marker>'
+
+# Local headless (start server first)
+setsid python3 /tmp/opencode/spa_server.py >/tmp/opencode/spa.log 2>&1 < /dev/null & disown
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8899/<route>
+/usr/bin/google-chrome-stable --headless=new --disable-gpu --no-sandbox \
+  --enable-logging=stderr --v=0 --virtual-time-budget=30000 \
+  --user-data-dir=/tmp/opencode/chrome_<phase> \
+  http://127.0.0.1:8899/<route> \
+  2>&1 | grep -aE "INFO:CONSOLE.*(REDIRECT|Exception|Late|error)" | head -20
+```
+
+A good `<phase-specific-marker>` is the literal name of a new class or string literal introduced in that phase (e.g., `'QuestionPalette'` or `'paletteSlideUp'`).
+
+---
+
+## 6. Definition of done (project level)
+
+- All four phases implemented and shipped.
+- `flutter analyze` clean; `flutter test` reports ≥ 50 passing (existing 46 + new tests).
+- Each phase deployed to Vercel with a verified fresh etag.
+- No GoException or LateInitializationError in the deployed console for the changed routes.
+- Manual checklist per phase (see "Verify" under each phase).
+
+---
+
+## 7. References (quick links to existing code)
+
+- Theme/tokens: `lib/core/theme/app_colors.dart`, `lib/core/theme/app_theme.dart`, `lib/core/theme/app_tokens.dart`.
+- Reusable widgets: `lib/core/widgets/glass_app_bar.dart`, `lib/core/widgets/skeletons.dart`, `lib/core/widgets/animated_wrapper.dart`.
+- Exam editor state pattern (good model): `lib/features/admin/widgets/exam_editor.dart`, `lib/features/admin/widgets/exam_editor_state.dart`.
+- Exam preview overlay (reuse for "معاينة سريعة"): `lib/features/admin/widgets/exam_editor_preview_overlay.dart`.
+- Result sharing (already implemented): `lib/features/dashboard/exams/widgets/result_share_card.dart`, `lib/features/dashboard/exams/services/result_share_service.dart`.
+- Lecture data model: `lib/features/dashboard/lectures/models/lecture.dart`.
+- Exam data model: `lib/features/dashboard/exams/models/exam_model.dart` (Exam, Question, Option).
+- Question style helpers (parsing inline markdown in questions): `lib/features/dashboard/exams/models/question_style.dart`.
+- Screen-capture / anti-cheat (already wired): `lib/core/services/screen_capture_service.dart`.
+- Private gate code (DO NOT COMMIT, do not refactor): `lib/features/gate/`, gate imports in `lib/core/routes/app_router.dart`, `supabase/migrations/`.
+
+---
+
+## 8. Order of operations (TL;DR for the implementer)
+
+1. Read §0–§2 in full.
+2. Phase 4 (Foundation) → analyze + test + build + deploy.
+3. Phase 1 (Lecture viewer) → analyze + test + build + deploy.
+4. Phase 2 (Exam taking) → analyze + test + build + deploy.
+5. Phase 3 (Editor) → analyze + test + build + deploy.
+6. Phase 4 (cont.) tests + a11y → analyze + test + build + deploy.
+7. Final report: "All phases shipped. Tests: <N>. Deployed etag: <hash>."
+
+If a phase breaks the build or tests, **stop and fix before moving on** — the phases are designed to layer cleanly, so a failure usually means the foundation was incomplete.
