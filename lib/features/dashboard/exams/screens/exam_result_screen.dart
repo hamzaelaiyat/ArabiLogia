@@ -1,9 +1,7 @@
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
-import 'package:arabilogia/features/dashboard/exams/widgets/score_summary_widget.dart';
-import 'package:arabilogia/features/dashboard/exams/widgets/stats_row_widget.dart';
-import 'package:arabilogia/features/dashboard/exams/widgets/question_review_widget.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/exam_result_view.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/action_buttons_widget.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/services/result_share_service.dart';
@@ -71,21 +69,6 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isPassed = widget.score >= widget.exam.passPercentage;
-    final List<int> wrongAnswerIndices = [];
-    for (int i = 0; i < widget.exam.questions.length; i++) {
-      final question = widget.exam.questions[i];
-      final selectedId = widget.userAnswers[i];
-      final correctOption = question.options.cast<Option?>().firstWhere(
-        (o) => o?.isCorrect == true,
-        orElse: () => null,
-      );
-      final correctId = correctOption?.id;
-      if (selectedId != correctId) {
-        wrongAnswerIndices.add(i);
-      }
-    }
-
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -131,7 +114,13 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             ),
           ],
         ),
-        body: SingleChildScrollView(
+        body: ExamResultView(
+          exam: widget.exam,
+          userAnswers: widget.userAnswers,
+          correctCount: widget.correctCount,
+          score: widget.score,
+          accuracy: widget.accuracy,
+          speedBonus: widget.speedBonus,
           padding: EdgeInsets.only(
             top:
                 MediaQuery.paddingOf(context).top +
@@ -141,54 +130,17 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             right: AppTokens.spacing16,
             bottom: AppTokens.spacing16,
           ),
-              child: Column(
-                children: [
-                  ScoreSummaryWidget(
-                    score: widget.score,
-                    isPassed: isPassed,
-                  ),
-                  const SizedBox(height: AppTokens.spacing24),
-
-                  StatsRowWidget(
-                    totalQuestions: widget.exam.questions.length,
-                    correctCount: widget.correctCount,
-                    accuracy: widget.accuracy,
-                    speedBonus: widget.speedBonus,
-                  ),
-                  const SizedBox(height: AppTokens.spacing32),
-
-                  if (wrongAnswerIndices.isNotEmpty) ...[
-                    const ReviewHeaderWidget(),
-                    const SizedBox(height: AppTokens.spacing16),
-                    ...wrongAnswerIndices.map(
-                      (index) => QuestionReviewCardWidget(
-                        question: widget.exam.questions[index],
-                        index: index,
-                        selectedId: widget.userAnswers[index],
-                      ),
-                    ),
-                  ] else if (widget.score == 100) ...[
-                    const Icon(Icons.stars, color: AppColors.primary, size: 48),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'أحسنت! جميع إجاباتك كانت صحيحة.',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-
-                  const SizedBox(height: AppTokens.spacing32),
-                  ActionButtonsWidget(
-                    onHomePressed: () => context.goNamed('home'),
-                    onRetakePressed: () => context.pushReplacementNamed(
-                      'exam-interaction',
-                      pathParameters: {'id': widget.exam.id},
-                      extra: {
-                        'subjectId': widget.exam.subjectId,
-                        'subjectName': widget.exam.subject,
-                      },
-                    ),
-                  ),
-                ],),
+          actions: ActionButtonsWidget(
+            onHomePressed: () => context.goNamed('home'),
+            onRetakePressed: () => context.pushReplacementNamed(
+              'exam-interaction',
+              pathParameters: {'id': widget.exam.id},
+              extra: {
+                'subjectId': widget.exam.subjectId,
+                'subjectName': widget.exam.subject,
+              },
+            ),
+          ),
         ),
       ),
     );
