@@ -174,6 +174,16 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
                 darkTheme: AppTheme.dark,
                 themeMode: themeProvider.themeMode,
                 routerConfig: AppRouter.router,
+                builder: (context, child) {
+                  final mediaQuery = MediaQuery.of(context);
+                  final scale = mediaQuery.textScaler.scale(1.0);
+                  return MediaQuery(
+                    data: mediaQuery.copyWith(
+                      textScaler: TextScaler.linear(scale.clamp(0.85, 1.3)),
+                    ),
+                    child: child ?? const SizedBox.shrink(),
+                  );
+                },
                 locale: const Locale('ar'),
                 supportedLocales: const [Locale('ar')],
                 localizationsDelegates: const [

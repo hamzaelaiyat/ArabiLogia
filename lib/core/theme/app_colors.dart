@@ -26,6 +26,11 @@ class AppColors {
   static const Color emerald = Color(0xFF30D158);
   static const Color warning = Color(0xFFFFCC00);
 
+  static const Color examPass = Color(0xFF34C759);
+  static const Color examFail = Color(0xFFFF3B30);
+  static const Color examWarning = Color(0xFFFF9500);
+  static const Color examUrgent = Color(0xFFC62828);
+
   static const Color surfaceGlass = Color(0x33FFFFFF);
   static const Color surfaceGlassDark = Color(0x1AFFFFFF);
   static const Color glowPrimary = Color(0x40EB8A00);
