@@ -1,20 +1,14 @@
+import 'package:arabilogia/core/utils/grade_utils.dart';
+
 String getGradeName(int grade) {
-  switch (grade) {
-    case 10:
-      return 'الأولى باكالوريا';
-    case 11:
-      return 'الثانية ثانوي';
-    case 12:
-      return 'الثالثة ثانوي';
-    default:
-      return 'كل الصفوف';
-  }
+  if (grade == 0) return 'كل الصفوف';
+  return getGradeText(grade);
 }
 
 int getGradeValueFromLabel(String label) {
-  if (label.contains('الأول')) return 10;
-  if (label.contains('الثاني')) return 11;
-  if (label.contains('الثالث')) return 12;
+  if (label.contains('الأول')) return 1;
+  if (label.contains('الثاني')) return 2;
+  if (label.contains('الثالث')) return 3;
   return 0;
 }
 

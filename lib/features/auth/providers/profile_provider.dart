@@ -9,6 +9,8 @@ class ProfileProvider extends ChangeNotifier {
 
   String? _role;
 
+  String? get role => _role;
+
   bool get isTeacher {
     final effectiveRole = _role;
     return effectiveRole == 'teacher' || effectiveRole == 'admin';
@@ -19,11 +21,9 @@ class ProfileProvider extends ChangeNotifier {
     return effectiveRole == 'admin';
   }
 
-  ProfileProvider({
-    required ProfileService profileService,
-    GoTrueClient? auth,
-  })  : _profileService = profileService,
-        _auth = auth;
+  ProfileProvider({required ProfileService profileService, GoTrueClient? auth})
+    : _profileService = profileService,
+      _auth = auth;
 
   set auth(GoTrueClient? value) => _auth = value;
 

@@ -30,9 +30,12 @@ class AuthProvider extends ChangeNotifier {
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
+  final Completer<void> _initCompleter = Completer<void>();
+  Future<void> whenInitialized() => _initCompleter.future;
 
   bool get isTeacher => _profileProvider.isTeacher;
   bool get isAdmin => _profileProvider.isAdmin;
+  String? get role => _profileProvider.role;
 
   bool get canUploadAvatar => _avatarProvider.canUploadAvatar;
   int get imageViolationCount => _avatarProvider.imageViolationCount;
@@ -59,15 +62,14 @@ class AuthProvider extends ChangeNotifier {
       avatarService: _avatarService,
       profileService: _profileService,
     );
-    _profileProvider = ProfileProvider(
-      profileService: _profileService,
-    );
+    _profileProvider = ProfileProvider(profileService: _profileService);
   }
 
   Future<void> initializeAfterSupabase() async {
     try {
       if (!SupabaseConfig.isConfigured) {
         _isInitialized = true;
+        if (!_initCompleter.isCompleted) _initCompleter.complete();
         notifyListeners();
         return;
       }
@@ -116,6 +118,7 @@ class AuthProvider extends ChangeNotifier {
     }
 
     _isInitialized = true;
+    if (!_initCompleter.isCompleted) _initCompleter.complete();
     notifyListeners();
   }
 

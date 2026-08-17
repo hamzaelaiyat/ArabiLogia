@@ -9,6 +9,7 @@ import 'package:arabilogia/features/dashboard/leaderboard/repositories/leaderboa
 import 'package:arabilogia/core/routes/app_router.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
+import 'package:arabilogia/core/utils/grade_utils.dart';
 
 import '../widgets/home_welcome_card.dart';
 import '../widgets/quick_stats_row.dart';
@@ -153,18 +154,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     );
   }
 
-  String _getGradeText(dynamic grade) {
-    if (grade == null) return 'رحلتك الدراسية';
-    final g = grade is int ? grade : int.tryParse(grade.toString()) ?? 0;
-    switch (g) {
-      case 10:
-        return 'الأولى باكالوريا';
-      case 11:
-        return 'الثانية ثانوي';
-      case 12:
-        return 'الثالثة ثانوي';
-      default:
-        return 'صفك الدراسي';
-    }
-  }
+  String _getGradeText(dynamic grade) =>
+      getGradeText(grade, fallback: 'رحلتك الدراسية');
 }

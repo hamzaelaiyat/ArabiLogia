@@ -110,7 +110,7 @@ class ExamCard extends StatelessWidget {
                     ),
                     child: Text(
                       '${exam['score']}%',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.success,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,

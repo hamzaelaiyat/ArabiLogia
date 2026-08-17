@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:mocktail/mocktail.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:arabilogia/core/services/supabase_service_interface.dart';
 
 export 'package:flutter_test/flutter_test.dart';
 export 'package:mocktail/mocktail.dart';
-export 'package:shared_preferences/shared_preferences.dart';
 export 'package:supabase_flutter/supabase_flutter.dart';
 export 'package:arabilogia/core/services/supabase_service_interface.dart';
 
@@ -12,63 +13,110 @@ class MockSupabaseService extends Mock implements SupabaseServiceInterface {}
 
 class MockGoTrueClient extends Mock implements GoTrueClient {}
 
-class MockSupabaseClient extends Mock implements SupabaseClient {}
-
-class MockSupabaseQueryBuilder extends Mock implements SupabaseQueryBuilder {}
-
-class MockPostgrestFilterBuilder extends Mock
-    implements PostgrestFilterBuilder {}
-
-class MockPostgrestTransformBuilder extends Mock
-    implements PostgrestTransformBuilder {}
-
-class MockSharedPreferences extends Mock implements SharedPreferences {}
-
-void setUpMockAuthClient(MockGoTrueClient mockAuth) {
-  when(() => mockAuth.currentUser).thenReturn(null);
-  when(() => mockAuth.currentSession).thenReturn(null);
+User createTestUser({
+  String id = 'user_1',
+  String email = 'test@example.com',
+  Map<String, dynamic>? userMetadata,
+}) {
+  return User(
+    id: id,
+    appMetadata: const {},
+    userMetadata: userMetadata ?? const {},
+    aud: 'authenticated',
+    createdAt: DateTime.now().toIso8601String(),
+    email: email,
+    role: 'authenticated',
+  );
 }
 
-Map<String, dynamic> createTestExamData({
-  String id = 'exam_1',
-  String title = 'Test Exam',
-  String subjectId = 'subject_1',
-  int grade = 1,
-  int durationMinutes = 30,
-}) {
-  return {
-    'id': id,
-    'title': title,
-    'subject_id': subjectId,
-    'grade': grade,
-    'duration_minutes': durationMinutes,
-    'data': {
-      'id': id,
-      't': title,
-      's': subjectId,
-      'g': grade,
-      'd': durationMinutes,
-      'q': [],
-      'p': 1,
-    },
-  };
+/// Minimal fake Postgrest filter builder that resolves to a preset list of
+/// rows on await, records `eq()` calls, and forwards the query chain to
+/// itself. Note: `PostgrestBuilder` implements [Future], so awaiting the
+/// returned chain hits the overridden `then`.
+class FakeFilterBuilder extends Fake
+    implements PostgrestFilterBuilder<PostgrestList> {
+  final List<Map<String, dynamic>> rows;
+  final Object? error;
+  final Map<String, dynamic> eqValues = {};
+
+  FakeFilterBuilder([this.rows = const []]) : error = null;
+  FakeFilterBuilder.error(Object this.error) : rows = const [];
+
+  @override
+  Future<U> then<U>(
+    FutureOr<U> Function(PostgrestList) onValue, {
+    Function? onError,
+  }) {
+    if (error != null) {
+      final completer = Completer<PostgrestList>()..completeError(error!);
+      return completer.future.then<U>(onValue, onError: onError);
+    }
+    return Future<PostgrestList>
+        .value(rows)
+        .then<U>(onValue, onError: onError);
+  }
+
+  @override
+  PostgrestFilterBuilder<PostgrestList> eq(String column, Object value) {
+    eqValues[column] = value;
+    return this;
+  }
+
+  @override
+  PostgrestTransformBuilder<PostgrestList> order(
+    String column, {
+    bool ascending = false,
+    bool nullsFirst = false,
+    String? referencedTable,
+  }) =>
+      this;
+
+  @override
+  PostgrestTransformBuilder<PostgrestList> limit(
+    int count, {
+    String? referencedTable,
+  }) =>
+      this;
+
+  @override
+  PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) => this;
+
+  @override
+  PostgrestTransformBuilder<PostgrestMap?> maybeSingle() =>
+      FakeSingleBuilder(rows.isEmpty ? null : rows.first);
 }
 
-Map<String, dynamic> createTestScoreData({
-  String examId = 'exam_1',
-  double score = 85.0,
-  int points = 10,
-  String userId = 'user_1',
-  String status = 'completed',
-}) {
-  return {
-    'exam_id': examId,
-    'score': score,
-    'points': points,
-    'user_id': userId,
-    'status': status,
-    'subject': 'subject_1',
-    'wrong_mask': 0,
-    'created_at': DateTime.now().toIso8601String(),
-  };
+/// Minimal fake transform builder (e.g. from `.maybeSingle()`) that resolves
+/// to a preset map on await.
+class FakeSingleBuilder extends Fake
+    implements PostgrestTransformBuilder<PostgrestMap?> {
+  final PostgrestMap? result;
+  final Object? error;
+
+  FakeSingleBuilder(this.result) : error = null;
+  FakeSingleBuilder.error(Object this.error) : result = null;
+
+  @override
+  Future<U> then<U>(
+    FutureOr<U> Function(PostgrestMap?) onValue, {
+    Function? onError,
+  }) {
+    if (error != null) {
+      final completer = Completer<PostgrestMap?>()..completeError(error!);
+      return completer.future.then<U>(onValue, onError: onError);
+    }
+    return Future<PostgrestMap?>.value(result).then<U>(onValue, onError: onError);
+  }
+}
+
+/// Minimal fake Supabase query builder that returns a preset filter builder
+/// from `select()`.
+class FakeQueryBuilder extends Fake implements SupabaseQueryBuilder {
+  final PostgrestFilterBuilder<PostgrestList> Function()? onSelect;
+
+  FakeQueryBuilder({this.onSelect});
+
+  @override
+  PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) =>
+      onSelect?.call() ?? FakeFilterBuilder(const []);
 }

@@ -179,7 +179,7 @@ List<TextSpan> parseQuestionText(String text, {bool isDark = false}) {
         ));
         i = end + 2;
       } else {
-        spans.add(TextSpan(text: '**'));
+        spans.add(const TextSpan(text: '**'));
         i += 2;
       }
     } else if (text.substring(i).startsWith('__')) {
@@ -192,7 +192,7 @@ List<TextSpan> parseQuestionText(String text, {bool isDark = false}) {
         ));
         i = end + 2;
       } else {
-        spans.add(TextSpan(text: '__'));
+        spans.add(const TextSpan(text: '__'));
         i += 2;
       }
     } else if (i + 1 < text.length &&
@@ -200,7 +200,9 @@ List<TextSpan> parseQuestionText(String text, {bool isDark = false}) {
         RegExp(r'\d').hasMatch(text[i + 1])) {
       // New color format: $N"text" (e.g., $0"hello")
       int j = i + 1;
-      while (j < text.length && RegExp(r'\d').hasMatch(text[j])) j++;
+      while (j < text.length && RegExp(r'\d').hasMatch(text[j])) {
+        j++;
+      }
       if (j < text.length && text[j] == '"') {
         final colorIndex = int.tryParse(text.substring(i + 1, j));
         if (colorIndex != null && colorIndex >= 0 && colorIndex < 10) {

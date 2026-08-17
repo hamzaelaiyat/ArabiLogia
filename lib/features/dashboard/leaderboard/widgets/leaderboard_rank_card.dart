@@ -154,7 +154,7 @@ class LeaderboardRankCard extends StatelessWidget {
                           child: Text(
                             leader['full_name'] ?? '',
                             style: (isBadged
-                                    ? TextStyle(
+                                    ? const TextStyle(
                                         decoration: TextDecoration.lineThrough,
                                         color: Colors.red,
                                         decorationColor: Colors.red,
@@ -192,7 +192,7 @@ class LeaderboardRankCard extends StatelessWidget {
                         ],
                         if (isBadged) ...[
                           const SizedBox(width: 6),
-                          Tooltip(
+                          const Tooltip(
                             message: 'مخالف - تم حظر رفع الصور',
                             child: Icon(
                               Icons.warning_amber_rounded,

@@ -24,7 +24,7 @@ class ExamErrorState extends StatelessWidget {
             color: AppColors.error.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 16),
-          Text(message, style: TextStyle(color: AppColors.error)),
+          Text(message, style: const TextStyle(color: AppColors.error)),
           const SizedBox(height: 8),
           TextButton(
             key: TestKeys.examErrorRetry,

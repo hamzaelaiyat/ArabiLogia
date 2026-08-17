@@ -43,7 +43,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
       },
     );
 
-    final request = AdRequest(
+    const request = AdRequest(
       keywords: ['education', 'exam', 'learning', 'arabic'],
       nonPersonalizedAds: false,
     );
@@ -156,7 +156,7 @@ class _SimpleNativeAdWidgetState extends State<SimpleNativeAdWidget> {
       },
     );
 
-    final request = AdRequest(
+    const request = AdRequest(
       keywords: ['education', 'exam', 'learning', 'arabic'],
       nonPersonalizedAds: false,
     );

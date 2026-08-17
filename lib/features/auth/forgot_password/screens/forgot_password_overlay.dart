@@ -276,8 +276,9 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'يرجى إدخال الرمز';
-                  if (value.length < 6 || value.length > 8)
+                  if (value.length < 6 || value.length > 8) {
                     return 'الرمز يجب أن يكون 6 إلى 8 أرقام';
+                  }
                   return null;
                 },
               ),
@@ -302,8 +303,9 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                   ),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'يرجى إدخال كلمة المرور';
+                  }
                   if (value.length < 6) return 'يجب أن تكون 6 أحرف على الأقل';
                   return null;
                 },

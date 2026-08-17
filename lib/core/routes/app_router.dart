@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:arabilogia/core/constants/routes.dart';
@@ -31,6 +32,9 @@ import 'package:arabilogia/features/dashboard/lectures/screens/practice_quiz_scr
 import 'package:arabilogia/features/dashboard/lectures/widgets/practice_result_screen.dart';
 import 'package:arabilogia/features/dashboard/lectures/models/lecture.dart';
 import 'package:arabilogia/features/admin/screens/lecture_editor_screen.dart';
+// PRIVATE: gate feature (gitignored; do not commit this import or the route below).
+import 'package:arabilogia/features/gate/screens/gate_screen.dart';
+import 'package:arabilogia/features/gate/screens/gate_admin_screen.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
@@ -68,13 +72,9 @@ class AppRouter {
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return ScaleTransition(
-          scale: Tween<double>(
-            begin: 0.9,
-            end: 1.0,
-          ).animate(CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOutCubic,
-          )),
+          scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+          ),
           child: child,
         );
       },
@@ -99,16 +99,41 @@ class AppRouter {
 
   static final GoRouter _router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: AppRoutes.login,
+    // On web, honor the actual browser URL on cold start (e.g. a deep link
+    // to /gate). go_router ignores the browser URL when initialLocation is
+    // hard-coded, which caused every cold deep link to boot at /login and
+    // then bounce to /home once the auth redirect kicked in.
+    initialLocation: kIsWeb ? Uri.base.path : AppRoutes.login,
     observers: [routeObserver],
     debugLogDiagnostics: true,
     redirect: (context, state) {
+      debugPrint(
+        'REDIRECT matched=${state.matchedLocation} path=${state.uri.path} '
+        'base=${Uri.base.path} defaultRoute='
+        '${WidgetsBinding.instance.platformDispatcher.defaultRouteName} '
+        'init=${context.read<AuthProvider>().isInitialized}',
+      );
       final uri = state.uri;
       if (uri.path == '/landing.html') {
         return AppRoutes.register;
       }
 
+      // Strip trailing slashes so /gate/ and /gate resolve to the same route.
+      if (uri.path.length > 1 && uri.path.endsWith('/')) {
+        final stripped = uri.replace(
+          path: uri.path.substring(0, uri.path.length - 1),
+        );
+        return stripped.toString();
+      }
+
       final authProvider = context.read<AuthProvider>();
+      // Wait for AuthProvider to finish restoring the Supabase session
+      // before applying auth-based redirects. Otherwise a deep link to a
+      // protected route (e.g. /gate) bounces through /login -> /home on
+      // cold load because isAuthenticated is briefly false during init.
+      if (!authProvider.isInitialized) {
+        return null;
+      }
       final isAuthenticated = authProvider.state.isAuthenticated;
       final isTeacher = authProvider.isTeacher;
       final matched = state.matchedLocation;
@@ -116,7 +141,8 @@ class AppRouter {
       final isPublicRoute =
           matched == AppRoutes.login ||
           matched == AppRoutes.register ||
-          matched == AppRoutes.forgotPassword;
+          matched == AppRoutes.forgotPassword ||
+          matched == '/gate';
 
       // Teacher panel is NOT public - requires teacher role
       if (matched == AppRoutes.teacherPanel ||
@@ -136,13 +162,43 @@ class AppRouter {
         return AppRoutes.login;
       }
 
-      if (isAuthenticated && isPublicRoute) {
+      if (isAuthenticated && matched == AppRoutes.login) {
         return isTeacher ? AppRoutes.teacherPanel : AppRoutes.dashboard;
       }
 
       return null;
     },
     routes: [
+      // Root: if Flutter boots at '/' (e.g. the URL was normalized before the
+      // router mounted), honor the real deep link from the address bar. Falls
+      // back to auth-based routing when the app genuinely opened at the root.
+      GoRoute(
+        path: '/',
+        name: 'root',
+        redirect: (context, state) {
+          final basePath = Uri.base.path;
+          if (basePath.isNotEmpty &&
+              basePath != '/' &&
+              basePath != '/index.html' &&
+              basePath != '/web' &&
+              basePath != '/web/') {
+            return basePath;
+          }
+          final authProvider = context.read<AuthProvider>();
+          if (!authProvider.isInitialized) return null;
+          if (!authProvider.state.isAuthenticated) return AppRoutes.login;
+          return authProvider.isTeacher
+              ? AppRoutes.teacherPanel
+              : AppRoutes.dashboard;
+        },
+        pageBuilder: (context, state) => AppRouter._buildPage(
+          context: context,
+          state: state,
+          child: const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          ),
+        ),
+      ),
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
@@ -218,7 +274,8 @@ class AppRouter {
             exam = extra;
           } else if (extra is Map<String, dynamic>) {
             exam = extra['exam'] as Exam?;
-            hideCategoryAndGrade = extra['hideCategoryAndGrade'] as bool? ?? false;
+            hideCategoryAndGrade =
+                extra['hideCategoryAndGrade'] as bool? ?? false;
             hidePoints = extra['hidePoints'] as bool? ?? false;
             hideTimer = extra['hideTimer'] as bool? ?? false;
             hideLevel = extra['hideLevel'] as bool? ?? false;
@@ -339,6 +396,28 @@ class AppRouter {
             ),
           );
         },
+      ),
+      // PRIVATE: gate route (gitignored; do not commit).
+      GoRoute(
+        path: '/gate',
+        name: 'gate',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppRouter._buildPage(
+          context: context,
+          state: state,
+          child: const GateScreen(),
+        ),
+      ),
+      // PRIVATE: gate admin route (gitignored; do not commit).
+      GoRoute(
+        path: '/gate-admin',
+        name: 'gate-admin',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppRouter._buildPage(
+          context: context,
+          state: state,
+          child: const GateAdminScreen(),
+        ),
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,

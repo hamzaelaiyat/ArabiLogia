@@ -49,6 +49,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
       final userMetadata = authProvider.state.user?.userMetadata;
 
       await ResultShareService.shareExamResult(
+        context: context,
         fullName: userMetadata?['full_name'],
         username: userMetadata?['username'],
         gradeRaw: userMetadata?['grade'],
@@ -59,6 +60,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
         examTitle: widget.exam.title,
         examId: widget.exam.id,
         passPercentage: widget.exam.passPercentage,
+        totalQuestions: widget.exam.questions.length,
       );
     } catch (e) {
       debugPrint('Failed to share result: $e');

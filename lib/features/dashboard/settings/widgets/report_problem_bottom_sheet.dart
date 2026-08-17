@@ -173,7 +173,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
           constraints: BoxConstraints(maxHeight: maxHeight),
           child: Container(
             key: TestKeys.reportProblemSheet,
-            padding: EdgeInsets.fromLTRB(
+            padding: const EdgeInsets.fromLTRB(
               AppTokens.spacing24,
               0,
               AppTokens.spacing24,

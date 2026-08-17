@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/core/models/grade_metadata.dart';
 
 class GradeSelector extends StatelessWidget {
   final int? selectedGrade;
@@ -16,11 +17,9 @@ class GradeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final grades = [
-      {'value': 10, 'label': 'الأولى باكالوريا'},
-      {'value': 11, 'label': 'الثانية ثانوي'},
-      {'value': 12, 'label': 'الثالثة ثانوي'},
-    ];
+    final grades = GradeMetadata.grades.map((g) {
+      return {'value': g.id, 'label': g.name};
+    }).toList();
 
     return Column(
       children: grades.map((g) {

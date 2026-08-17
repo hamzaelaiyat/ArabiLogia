@@ -154,7 +154,7 @@ class DeviceSpecDetector {
 
       return _cachedSpec!;
     } catch (e) {
-      return DeviceSpec(
+      return const DeviceSpec(
         ramGB: 4,
         cpuCores: 2,
         batteryPercent: 50,

@@ -210,7 +210,7 @@ class LeaderboardUserProfileSheet extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.emoji_events,
                   size: 18,
                   color: AppColors.primary,
@@ -218,7 +218,7 @@ class LeaderboardUserProfileSheet extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'المرتبة #$rank',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,

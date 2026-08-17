@@ -2,12 +2,12 @@
 <html lang="ar" dir="rtl" data-theme="dark">
 
 <head>
-  <base href="$FLUTTER_BASE_HREF">
+  <base href="/">
   <script>
     // Dynamically patch base href during local template preview to prevent 404s
     (function () {
       var baseEl = document.querySelector('base');
-      if (baseEl && baseEl.getAttribute('href') === '$FLUTTER_BASE_HREF') {
+      if (baseEl && baseEl.getAttribute('href') === '/') {
         var path = window.location.pathname;
         var dir = path.substring(0, path.lastIndexOf('/') + 1);
         baseEl.setAttribute('href', dir || '/');

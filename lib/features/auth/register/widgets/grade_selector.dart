@@ -3,7 +3,20 @@ import 'package:provider/provider.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
+import 'package:arabilogia/core/models/grade_metadata.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
+
+IconData _gradeIcon(int index) {
+  const icons = [
+    Icons.looks_one_outlined,
+    Icons.looks_two_outlined,
+    Icons.looks_3_outlined,
+    Icons.looks_4_outlined,
+    Icons.looks_5_outlined,
+    Icons.looks_6_outlined,
+  ];
+  return index < icons.length ? icons[index] : Icons.school_outlined;
+}
 
 class GradeSelector extends StatelessWidget {
   final int? selectedGrade;
@@ -21,23 +34,15 @@ class GradeSelector extends StatelessWidget {
     final animDuration = potato.animationsEnabled
         ? AppTokens.durationSm
         : Duration.zero;
-    final List<Map<String, dynamic>> grades = [
-      {
-        'id': 10,
-        'name': AppStrings.grade10,
-        'icon': Icons.looks_one_outlined,
-      },
-      {
-        'id': 11,
-        'name': AppStrings.grade11,
-        'icon': Icons.looks_two_outlined,
-      },
-      {
-        'id': 12,
-        'name': AppStrings.grade12,
-        'icon': Icons.looks_3_outlined,
-      },
-    ];
+    final List<Map<String, dynamic>> grades = GradeMetadata.grades
+        .asMap()
+        .entries
+        .map((entry) => {
+              'id': entry.value.id,
+              'name': entry.value.name,
+              'icon': _gradeIcon(entry.key),
+            })
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

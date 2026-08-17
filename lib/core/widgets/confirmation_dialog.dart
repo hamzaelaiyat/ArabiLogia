@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/core/widgets/desktop_confirm_dialog.dart';
 
 class ConfirmationDialog extends StatelessWidget {
   final String title;
@@ -26,6 +28,19 @@ class ConfirmationDialog extends StatelessWidget {
     String cancelLabel = 'إلغاء',
     Color? confirmColor,
   }) async {
+    if (AppTokens.isDesktop(context)) {
+      final result = await DesktopConfirmDialog.show<bool>(
+        context: context,
+        title: title,
+        message: content,
+        confirmLabel: confirmLabel,
+        cancelLabel: cancelLabel,
+        confirmColor: confirmColor,
+        onConfirm: () => Navigator.pop(context, true),
+      );
+      return result ?? false;
+    }
+
     return await showDialog<bool>(
           context: context,
           builder: (ctx) => ConfirmationDialog(

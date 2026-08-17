@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/core/widgets/desktop_confirm_dialog.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -38,6 +39,20 @@ class GlassBottomSheet extends StatelessWidget {
     Color? confirmColor,
     Widget? customContent,
   }) {
+    if (AppTokens.isDesktop(context)) {
+      return DesktopConfirmDialog.show<T>(
+        context: context,
+        title: title,
+        message: message,
+        confirmLabel: confirmLabel,
+        cancelLabel: cancelLabel,
+        onConfirm: onConfirm,
+        onCancel: onCancel,
+        confirmColor: confirmColor,
+        customContent: customContent,
+      );
+    }
+
     return showModalBottomSheet<T>(
       context: context,
       backgroundColor: Colors.transparent,

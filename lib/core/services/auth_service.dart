@@ -54,7 +54,11 @@ class AuthService {
       final response = await _auth.signUp(
         email: email,
         password: password,
-        data: {'full_name': fullName, 'username': username, 'grade': grade},
+        data: {
+          'full_name': fullName,
+          'username': username,
+          'grade': grade,
+        },
       );
       return SignUpResult(user: response.user);
     } on AuthException catch (e) {

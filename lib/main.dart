@@ -19,7 +19,7 @@ import 'package:arabilogia/features/dashboard/exams/providers/exam_provider.dart
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/admin/providers/teacher_exam_defaults_provider.dart';
 import 'package:arabilogia/features/dashboard/profile/providers/accounts_provider.dart';
-import 'package:arabilogia/features/dashboard/exams/models/grade_metadata.dart';
+import 'package:arabilogia/core/models/grade_metadata.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -61,8 +61,7 @@ Future<void> _initializeMobileAds() async {
   if (!kIsWeb) {
     try {
       await MobileAds.instance.initialize();
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 }
 
@@ -110,8 +109,8 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
     if (authProvider.state.isAuthenticated &&
         !kIsWeb &&
         (Theme.of(context).platform == TargetPlatform.android ||
-         Theme.of(context).platform == TargetPlatform.windows ||
-         Theme.of(context).platform == TargetPlatform.linux)) {
+            Theme.of(context).platform == TargetPlatform.windows ||
+            Theme.of(context).platform == TargetPlatform.linux)) {
       UpdateService.checkForUpdatesInBackground();
     }
   }
@@ -146,73 +145,44 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => ThemeProvider(),
-          lazy: true,
-        ),
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(),
-          lazy: true,
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ExamProvider(),
-          lazy: true,
-        ),
-        ChangeNotifierProvider(
-          create: (_) => PotatoModeProvider(),
-          lazy: true,
-        ),
+        ChangeNotifierProvider(create: (_) => ThemeProvider(), lazy: true),
+        ChangeNotifierProvider(create: (_) => AuthProvider(), lazy: true),
+        ChangeNotifierProvider(create: (_) => ExamProvider(), lazy: true),
+        ChangeNotifierProvider(create: (_) => PotatoModeProvider(), lazy: true),
         ChangeNotifierProvider(
           create: (_) => TeacherExamDefaultsProvider(),
           lazy: true,
         ),
-        ChangeNotifierProvider(
-          create: (_) => AccountsProvider(),
-          lazy: true,
-        ),
+        ChangeNotifierProvider(create: (_) => AccountsProvider(), lazy: true),
       ],
-          child: Builder(
-            builder: (context) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _initializeHeavyProviders(context);
-              });
+      child: Builder(
+        builder: (context) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _initializeHeavyProviders(context);
+          });
 
-              return Consumer<AuthProvider>(
-                builder: (context, authProvider, _) {
-                  if (!authProvider.isInitialized) {
-                    return MaterialApp(
-                      debugShowCheckedModeBanner: false,
-                      theme: AppTheme.light,
-                      darkTheme: AppTheme.dark,
-                      locale: const Locale('ar'),
-                      home: const Scaffold(
-                        body: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                    );
-                  }
-
-                  return Consumer<ThemeProvider>(
-                builder: (context, themeProvider, child) {
-                  return MaterialApp.router(
-                    title: 'عربيلوجيا',
-                    debugShowCheckedModeBanner: false,
-                    theme: AppTheme.light,
-                    darkTheme: AppTheme.dark,
-                    themeMode: themeProvider.themeMode,
-                    routerConfig: AppRouter.router,
-                    locale: const Locale('ar'),
-                    supportedLocales: const [Locale('ar')],
-                    localizationsDelegates: const [
-                      GlobalMaterialLocalizations.delegate,
-                      GlobalWidgetsLocalizations.delegate,
-                      GlobalCupertinoLocalizations.delegate,
-                    ],
-                  );
-                },
+          // Mount MaterialApp.router from the very first frame. Using a
+          // plain MaterialApp (spinner) while auth initializes lets the
+          // framework normalize the URL to "/", which made go_router boot
+          // at the wrong location on cold deep links (e.g. /gate).
+          return Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return MaterialApp.router(
+                title: 'عربيلوجيا',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.light,
+                darkTheme: AppTheme.dark,
+                themeMode: themeProvider.themeMode,
+                routerConfig: AppRouter.router,
+                locale: const Locale('ar'),
+                supportedLocales: const [Locale('ar')],
+                localizationsDelegates: const [
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
               );
-                },
+            },
           );
         },
       ),

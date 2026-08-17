@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/core/widgets/desktop_confirm_dialog.dart';
 
 class SolidBottomSheet extends StatelessWidget {
   final String title;
@@ -34,6 +35,20 @@ class SolidBottomSheet extends StatelessWidget {
     Color? confirmColor,
     Widget? customContent,
   }) {
+    if (AppTokens.isDesktop(context)) {
+      return DesktopConfirmDialog.show<T>(
+        context: context,
+        title: title,
+        message: message,
+        confirmLabel: confirmLabel,
+        cancelLabel: cancelLabel,
+        onConfirm: onConfirm,
+        onCancel: onCancel,
+        confirmColor: confirmColor,
+        customContent: customContent,
+      );
+    }
+
     return showModalBottomSheet<T>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,

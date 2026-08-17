@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "agentrouter": {
+      "displayName": "Agent Router",
+      "url": "https://agentrouter.org/v1",
+      "api_key": "sk-UXC0wS0GWVBQpHPTceYNBsXi0j0k5G1Ej8xBCFtpQNz7tdKE"
+    }
+  }
+}

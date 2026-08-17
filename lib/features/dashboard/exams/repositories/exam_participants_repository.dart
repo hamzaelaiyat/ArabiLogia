@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:realtime_client/realtime_client.dart';
 import 'package:arabilogia/core/services/supabase_service_interface.dart';
 import 'package:arabilogia/core/services/supabase_service_wrapper.dart';
-import '../utils/grade_mapper.dart';
 
 class ExamParticipantsRepository {
   final SupabaseServiceInterface _supabaseService;
@@ -113,7 +112,7 @@ class ExamParticipantsRepository {
 
   Future<List<Map<String, dynamic>>> getGradeProfiles(int grade) async {
     try {
-      final dbGrade = mapUiGradeToDbGrade(grade);
+      final dbGrade = grade;
       var query = _supabaseService
           .from('profiles')
           .select('id, full_name, username, grade');

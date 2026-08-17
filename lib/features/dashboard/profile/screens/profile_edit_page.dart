@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/constants/test_keys.dart';
@@ -63,7 +62,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     if (gradeVal is int) {
       _selectedGrade = gradeVal;
     } else if (gradeVal != null) {
-      _selectedGrade = int.tryParse(gradeVal.toString());
+      _selectedGrade = int.tryParse(gradeVal.toString()) ?? 0;
     } else {
       _selectedGrade = 0;
     }
@@ -106,10 +105,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     if (_gradeUpdatedAt == null) return '';
     final remaining =
         const Duration(days: 3) - DateTime.now().difference(_gradeUpdatedAt!);
-    if (remaining.inDays > 0)
+    if (remaining.inDays > 0) {
       return 'يمكنك التغيير بعد ${remaining.inDays} يوم';
-    if (remaining.inHours > 0)
+    }
+    if (remaining.inHours > 0) {
       return 'يمكنك التغيير بعد ${remaining.inHours} ساعة';
+    }
     return 'يمكنك التغيير بعد قليل';
   }
 
@@ -219,8 +220,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         helperText: 'يجب أن يكون فريداً وغير مستخدم',
                       ),
                       validator: (v) {
-                        if (v == null || v.isEmpty)
+                        if (v == null || v.isEmpty) {
                           return 'يرجى إدخال اسم المستخدم';
+                        }
                         if (v.length < 3) return 'اسم المستخدم قصير جداً';
                         return null;
                       },

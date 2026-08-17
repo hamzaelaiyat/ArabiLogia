@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
@@ -209,13 +210,117 @@ class DarkTheme {
       ),
     ),
 
-    bottomSheetTheme: BottomSheetThemeData(
+    bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: AppColors.secondaryDark,
       elevation: AppTokens.elevationLg,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       modalBackgroundColor: AppColors.secondaryDark,
+    ),
+
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
+
+    tooltipTheme: TooltipThemeData(
+      decoration: BoxDecoration(
+        color: AppColors.fgDark,
+        borderRadius: BorderRadius.circular(AppTokens.radiusSm),
+      ),
+      textStyle: GoogleFonts.rubik(
+        fontSize: AppTokens.fontSizeSm,
+        color: AppColors.bgDark,
+      ),
+    ),
+
+    popupMenuTheme: PopupMenuThemeData(
+      color: AppColors.secondaryDark,
+      elevation: AppTokens.elevationLg,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppTokens.radiusLgAll,
+      ),
+      textStyle: GoogleFonts.rubik(
+        fontSize: AppTokens.fontSizeMd,
+        color: AppColors.fgDark,
+      ),
+    ),
+
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: AppColors.primary,
+      linearTrackColor: AppColors.secondaryDark,
+    ),
+
+    sliderTheme: SliderThemeData(
+      activeTrackColor: AppColors.primary,
+      inactiveTrackColor: AppColors.mutedDark.withValues(alpha: 0.3),
+      thumbColor: AppColors.primary,
+      overlayColor: AppColors.primary.withValues(alpha: 0.12),
+      valueIndicatorColor: AppColors.primary,
+      valueIndicatorTextStyle: GoogleFonts.rubik(
+        fontSize: AppTokens.fontSizeSm,
+        color: Colors.white,
+      ),
+    ),
+
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return AppColors.primary;
+        return AppColors.mutedDark;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.primary.withValues(alpha: 0.5);
+        }
+        return AppColors.mutedDark.withValues(alpha: 0.3);
+      }),
+    ),
+
+    checkboxTheme: CheckboxThemeData(
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return AppColors.primary;
+        return Colors.transparent;
+      }),
+      checkColor: WidgetStateProperty.all(Colors.white),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTokens.radiusXs),
+      ),
+    ),
+
+    radioTheme: RadioThemeData(
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return AppColors.primary;
+        return AppColors.mutedDark;
+      }),
+    ),
+
+    timePickerTheme: TimePickerThemeData(
+      backgroundColor: AppColors.bgDark,
+      hourMinuteColor: AppColors.secondaryDark,
+      hourMinuteTextColor: AppColors.fgDark,
+      dayPeriodColor: AppColors.secondaryDark,
+      dayPeriodTextColor: AppColors.fgDark,
+      dialBackgroundColor: AppColors.secondaryDark,
+      dialHandColor: AppColors.primary,
+      entryModeIconColor: AppColors.primary,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppTokens.radius2xlAll,
+      ),
+    ),
+
+    badgeTheme: BadgeThemeData(
+      backgroundColor: AppColors.primary,
+      textColor: Colors.white,
+      textStyle: GoogleFonts.rubik(
+        fontSize: AppTokens.fontSizeXs,
+        fontWeight: FontWeight.bold,
+      ),
     ),
   );
 
@@ -269,19 +374,19 @@ class DarkTheme {
         fontWeight: FontWeight.w600,
         color: fg,
       ),
-      bodyLarge: TextStyle(
+      bodyLarge: const TextStyle(
         fontFamily: AppTokens.fontFamilyBody,
         fontSize: AppTokens.fontSizeLg,
         fontWeight: FontWeight.normal,
         color: fg,
       ),
-      bodyMedium: TextStyle(
+      bodyMedium: const TextStyle(
         fontFamily: AppTokens.fontFamilyBody,
         fontSize: AppTokens.fontSizeMd,
         fontWeight: FontWeight.normal,
         color: fg,
       ),
-      bodySmall: TextStyle(
+      bodySmall: const TextStyle(
         fontFamily: AppTokens.fontFamilyBody,
         fontSize: AppTokens.fontSizeXs,
         fontWeight: FontWeight.normal,
