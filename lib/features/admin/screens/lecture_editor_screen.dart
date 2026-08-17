@@ -1,5 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/constants/test_keys.dart';
@@ -15,6 +19,7 @@ import 'package:arabilogia/features/admin/widgets/lecture_editor/youtube_link_ed
 import 'package:arabilogia/features/admin/widgets/lecture_editor/add_content_sheet.dart';
 import 'package:arabilogia/features/admin/widgets/lecture_editor/exit_confirmation_sheet.dart';
 import 'package:arabilogia/features/admin/widgets/lecture_editor/block_preview_widget.dart';
+import 'package:arabilogia/features/admin/widgets/lecture_editor/block_row_widget.dart';
 import 'package:arabilogia/features/admin/widgets/lecture_editor/lecture_editor_mobile_app_bar.dart';
 import 'package:arabilogia/features/admin/widgets/lecture_editor/lecture_editor_desktop_layout.dart';
 import 'package:arabilogia/features/admin/widgets/inset_toggle.dart';
@@ -43,8 +48,13 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
   List<Exam> _exams = [];
   int _activeSidebarIndex = 0;
   bool _isMobileContentView = true;
+  Timer? _autosaveTimer;
+  DateTime? _lastAutosaveAt;
 
   bool get _isEditing => widget.existingLecture != null;
+
+  String get _draftKey =>
+      'lecture_draft_${widget.existingLecture?.id ?? 'new'}';
 
   @override
   void initState() {
@@ -59,11 +69,15 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
     _selectedGrade = lecture?.grade ?? 1;
     _isPublished = lecture?.isPublished ?? false;
     _contentBlocks = lecture != null ? List.from(lecture.contentBlocks) : [];
+    _titleController.addListener(_scheduleAutosave);
+    _sortOrderController.addListener(_scheduleAutosave);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkDraft());
     _loadExams();
   }
 
   @override
   void dispose() {
+    _autosaveTimer?.cancel();
     _titleController.dispose();
     _sortOrderController.dispose();
     super.dispose();
@@ -84,6 +98,83 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
           _exams = loaded;
         });
       }
+    }
+  }
+
+  Lecture _currentLecture() {
+    return Lecture(
+      id: widget.existingLecture?.id ?? 'draft',
+      title: _titleController.text.trim(),
+      courseId: _selectedCategoryId,
+      youtubeUrl: '',
+      description: '',
+      sortOrder: int.tryParse(_sortOrderController.text) ?? 0,
+      grade: _selectedGrade,
+      isPublished: _isPublished,
+      contentBlocks: _contentBlocks,
+      examIds: _exams.map((e) => e.id).toList(),
+    );
+  }
+
+  void _scheduleAutosave() {
+    _autosaveTimer?.cancel();
+    _autosaveTimer = Timer(const Duration(seconds: 3), _autosaveDraft);
+  }
+
+  Future<void> _autosaveDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_draftKey, jsonEncode(_currentLecture().toJson()));
+    if (mounted) {
+      setState(() => _lastAutosaveAt = DateTime.now());
+    }
+  }
+
+  Future<void> _clearDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_draftKey);
+  }
+
+  Future<void> _checkDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_draftKey);
+    if (raw == null || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('توجد مسودة محفوظة تلقائياً لهذه المحاضرة'),
+        duration: const Duration(seconds: 8),
+        action: SnackBarAction(
+          label: 'استعادة',
+          onPressed: () => _restoreDraft(raw),
+        ),
+      ),
+    );
+  }
+
+  void _restoreDraft(String raw) {
+    try {
+      final lecture = Lecture.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      setState(() {
+        _titleController.text = lecture.title;
+        _sortOrderController.text = lecture.sortOrder.toString();
+        _selectedCategoryId = lecture.courseId;
+        _selectedGrade = lecture.grade;
+        _isPublished = lecture.isPublished;
+        _contentBlocks = List.from(lecture.contentBlocks);
+      });
+      _loadExamsFromIds(lecture.examIds);
+    } catch (_) {}
+  }
+
+  Future<void> _loadExamsFromIds(List<String> ids) async {
+    final loaded = <Exam>[];
+    for (var id in ids) {
+      final exam = await ExamRepository().loadExamById(_selectedCategoryId, id);
+      if (exam != null) {
+        loaded.add(exam);
+      }
+    }
+    if (mounted) {
+      setState(() => _exams = loaded);
     }
   }
 
@@ -137,6 +228,7 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
       );
 
       await LectureRepository().upsertLecture(lecture);
+      await _clearDraft();
 
       if (!mounted) return;
 
@@ -166,6 +258,7 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
         _contentBlocks.add(block);
       }
     });
+    _scheduleAutosave();
   }
 
   Future<void> _showExamEditor({LectureContentBlock? existingBlock, int? index, bool isQuiz = true}) async {
@@ -217,6 +310,7 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
           _contentBlocks.add(block);
         }
       });
+      _scheduleAutosave();
     }
   }
 
@@ -254,6 +348,7 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
           _exams.add(result);
         }
       });
+      _scheduleAutosave();
     }
   }
 
@@ -526,9 +621,57 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
           title: const Text('نشر المحاضرة'),
           subtitle: const Text('تفعيل هذا الخيار يجعل المحاضرة مرئية للطلاب مباشرة'),
           value: _isPublished,
-          onChanged: (val) => setState(() => _isPublished = val),
+          onChanged: (val) {
+            setState(() => _isPublished = val);
+            _scheduleAutosave();
+          },
           contentPadding: EdgeInsets.zero,
         ),
+        const SizedBox(height: AppTokens.spacing8),
+        Container(
+          padding: const EdgeInsets.all(AppTokens.spacing6),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.06),
+            borderRadius: AppTokens.radiusMdAll,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.info_outline, size: 18, color: AppColors.primary),
+              const SizedBox(width: AppTokens.spacing4),
+              Expanded(
+                child: Text(
+                  'سيتم اشتقاق الحقول القديمة (رابط الفيديو، الوصف، الاختبار) تلقائياً من الكتلة الأولى من كل نوع عند الحفظ',
+                  style: TextStyle(
+                    fontSize: AppTokens.fontSizeSm,
+                    color: AppColors.mutedColor(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_lastAutosaveAt != null)
+          Padding(
+            padding: const EdgeInsets.only(top: AppTokens.spacing4),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.cloud_done_outlined,
+                  size: 16,
+                  color: AppColors.mutedColor(context),
+                ),
+                const SizedBox(width: AppTokens.spacing2),
+                Text(
+                  'تم الحفظ تلقائياً · ${_lastAutosaveAt!.hour.toString().padLeft(2, '0')}:${_lastAutosaveAt!.minute.toString().padLeft(2, '0')}',
+                  style: TextStyle(
+                    fontSize: AppTokens.fontSizeXs,
+                    color: AppColors.mutedColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -721,9 +864,24 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
                 borderRadius: AppTokens.radiusMdAll,
                 child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                leading: const Icon(Icons.assignment, color: Colors.orange, size: 28),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.emoji_events_outlined,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
                 title: Text(exam.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('يحتوي على $qCount أسئلة'),
+                subtitle: Text(
+                  exam.durationMinutes != null
+                      ? '$qCount سؤال · ${exam.durationMinutes} دقيقة'
+                      : '$qCount سؤال',
+                ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -737,6 +895,7 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
                         setState(() {
                           _exams.remove(exam);
                         });
+                        _scheduleAutosave();
                       },
                     ),
                   ],
@@ -835,69 +994,25 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
           child: ReorderableListView.builder(
             padding: const EdgeInsets.all(AppTokens.spacing16),
             itemCount: _contentBlocks.length,
-            onReorderItem: (oldIndex, newIndex) {
+            buildDefaultDragHandles: false,
+            onReorder: (oldIndex, newIndex) {
               setState(() {
+                if (newIndex > oldIndex) newIndex--;
                 final item = _contentBlocks.removeAt(oldIndex);
                 _contentBlocks.insert(newIndex, item);
               });
+              _scheduleAutosave();
             },
             itemBuilder: (context, index) {
               final block = _contentBlocks[index];
-              return Container(
+              return BlockRowWidget(
                 key: ValueKey(block.id),
-                margin: const EdgeInsets.only(bottom: 12),
-                child: Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      leading: Icon(_getBlockIcon(block.type), color: AppColors.primary),
-                      title: Text(
-                        _getBlockTitle(block),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(_getBlockSubtitle(block), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () {
-                              if (block.type == BlockType.text) {
-                                TextBlockEditorSheet.show(context, existingBlock: block, index: index, onSave: _onContentBlockSaved);
-                              } else if (block.type == BlockType.youtube) {
-                                YoutubeLinkEditorSheet.show(context, existingBlock: block, index: index, onSave: _onContentBlockSaved);
-                              } else if (block.type == BlockType.quiz || block.type == BlockType.exam) {
-                                _showExamEditor(existingBlock: block, index: index, isQuiz: true);
-                              }
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () {
-                              setState(() {
-                                _contentBlocks.removeAt(index);
-                              });
-                            },
-                          ),
-                          const Icon(Icons.drag_handle, color: Colors.grey),
-                        ],
-                      ),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: BlockPreviewWidget(
-                            block: block,
-                            onEdit: (block.type == BlockType.quiz || block.type == BlockType.exam)
-                                ? () => _showExamEditor(existingBlock: block, isQuiz: true)
-                                : null,
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
+                index: index,
+                icon: _getBlockIcon(block.type),
+                title: _getBlockTitle(block),
+                subtitle: _getBlockSubtitle(block),
+                badge: _getBlockBadge(block),
+                onAction: (action) => _handleBlockAction(action, block, index),
               );
             },
           ),
@@ -940,6 +1055,60 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
       case BlockType.quiz:
         final qCount = block.metadata?['questionsCount'] ?? 0;
         return 'اختبار مرتبط - يحتوي على $qCount أسئلة';
+    }
+  }
+
+  String? _getBlockBadge(LectureContentBlock block) {
+    switch (block.type) {
+      case BlockType.text:
+        return '~${(block.content.length / 180).ceil()} د قراءة';
+      case BlockType.youtube:
+        final duration = block.metadata?['duration']?.toString() ?? '';
+        return duration.isEmpty ? null : duration;
+      case BlockType.exam:
+      case BlockType.quiz:
+        return '${block.metadata?['questionsCount'] ?? 0} سؤال';
+    }
+  }
+
+  void _handleBlockAction(
+    BlockRowAction action,
+    LectureContentBlock block,
+    int index,
+  ) {
+    switch (action) {
+      case BlockRowAction.edit:
+        if (block.type == BlockType.text) {
+          TextBlockEditorSheet.show(context, existingBlock: block, index: index, onSave: _onContentBlockSaved);
+        } else if (block.type == BlockType.youtube) {
+          YoutubeLinkEditorSheet.show(context, existingBlock: block, index: index, onSave: _onContentBlockSaved);
+        } else {
+          _showExamEditor(existingBlock: block, index: index, isQuiz: true);
+        }
+      case BlockRowAction.preview:
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (ctx) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: Padding(
+              padding: const EdgeInsets.all(AppTokens.spacing16),
+              child: SingleChildScrollView(
+                child: BlockPreviewWidget(
+                  block: block,
+                  onEdit: (block.type == BlockType.quiz || block.type == BlockType.exam)
+                      ? () => _showExamEditor(existingBlock: block, isQuiz: true)
+                      : null,
+                ),
+              ),
+            ),
+          ),
+        );
+      case BlockRowAction.delete:
+        setState(() {
+          _contentBlocks.removeAt(index);
+        });
+        _scheduleAutosave();
     }
   }
 }
