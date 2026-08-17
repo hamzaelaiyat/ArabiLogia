@@ -1,0 +1,2 @@
+[auth]
+  security_captcha_enabled = false

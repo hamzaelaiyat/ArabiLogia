@@ -13,26 +13,10 @@
 .swiftpm/
 migrate_working_dir/
 node_modules/
-*.sql
-
 # Environment variables
 .env
 .env.local
 .env.*.local
-
-# Private features (not open source)
-lib/features/admin/
-lib/features/legal/
-lib/features/reusables/
-lib/features/gate/
-test/features/gate/
-
-# Backend & infrastructure
-supabase/
-scripts/
-deploy.sh
-docs/
-release_notes*.md
 
 # Vercel
 .vercel/
