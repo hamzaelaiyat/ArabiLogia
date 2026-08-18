@@ -95,3 +95,8 @@ android/build/
 Orchis-theme/
 app/
 assets/images/album/
+
+# Private: admin & gate features
+lib/features/admin/
+lib/features/gate/
+supabase/
