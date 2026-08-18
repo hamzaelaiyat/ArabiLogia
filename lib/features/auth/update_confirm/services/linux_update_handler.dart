@@ -123,7 +123,9 @@ class LinuxUpdateHandler {
   Future<void> _makeAppImageExecutable(String appImagePath) async {
     try {
       await Process.run('chmod', ['+x', appImagePath]);
-    } catch (e) {}
+    } catch (e) {
+      // Ignore chmod failures on non-executable filesystems
+    }
   }
 
   void _showInstallInstructions(

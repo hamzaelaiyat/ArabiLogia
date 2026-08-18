@@ -7,6 +7,7 @@ import 'package:arabilogia/features/auth/forgot_password/widgets/error_banner.da
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
+import 'package:arabilogia/features/auth/widgets/auth_text_field.dart';
 
 class ForgotPasswordOverlay extends StatefulWidget {
   const ForgotPasswordOverlay({super.key});
@@ -284,24 +285,14 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
               ),
               const SizedBox(height: AppTokens.spacing16),
               ErrorBanner(message: _errorMessage),
-              TextFormField(
+              AuthTextField(
                 controller: _passwordController,
+                label: 'كلمة المرور الجديدة',
+                icon: Icons.lock_outline,
+                isPassword: true,
                 obscureText: _obscurePassword,
-                style: TextStyle(color: AppColors.authTextColor(context)),
-                decoration: solidInputDecoration.copyWith(
-                  labelText: 'كلمة المرور الجديدة',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: AppColors.authLabelColor(context),
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
-                ),
+                onToggleVisibility: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'يرجى إدخال كلمة المرور';

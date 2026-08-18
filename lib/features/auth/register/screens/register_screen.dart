@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
-import 'package:arabilogia/core/widgets/solid_container.dart';
 import 'package:arabilogia/features/auth/register/widgets/account_step_form.dart';
 import 'package:arabilogia/features/auth/register/widgets/profile_step_form.dart';
 import 'package:arabilogia/features/auth/register/widgets/grade_step_form.dart';
@@ -15,6 +14,7 @@ import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/features/dashboard/profile/providers/accounts_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
+import 'package:arabilogia/features/auth/widgets/auth_layout.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -138,65 +138,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = AppTokens.isDesktop(context);
-    final isMobile = AppTokens.isMobile(context);
     final authProvider = context.watch<AuthProvider>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        key: TestKeys.registerScreen,
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          automaticallyImplyLeading: false,
-        ),
-        body: Stack(
-          children: [
-            Positioned.fill(
-              child: isMobile
-                  ? Container(
-                      color: isDark
-                          ? AppTokens.mobileDarkBackground
-                          : AppTokens.mobileBackground,
-                    )
-                  : Image.asset(
-                      isDark
-                          ? 'assets/images/clouds-darkmode.png'
-                          : 'assets/images/clouds-image.png',
-                      fit: BoxFit.cover,
-                    ),
-            ),
-            Center(
-              child: SingleChildScrollView(
-                padding: isMobile
-                    ? EdgeInsets.zero
-                    : EdgeInsets.all(
-                        isDesktop ? AppTokens.spacing16 : AppTokens.spacing8,
-                      ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: isMobile ? double.infinity : 500,
-                  ),
-                  child: _isSuccess
-                      ? EmailVerificationCard(
-                          email: _emailController.text.trim(),
-                          isLoading: authProvider.state.isLoading,
-                          error: authProvider.state.error,
-                          onVerify: _handleVerifyEmail,
-                          onResend: _handleResendCode,
-                          onBackToLogin: () => context.go(AppRoutes.login),
-                        )
-                      : _buildFormCard(context, authProvider),
-                ),
-              ),
-            ),
-
-          ],
-        ),
-      ),
+    return AuthLayout(
+      key: TestKeys.registerScreen,
+      formChild: _isSuccess
+          ? EmailVerificationCard(
+              email: _emailController.text.trim(),
+              isLoading: authProvider.state.isLoading,
+              error: authProvider.state.error,
+              onVerify: _handleVerifyEmail,
+              onResend: _handleResendCode,
+              onBackToLogin: () => context.go(AppRoutes.login),
+            )
+          : _buildFormCard(context, authProvider),
     );
   }
 
@@ -307,20 +262,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
 
-    if (isMobile) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTokens.spacing24,
-          vertical: AppTokens.spacing32,
-        ),
-        child: content,
-      );
-    }
-
-    return SolidContainer(
+    return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppTokens.spacing24,
-        vertical: AppTokens.spacing32,
+        horizontal: AppTokens.spacing8,
+        vertical: AppTokens.spacing12,
       ),
       child: content,
     );
