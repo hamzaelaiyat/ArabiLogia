@@ -4,6 +4,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_text_styles.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/core/theme/app_markdown_style.dart';
 import 'package:arabilogia/features/dashboard/lectures/models/lecture.dart';
 
 class TextBlockWidget extends StatelessWidget {
@@ -22,7 +23,6 @@ class TextBlockWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = AppColors.foreground(context);
     return Card(
       margin: const EdgeInsets.only(bottom: AppTokens.spacing16),
       shape: RoundedRectangleBorder(borderRadius: AppTokens.radiusLgAll),
@@ -69,32 +69,7 @@ class TextBlockWidget extends StatelessWidget {
             const SizedBox(height: AppTokens.spacing4),
             MarkdownBody(
               data: block.content,
-              styleSheet:
-                  MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-                p: AppTextStyles.bodyLg.copyWith(color: foreground),
-                h1: AppTextStyles.headingLg.copyWith(color: foreground),
-                h2: AppTextStyles.headingMd.copyWith(color: foreground),
-                h3: AppTextStyles.headingSm.copyWith(color: foreground),
-                listBullet: AppTextStyles.bodyLg.copyWith(color: foreground),
-                blockquote: AppTextStyles.bodyLg.copyWith(
-                  color: AppColors.mutedColor(context),
-                  fontStyle: FontStyle.italic,
-                ),
-                blockquoteDecoration: BoxDecoration(
-                  color: AppColors.surface(context),
-                  border: const Border(
-                    right: BorderSide(color: AppColors.primary, width: 3),
-                  ),
-                ),
-                code: AppTextStyles.bodyMd.copyWith(
-                  fontFamily: 'monospace',
-                  backgroundColor: AppColors.surface(context),
-                ),
-                codeblockDecoration: BoxDecoration(
-                  color: AppColors.surface(context),
-                  borderRadius: AppTokens.radiusSmAll,
-                ),
-              ),
+              styleSheet: AppMarkdownStyle.build(context),
             ),
             const Divider(height: 24),
             Row(

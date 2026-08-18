@@ -168,6 +168,14 @@ class ScoreRepository {
     return _scoreDao.getAllScores();
   }
 
+  Future<void> saveScoreLocally(String examId, double score, [int points = 0]) async {
+    try {
+      await _scoreDao.upsertScore(examId, score, points);
+    } catch (e) {
+      debugPrint('ScoreRepository saveScoreLocally error: $e');
+    }
+  }
+
   Future<void> syncScoresWithSupabase() async {
     if (_syncFuture != null) {
       await _syncFuture;

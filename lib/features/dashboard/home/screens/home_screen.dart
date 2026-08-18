@@ -95,14 +95,18 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     final rank = _userStats?['rank'] ?? 0;
     final gradeText = _getGradeText(grade);
 
+    final isMobile = AppTokens.isMobile(context);
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         key: TestKeys.homeScreen,
-        extendBodyBehindAppBar: true,
-        appBar: const GlassAppBar(
-          title: ResponsiveAppBarTitle('الرئيسية'),
-        ),
+        extendBodyBehindAppBar: isMobile,
+        appBar: isMobile
+            ? const GlassAppBar(
+                title: ResponsiveAppBarTitle('الرئيسية'),
+              )
+            : null,
         body: RefreshIndicator(
           onRefresh: () async {
             await _fetchRank();
@@ -111,17 +115,18 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.only(
-              top:
-                  MediaQuery.paddingOf(context).top +
-                  kToolbarHeight +
-                  AppTokens.spacing16,
-              left: AppTokens.isMobile(context)
+              top: isMobile
+                  ? MediaQuery.paddingOf(context).top +
+                      kToolbarHeight +
+                      AppTokens.spacing16
+                  : AppTokens.spacing16,
+              left: isMobile
                   ? AppTokens.dashboardPaddingMobile
                   : AppTokens.dashboardPadding,
-              right: AppTokens.isMobile(context)
+              right: isMobile
                   ? AppTokens.dashboardPaddingMobile
                   : AppTokens.dashboardPadding,
-              bottom: AppTokens.isMobile(context)
+              bottom: isMobile
                   ? AppTokens.dashboardPaddingMobile
                   : AppTokens.dashboardPadding,
             ),

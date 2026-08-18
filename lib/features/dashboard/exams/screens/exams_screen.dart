@@ -5,9 +5,9 @@ import 'package:arabilogia/core/widgets/native_ad_widget.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
-import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
-import 'package:arabilogia/features/dashboard/exams/widgets/exam_card.dart';
+import 'package:arabilogia/features/dashboard/lectures/repositories/lecture_repository.dart';
+import 'package:arabilogia/features/dashboard/lectures/widgets/lecture_card.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_empty_state.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_error_state.dart';
 import 'package:arabilogia/core/widgets/skeletons.dart';
@@ -31,7 +31,6 @@ class _ExamsScreenState extends State<ExamsScreen>
 
   final List<CategoryMetadata> _subjects = CategoryMetadata.categories;
 
-  final ExamRepository _examRepository = ExamRepository();
   final Map<int, List<Map<String, dynamic>>> _examsByTab = {};
   final Map<int, bool> _isLoadingByTab = {};
   final Map<int, String?> _errorByTab = {};
@@ -85,11 +84,11 @@ class _ExamsScreenState extends State<ExamsScreen>
 
     try {
       final subjectId = _subjects[index].id;
-      final exams = await _examRepository.getExamsBySubject(subjectId);
+      final lectures = await LectureRepository().getLecturesByCategory(subjectId);
 
       if (mounted) {
         setState(() {
-          _examsByTab[index] = exams;
+          _examsByTab[index] = lectures;
           _isLoadingByTab[index] = false;
         });
       }
@@ -235,23 +234,18 @@ class _ExamsScreenState extends State<ExamsScreen>
           return const SizedBox.shrink();
         }
 
-        final exam = displayExams[actualExamIndex];
+        final lecture = displayExams[actualExamIndex];
+        final currentSubject = _subjects[tabIndex];
         return AnimatedWrapper(
           addAnimation: true,
           delay: Duration(milliseconds: actualExamIndex * 60),
-          child: ExamCard(
-            exam: exam,
-            isLocked: exam['locked'] == true,
-            isCompleted: exam['completed'] == true,
+          child: LectureCard(
+            lecture: lecture,
+            categoryColor: currentSubject.color,
             onTap: () async {
-              final currentSubject = _subjects[tabIndex];
               await context.pushNamed(
-                'exam-detail',
-                pathParameters: {'id': exam['id']},
-                extra: {
-                  'subjectId': currentSubject.id,
-                  'subjectName': currentSubject.name,
-                },
+                'lecture-detail',
+                pathParameters: {'id': lecture['id']?.toString() ?? ''},
               );
               if (mounted) _fetchExams();
             },

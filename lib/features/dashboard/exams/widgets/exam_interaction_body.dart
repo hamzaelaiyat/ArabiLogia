@@ -183,18 +183,24 @@ class _ExamInteractionBodyState extends State<ExamInteractionBody> {
             ),
           ),
         ),
-        ExamNavigationBar(
-          currentQuestionIndex: widget.currentQuestionIndex,
-          totalQuestions: total,
-          onPrevious: widget.onPrevious,
-          onNext: widget.onNext,
-          isSubmitting: widget.isSubmitting,
-          hasSelectedAnswer:
-              widget.selectedAnswers[widget.currentQuestionIndex] != null,
-          categoryColor: widget.categoryColor,
-          isFlagged: widget.isFlagged,
-          onToggleFlag: widget.onToggleFlag,
-          onOpenPalette: widget.onOpenPalette,
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: AppTokens.spacing8),
+            child: ExamNavigationBar(
+              currentQuestionIndex: widget.currentQuestionIndex,
+              totalQuestions: total,
+              onPrevious: widget.onPrevious,
+              onNext: widget.onNext,
+              isSubmitting: widget.isSubmitting,
+              hasSelectedAnswer:
+                  widget.selectedAnswers[widget.currentQuestionIndex] != null,
+              categoryColor: widget.categoryColor,
+              isFlagged: widget.isFlagged,
+              onToggleFlag: widget.onToggleFlag,
+              onOpenPalette: widget.onOpenPalette,
+            ),
+          ),
         ),
       ],
     );

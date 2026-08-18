@@ -94,6 +94,36 @@ class _LectureCardState extends State<LectureCard> {
   }
 
   Widget _thumbnail() {
+    final customThumbnail = widget.lecture['thumbnail_url']?.toString() ?? '';
+    if (customThumbnail.isNotEmpty) {
+      if (customThumbnail.startsWith('data:image')) {
+        try {
+          final bytes = base64Decode(customThumbnail.split(',').last);
+          return SizedBox(
+            width: 120,
+            height: 72,
+            child: Image.memory(
+              bytes,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _youtubeOrPlaceholder(),
+            ),
+          );
+        } catch (_) {}
+      }
+      return SizedBox(
+        width: 120,
+        height: 72,
+        child: Image.network(
+          customThumbnail,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _youtubeOrPlaceholder(),
+        ),
+      );
+    }
+    return _youtubeOrPlaceholder();
+  }
+
+  Widget _youtubeOrPlaceholder() {
     final vid = _videoId;
     return SizedBox(
       width: 120,

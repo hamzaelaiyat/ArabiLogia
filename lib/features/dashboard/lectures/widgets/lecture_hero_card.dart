@@ -97,7 +97,9 @@ class LectureHeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppTokens.spacing8),
-          Row(
+          Wrap(
+            spacing: AppTokens.spacing4,
+            runSpacing: AppTokens.spacing4,
             children: [
               TextButton.icon(
                 onPressed: onMarkAllRead,
@@ -105,7 +107,6 @@ class LectureHeroCard extends StatelessWidget {
                 icon: const Icon(Icons.done_all, size: AppTokens.iconSizeXs),
                 label: const Text('تحديد الكل كمقروء'),
               ),
-              const SizedBox(width: AppTokens.spacing4),
               TextButton.icon(
                 onPressed: onResetProgress,
                 style: TextButton.styleFrom(

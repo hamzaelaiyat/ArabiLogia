@@ -44,7 +44,8 @@ class QuizBlockWidget extends StatelessWidget {
         onTap: () async {
           await context.pushNamed(
             'practice-quiz',
-            pathParameters: {
+            pathParameters: {'id': examId},
+            extra: {
               'examId': examId,
               'subjectId': lectureCourseId,
               'subjectName': categoryName,

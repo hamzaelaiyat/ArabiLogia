@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arabilogia/core/services/supabase_service_interface.dart';
 import 'package:arabilogia/core/services/supabase_service_wrapper.dart';
@@ -131,7 +132,7 @@ class StudentExamRepository {
         return Exam.fromMinifiedJson(examData);
       }
     } catch (e) {
-      print('Error loading remote exam $examId: $e');
+      debugPrint('Error loading remote exam $examId: $e');
     }
 
     return null;

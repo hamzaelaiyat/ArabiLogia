@@ -28,31 +28,68 @@ class YoutubeBlockWidget extends StatefulWidget {
 class _YoutubeBlockWidgetState extends State<YoutubeBlockWidget> {
   YoutubePlayerController? _controller;
   Timer? _positionTimer;
+  bool _isPlaying = false;
 
   String get _videoId => getVideoId(widget.block.content);
 
-  Future<void> _mountPlayer() async {
-    if (_controller != null || _videoId.isEmpty) return;
-    final prefs = await SharedPreferences.getInstance();
-    final lastPosition = prefs.getInt('yt_$_videoId') ?? 0;
-    if (!mounted) return;
-    setState(() {
-      _controller = YoutubePlayerController.fromVideoId(
-        videoId: _videoId,
-        autoPlay: true,
-        startSeconds: lastPosition > 3 ? lastPosition.toDouble() : null,
-        params: const YoutubePlayerParams(
-          showFullscreenButton: true,
-          strictRelatedVideos: true,
-        ),
-      );
-    });
-    _positionTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => _savePosition(),
-    );
-    if (!widget.isCompleted) {
-      widget.onToggleCompletion();
+  Future<void> _launchExternalVideo() async {
+    if (_videoId.isEmpty) return;
+    final uri = Uri.parse('https://www.youtube.com/watch?v=$_videoId');
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
+
+  Future<void> _startPlaying() async {
+    if (_videoId.isEmpty) return;
+
+    if (_controller == null) {
+      int lastPosition = 0;
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        lastPosition = prefs.getInt('yt_$_videoId') ?? 0;
+      } catch (_) {}
+
+      try {
+        final controller = YoutubePlayerController.fromVideoId(
+          videoId: _videoId,
+          autoPlay: true,
+          startSeconds: lastPosition > 3 ? lastPosition.toDouble() : null,
+          params: const YoutubePlayerParams(
+            showFullscreenButton: true,
+            strictRelatedVideos: true,
+            showControls: true,
+          ),
+        );
+
+        if (!mounted) return;
+        setState(() {
+          _controller = controller;
+          _isPlaying = true;
+        });
+
+        _positionTimer?.cancel();
+        _positionTimer = Timer.periodic(
+          const Duration(seconds: 5),
+          (_) => _savePosition(),
+        );
+
+        if (!widget.isCompleted) {
+          widget.onToggleCompletion();
+        }
+      } catch (e) {
+        // Fallback to launching external browser / YouTube app when WebViewPlatform is unavailable
+        await _launchExternalVideo();
+      }
+    } else {
+      try {
+        setState(() {
+          _isPlaying = true;
+        });
+        _controller?.playVideo();
+      } catch (_) {
+        await _launchExternalVideo();
+      }
     }
   }
 
@@ -67,13 +104,6 @@ class _YoutubeBlockWidgetState extends State<YoutubeBlockWidget> {
     } catch (_) {}
   }
 
-  Future<void> _openExternally() async {
-    final uri = Uri.tryParse(widget.block.content);
-    if (uri != null) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   @override
   void dispose() {
     _positionTimer?.cancel();
@@ -82,9 +112,9 @@ class _YoutubeBlockWidgetState extends State<YoutubeBlockWidget> {
     super.dispose();
   }
 
-  Widget _buildThumbnail(String duration) {
+  Widget _buildVideoThumbnail(String duration) {
     return GestureDetector(
-      onTap: _mountPlayer,
+      onTap: _startPlaying,
       child: AspectRatio(
         aspectRatio: 16 / 9,
         child: Stack(
@@ -94,37 +124,49 @@ class _YoutubeBlockWidgetState extends State<YoutubeBlockWidget> {
             Image.network(
               'https://img.youtube.com/vi/$_videoId/hqdefault.jpg',
               fit: BoxFit.cover,
-              errorBuilder: (context, _, __) =>
-                  Container(color: Colors.grey.shade200),
+              errorBuilder: (context, _, __) => Container(
+                color: Colors.grey.shade900,
+                child: const Icon(Icons.video_library_rounded, color: Colors.white54, size: 48),
+              ),
             ),
-            Container(color: Colors.black.withValues(alpha: 0.2)),
-            const Icon(
-              Icons.play_circle_fill,
-              color: AppColors.primary,
-              size: 64,
-            ),
-            Positioned(
-              bottom: AppTokens.spacing8,
-              left: AppTokens.spacing8,
+            Container(color: Colors.black.withValues(alpha: 0.3)),
+            Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: Colors.black45, blurRadius: 10, spreadRadius: 2),
+                  ],
                 ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  duration,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+                padding: const EdgeInsets.all(16),
+                child: const Icon(
+                  Icons.play_arrow_rounded,
+                  color: Colors.white,
+                  size: 36,
                 ),
               ),
             ),
+            if (duration.isNotEmpty)
+              Positioned(
+                bottom: AppTokens.spacing8,
+                left: AppTokens.spacing8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    duration,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -135,20 +177,30 @@ class _YoutubeBlockWidgetState extends State<YoutubeBlockWidget> {
   Widget build(BuildContext context) {
     final title = widget.block.metadata?['title'] ?? 'فيديو الشرح للمحاضرة';
     final rawDuration = widget.block.metadata?['duration']?.toString() ?? '';
-    final duration = rawDuration.isEmpty ? 'غير محدد' : rawDuration;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppTokens.spacing16),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: Card(
+          margin: const EdgeInsets.only(bottom: AppTokens.spacing16),
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: AppTokens.radiusLgAll),
       elevation: 2,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_controller != null)
+          if (_isPlaying && _controller != null)
             YoutubePlayer(controller: _controller!, aspectRatio: 16 / 9)
           else if (_videoId.isNotEmpty)
-            _buildThumbnail(duration),
+            _buildVideoThumbnail(rawDuration)
+          else
+            Container(
+              height: 180,
+              color: Colors.grey.shade200,
+              child: const Center(
+                child: Text('رابط الفيديو غير صالح'),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(AppTokens.spacing16),
             child: Row(
@@ -166,23 +218,25 @@ class _YoutubeBlockWidgetState extends State<YoutubeBlockWidget> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        'شرح بالفيديو للمحاضرة',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
+                      InkWell(
+                        onTap: _launchExternalVideo,
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.open_in_new_rounded, size: 14, color: AppColors.primary),
+                            SizedBox(width: 4),
+                            Text(
+                              'فتح في يوتيوب',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'فتح في يوتيوب',
-                  onPressed: _openExternally,
-                  icon: Icon(
-                    Icons.open_in_new,
-                    size: AppTokens.iconSizeXs,
-                    color: AppColors.mutedColor(context),
                   ),
                 ),
                 TextButton.icon(
@@ -206,6 +260,8 @@ class _YoutubeBlockWidgetState extends State<YoutubeBlockWidget> {
           ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 }

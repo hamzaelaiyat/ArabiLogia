@@ -16,6 +16,10 @@ import 'package:arabilogia/features/dashboard/lectures/widgets/text_block_widget
 import 'package:arabilogia/features/dashboard/lectures/widgets/youtube_block_widget.dart';
 import 'package:arabilogia/features/dashboard/lectures/widgets/quiz_block_widget.dart';
 import 'package:arabilogia/features/dashboard/lectures/widgets/standard_exam_widget.dart';
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:arabilogia/core/constants/routes.dart';
+import 'package:arabilogia/providers/contextual_sidebar_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LectureDetailScreen extends StatefulWidget {
@@ -49,7 +53,43 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    try {
+      context.read<ContextualSidebarProvider>().clearSidebar();
+    } catch (_) {}
     super.dispose();
+  }
+
+  void _registerSidebar() {
+    if (_lecture == null || !mounted) return;
+    try {
+      final category = _category;
+      context.read<ContextualSidebarProvider>().setLectureSidebar(
+            LectureSidebarData(
+              lectureId: _lecture!.id,
+              title: _lecture!.title,
+              categoryName: category?.name ?? 'المحاضرة',
+              categoryColor: category?.color ?? AppColors.primary,
+              tocEntries: _tocEntries,
+              activeIndex: _activeTocIndex,
+              onEntryTap: _jumpToEntry,
+              onBack: () {
+                try {
+                  context.read<ContextualSidebarProvider>().clearSidebar();
+                } catch (_) {}
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                } else {
+                  context.go(AppRoutes.lectures);
+                }
+              },
+              onShowMainSidebar: () {
+                try {
+                  context.read<ContextualSidebarProvider>().showMainSidebar();
+                } catch (_) {}
+              },
+            ),
+          );
+    } catch (_) {}
   }
 
   Future<void> _loadLectureDetails() async {
@@ -80,6 +120,7 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
           _examScores = scores.map((key, val) => MapEntry(key, Map<String, dynamic>.from(val)));
           _isLoading = false;
         });
+        _registerSidebar();
       }
     } else {
       if (mounted) {
@@ -152,6 +193,9 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     }
     if (active != _activeTocIndex) {
       setState(() => _activeTocIndex = active);
+      try {
+        context.read<ContextualSidebarProvider>().updateLectureActiveIndex(active);
+      } catch (_) {}
     }
   }
 
@@ -349,6 +393,17 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     final category = _category;
     final categoryColor = category?.color ?? AppColors.primary;
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        final sidebarProvider = context.read<ContextualSidebarProvider>();
+        if (sidebarProvider.mode != SidebarMode.lectureToc ||
+            sidebarProvider.lectureData?.lectureId != _lecture!.id) {
+          _registerSidebar();
+        }
+      } catch (_) {}
+    });
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -363,9 +418,17 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
         ),
         body: SingleChildScrollView(
           controller: _scrollController,
-          padding: const EdgeInsets.all(AppTokens.spacing16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          padding: EdgeInsets.fromLTRB(
+            AppTokens.isMobile(context) ? AppTokens.spacing12 : AppTokens.spacing16,
+            AppTokens.spacing16,
+            AppTokens.isMobile(context) ? AppTokens.spacing12 : AppTokens.spacing16,
+            AppTokens.isMobile(context) ? 96.0 : AppTokens.spacing32,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               LectureHeroCard(
                 title: _lecture!.title,
@@ -426,6 +489,8 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

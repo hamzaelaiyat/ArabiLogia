@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/services/screen_capture_service.dart';
 import 'package:arabilogia/core/constants/test_keys.dart';
+import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
@@ -10,6 +11,7 @@ import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/services/exam_session_service.dart';
 import 'package:arabilogia/features/dashboard/exams/providers/exam_provider.dart';
+import 'package:arabilogia/providers/contextual_sidebar_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:arabilogia/core/widgets/palette_slide_up.dart';
@@ -59,6 +61,13 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     _timerNotifier = ValueNotifier<int>(0);
     _timerWarning.addListener(_showTimerWarning);
     _screenCapture.enableSecureMode();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        try {
+          context.read<ExamProvider>().startExam();
+        } catch (_) {}
+      }
+    });
     _loadExam();
   }
 
@@ -111,11 +120,82 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     }
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _timerNotifier.dispose();
+    _timerWarning.removeListener(_showTimerWarning);
+    _timerWarning.dispose();
+    _screenCapture.disableSecureMode();
+    try {
+      context.read<ExamProvider>().endExam();
+      context.read<ContextualSidebarProvider>().clearSidebar();
+    } catch (_) {}
+    super.dispose();
+  }
+
+  void _updateSidebar() {
+    if (_exam == null || !mounted) return;
+    try {
+      context.read<ContextualSidebarProvider>().updateExamSidebarState(
+            currentIndex: _currentQuestionIndex,
+            selectedAnswers: _selectedAnswers,
+            flaggedQuestions: _flagged,
+          );
+    } catch (_) {}
+  }
+
+  void _registerSidebar() {
+    if (_exam == null || !mounted) return;
+    try {
+      final category = CategoryMetadata.getById(widget.subjectId);
+      context.read<ContextualSidebarProvider>().setExamSidebar(
+            ExamSidebarData(
+              examId: widget.examId,
+              title: _exam!.title,
+              categoryName: widget.subjectName.isNotEmpty ? widget.subjectName : (category?.name ?? 'اختبار'),
+              categoryColor: category?.color ?? AppColors.primary,
+              questionCount: _exam!.questions.length,
+              currentIndex: _currentQuestionIndex,
+              selectedAnswers: _selectedAnswers,
+              flaggedQuestions: _flagged,
+              timerNotifier: _timerNotifier,
+              onSelectQuestion: (index) {
+                if (mounted) {
+                  setState(() => _currentQuestionIndex = index);
+                  _updateSidebar();
+                }
+              },
+              onToggleFlag: (index) {
+                if (mounted) {
+                  setState(() {
+                    _flagged[index] = !(_flagged[index] ?? false);
+                  });
+                  _updateSidebar();
+                }
+              },
+              onExitExam: () async {
+                final shouldPop = await showExitConfirmationDialog(context);
+                if (shouldPop && mounted) {
+                  context.read<ExamProvider>().endExam();
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  } else {
+                    context.go(AppRoutes.exams);
+                  }
+                }
+              },
+            ),
+          );
+    } catch (_) {}
+  }
+
   void _toggleFlag() {
     setState(() {
       _flagged[_currentQuestionIndex] =
           !(_flagged[_currentQuestionIndex] ?? false);
     });
+    _updateSidebar();
   }
 
   void _openPalette(Color categoryColor) {
@@ -130,6 +210,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
         onQuestionTap: (index) {
           Navigator.of(sheetContext).pop();
           setState(() => _currentQuestionIndex = index);
+          _updateSidebar();
         },
       ),
     );
@@ -154,6 +235,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     }
 
     final localScores = await _scoreRepository.getLocalScores();
+    if (!mounted) return;
     context.read<ExamProvider>().startExam();
 
     final ExamSession? restoredSession =
@@ -185,6 +267,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
       }
       _isLoading = false;
     });
+    _registerSidebar();
   }
 
   Future<void> _submitExam() async {
@@ -211,6 +294,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
       }
 
       await _sessionService.clearSession();
+      if (!mounted) return;
       context.read<ExamProvider>().endExam();
 
       // Pull the answer key so the result screen can highlight the
@@ -221,6 +305,10 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
       final reviewExam = review == null
           ? _exam!
           : Exam.fromMinifiedJson(review.data).applyAnswers(review.answers);
+
+      try {
+        context.read<ContextualSidebarProvider>().clearSidebar();
+      } catch (_) {}
 
       context.pushReplacementNamed(
         'exam-result',
@@ -242,16 +330,6 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
 
   Future<void> _submitAbandonedExam() async {
     await _sessionService.clearSession();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _screenCapture.disableSecureMode();
-    _timerWarning.removeListener(_showTimerWarning);
-    _timerWarning.dispose();
-    _timerNotifier.dispose();
-    super.dispose();
   }
 
   @override
@@ -330,6 +408,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
                 setState(() {
                   _selectedAnswers[index] = optionId;
                 });
+                _updateSidebar();
               },
               onSaveSession: _saveSession,
               onPrevious: _currentQuestionIndex > 0
@@ -337,6 +416,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
                       setState(() {
                         _currentQuestionIndex--;
                       });
+                      _updateSidebar();
                     }
                   : null,
               onNext: () {
@@ -344,6 +424,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
                   setState(() {
                     _currentQuestionIndex++;
                   });
+                  _updateSidebar();
                 } else {
                   if (!_isSubmitting) _submitExam();
                 }

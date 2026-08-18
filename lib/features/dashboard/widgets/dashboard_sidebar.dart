@@ -14,6 +14,9 @@ class DashboardSidebar extends StatelessWidget {
   final VoidCallback onTermsTap;
   final VoidCallback onPrivacyTap;
   final String version;
+  final bool isPinned;
+  final VoidCallback? onTogglePin;
+  final double width;
 
   const DashboardSidebar({
     super.key,
@@ -26,31 +29,69 @@ class DashboardSidebar extends StatelessWidget {
     required this.onTermsTap,
     required this.onPrivacyTap,
     required this.version,
+    this.isPinned = true,
+    this.onTogglePin,
+    this.width = AppTokens.sidebarWidth,
   });
 
   @override
   Widget build(BuildContext context) {
+    final showLabels = width >= 140;
+
     return Container(
-      width: AppTokens.sidebarWidth,
+      width: width,
       decoration: BoxDecoration(
         color: AppColors.background(context),
-        border: Border(
-          left: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
-            width: 1,
-          ),
-        ),
       ),
       child: Column(
         children: [
-          Image.asset(
-            'assets/images/logo-removedbg.png',
-            width: 80,
-            height: 80,
-            fit: BoxFit.contain,
+          const SizedBox(height: AppTokens.spacing16),
+
+          // Header: Single Logo centered with Pin Icon on the side
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppTokens.spacing8),
+            child: SizedBox(
+              height: showLabels ? 64 : 44,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Center(
+                    child: Image.asset(
+                      'assets/images/logo-removedbg.png',
+                      width: showLabels ? 64 : 44,
+                      height: showLabels ? 64 : 44,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  if (showLabels && onTogglePin != null)
+                    Positioned(
+                      left: Directionality.of(context) == TextDirection.rtl
+                          ? null
+                          : 0,
+                      right: Directionality.of(context) == TextDirection.rtl
+                          ? 0
+                          : null,
+                      child: IconButton(
+                        icon: Icon(
+                          isPinned
+                              ? Icons.push_pin
+                              : Icons.push_pin_outlined,
+                          color: isPinned
+                              ? Theme.of(context).colorScheme.primary
+                              : AppColors.mutedColor(context),
+                          size: 20,
+                        ),
+                        tooltip: isPinned
+                            ? 'إلغاء تثبيت الشريط الجانبي'
+                            : 'تثبيت الشريط الجانبي',
+                        onPressed: onTogglePin,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: AppTokens.spacing16),
-          const Divider(),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(
@@ -61,89 +102,90 @@ class DashboardSidebar extends StatelessWidget {
                   isSelected: selectedIndex == 0,
                   icon: Icons.home_outlined,
                   selectedIcon: Icons.home,
-                  label: 'الرئيسية',
+                  label: showLabels ? 'الرئيسية' : '',
                   onTap: () => onItemTapped(0),
                 ),
                 DashboardSidebarNavItem(
                   isSelected: selectedIndex == 1,
                   icon: Icons.assignment_outlined,
                   selectedIcon: Icons.assignment,
-                  label: 'المحاضرات',
+                  label: showLabels ? 'المحاضرات' : '',
                   onTap: () => onItemTapped(1),
                 ),
                 DashboardSidebarNavItem(
                   isSelected: selectedIndex == 2,
                   icon: Icons.leaderboard_outlined,
                   selectedIcon: Icons.leaderboard,
-                  label: 'لوحة المتصدرين',
+                  label: showLabels ? 'لوحة المتصدرين' : '',
                   onTap: () => onItemTapped(2),
                 ),
                 DashboardSidebarNavItem(
                   isSelected: selectedIndex == 3,
                   icon: Icons.person_outline,
                   selectedIcon: Icons.person,
-                  label: 'الملف الشخصي',
+                  label: showLabels ? 'الملف الشخصي' : '',
                   onTap: () => onItemTapped(3),
                 ),
                 DashboardSidebarNavItem(
                   isSelected: selectedIndex == 4,
                   icon: Icons.settings_outlined,
                   selectedIcon: Icons.settings,
-                  label: 'الإعدادات',
+                  label: showLabels ? 'الإعدادات' : '',
                   onTap: () => onItemTapped(4),
                 ),
                 if (isTeacher) ...[
-                  const SizedBox(height: AppTokens.spacing16),
-                  const Divider(),
+                  const SizedBox(height: AppTokens.spacing20),
                   DashboardSidebarNavItem(
                     isSelected: false,
                     icon: Icons.admin_panel_settings_outlined,
                     selectedIcon: Icons.admin_panel_settings,
-                    label: isAdmin ? 'لوحة الإدارة' : 'لوحة المعلم',
+                    label: showLabels
+                        ? (isAdmin ? 'لوحة الإدارة' : 'لوحة المعلم')
+                        : '',
                     onTap: onTeacherPanelTap,
                   ),
                 ],
-                const SizedBox(height: AppTokens.spacing16),
-                const Divider(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTokens.spacing16,
-                    vertical: AppTokens.spacing8,
-                  ),
-                  child: Text(
-                    'المعلومات والقانون',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.mutedColor(context),
-                      fontWeight: FontWeight.bold,
+                if (showLabels) ...[
+                  const SizedBox(height: AppTokens.spacing24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTokens.spacing16,
+                      vertical: AppTokens.spacing8,
+                    ),
+                    child: Text(
+                      'المعلومات والقانون',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: AppColors.mutedColor(context),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ),
-                ),
-                DashboardSidebarSecondaryNavItem(
-                  icon: Icons.info_outline,
-                  label: 'عن عربيلوجيا',
-                  onTap: onAboutTap,
-                ),
-                DashboardSidebarSecondaryNavItem(
-                  icon: Icons.description_outlined,
-                  label: 'الشروط والأحكام',
-                  onTap: onTermsTap,
-                ),
-                DashboardSidebarSecondaryNavItem(
-                  icon: Icons.privacy_tip_outlined,
-                  label: 'سياسة الخصوصية',
-                  onTap: onPrivacyTap,
-                ),
+                  DashboardSidebarSecondaryNavItem(
+                    icon: Icons.info_outline,
+                    label: 'عن عربيلوجيا',
+                    onTap: onAboutTap,
+                  ),
+                  DashboardSidebarSecondaryNavItem(
+                    icon: Icons.description_outlined,
+                    label: 'الشروط والأحكام',
+                    onTap: onTermsTap,
+                  ),
+                  DashboardSidebarSecondaryNavItem(
+                    icon: Icons.privacy_tip_outlined,
+                    label: 'سياسة الخصوصية',
+                    onTap: onPrivacyTap,
+                  ),
+                ],
               ],
             ),
           ),
-          const Divider(),
           Padding(
-            padding: const EdgeInsets.all(AppTokens.spacing8),
+            padding: const EdgeInsets.all(AppTokens.spacing12),
             child: Text(
-              version,
+              showLabels ? version : '',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.mutedColor(context),
-              ),
+                    color: AppColors.mutedColor(context),
+                  ),
             ),
           ),
         ],

@@ -38,20 +38,17 @@ class GradeSelector extends StatelessWidget {
               width: 1,
             ),
           ),
-          child: Material(
-            type: MaterialType.transparency,
-            child: ListTile(
-              title: Text(g['label'] as String),
-              trailing: isSelected
-                  ? const Icon(Icons.check_circle, color: AppColors.primary)
-                  : isLocked
-                  ? const Icon(Icons.lock_outline, size: 20)
-                  : null,
-              onTap: isLocked
-                  ? null
-                  : () => onSelect(g['value'] as int),
-              enabled: !isLocked,
-            ),
+          child: ListTile(
+            title: Text(g['label'] as String),
+            trailing: isSelected
+                ? const Icon(Icons.check_circle, color: AppColors.primary)
+                : isLocked
+                ? const Icon(Icons.lock_outline, size: 20)
+                : null,
+            onTap: isLocked
+                ? null
+                : () => onSelect(g['value'] as int),
+            enabled: !isLocked,
           ),
         );
       }).toList(),

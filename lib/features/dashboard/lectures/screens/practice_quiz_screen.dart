@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arabilogia/core/constants/test_keys.dart';
+import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
+import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_interaction_body.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exit_confirmation_dialog.dart';
+import 'package:arabilogia/providers/contextual_sidebar_provider.dart';
+import 'package:arabilogia/features/dashboard/exams/providers/exam_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 class PracticeQuizScreen extends StatefulWidget {
@@ -32,12 +38,88 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
   bool _isLoading = true;
   int _currentQuestionIndex = 0;
   final Map<int, String?> _selectedAnswers = {};
+  final Map<int, bool> _flagged = {};
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        try {
+          context.read<ExamProvider>().startExam();
+        } catch (_) {}
+      }
+    });
     _loadExam();
+  }
+
+  @override
+  void dispose() {
+    try {
+      context.read<ExamProvider>().endExam();
+      context.read<ContextualSidebarProvider>().clearSidebar();
+    } catch (_) {}
+    super.dispose();
+  }
+
+  void _updateSidebar() {
+    if (_exam == null || !mounted) return;
+    try {
+      context.read<ContextualSidebarProvider>().updateExamSidebarState(
+            currentIndex: _currentQuestionIndex,
+            selectedAnswers: _selectedAnswers,
+            flaggedQuestions: _flagged,
+          );
+    } catch (_) {}
+  }
+
+  void _registerSidebar() {
+    if (_exam == null || !mounted) return;
+    try {
+      final category = CategoryMetadata.getById(widget.subjectId);
+      context.read<ContextualSidebarProvider>().setExamSidebar(
+            ExamSidebarData(
+              examId: widget.examId,
+              title: _exam!.title,
+              categoryName: widget.subjectName.isNotEmpty
+                  ? widget.subjectName
+                  : (category?.name ?? 'تمرين'),
+              categoryColor: category?.color ?? AppColors.primary,
+              questionCount: _exam!.questions.length,
+              currentIndex: _currentQuestionIndex,
+              selectedAnswers: _selectedAnswers,
+              flaggedQuestions: _flagged,
+              onSelectQuestion: (index) {
+                if (mounted) {
+                  setState(() => _currentQuestionIndex = index);
+                  _updateSidebar();
+                }
+              },
+              onToggleFlag: (index) {
+                if (mounted) {
+                  setState(() {
+                    _flagged[index] = !(_flagged[index] ?? false);
+                  });
+                  _updateSidebar();
+                }
+              },
+              onExitExam: () async {
+                final shouldPop = await showExitConfirmationDialog(context);
+                if (shouldPop && mounted) {
+                  try {
+                    context.read<ExamProvider>().endExam();
+                  } catch (_) {}
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  } else {
+                    context.go(AppRoutes.lectures);
+                  }
+                }
+              },
+            ),
+          );
+    } catch (_) {}
   }
 
   Future<void> _loadExam() async {
@@ -58,6 +140,7 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
         _exam = exam.copyWith(questions: shuffledQuestions);
         _isLoading = false;
       });
+      _registerSidebar();
     } else {
       setState(() => _isLoading = false);
       if (Navigator.of(context).canPop()) {
@@ -69,7 +152,7 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
     }
   }
 
-  void _submitQuiz() {
+  Future<void> _submitQuiz() async {
     if (_isSubmitting) return;
     if (_exam == null || _exam!.questions.isEmpty) return;
     setState(() => _isSubmitting = true);
@@ -88,7 +171,29 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
       }
     }
 
+    final total = _exam!.questions.length;
+    final score = total > 0 ? (correctCount / total * 100).toDouble() : 0.0;
+
+    // Persist score locally
+    await ScoreRepository().saveScoreLocally(widget.examId, score, correctCount * 10);
+
+    // Persist completion in lecture progress if lectureId exists
+    if (widget.lectureId.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'lecture_progress_${widget.lectureId}';
+      final completed = prefs.getStringList(key) ?? [];
+      if (!completed.contains(widget.examId)) {
+        completed.add(widget.examId);
+        await prefs.setStringList(key, completed);
+      }
+    }
+
     if (!mounted) return;
+
+    try {
+      context.read<ExamProvider>().endExam();
+      context.read<ContextualSidebarProvider>().clearSidebar();
+    } catch (_) {}
 
     context.pushReplacementNamed(
       'practice-result',
@@ -142,6 +247,44 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
                 const Text('اختبار تدريبي', style: TextStyle(fontSize: 16)),
               ],
             ),
+            actions: [
+              TextButton.icon(
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('إنهاء الاختبار'),
+                      content: const Text('هل تريد تسليم وإنهاء الاختبار القصير الآن؟'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('متابعة الحل'),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text('تسليم وإنهاء'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true && !_isSubmitting) {
+                    _submitQuiz();
+                  }
+                },
+                icon: const Icon(Icons.check_circle_outline, color: Colors.green),
+                label: const Text('إنهاء الاختبار', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () async {
+                  final shouldPop = await showExitConfirmationDialog(context);
+                  if (shouldPop && context.mounted) {
+                    context.pop();
+                  }
+                },
+              ),
+            ],
           ),
           body: ExamInteractionBody(
             exam: _exam!,
@@ -150,10 +293,19 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
             categoryColor: categoryColor,
             progress: progress,
             isSubmitting: _isSubmitting,
+            isFlagged: _flagged[_currentQuestionIndex] ?? false,
+            onToggleFlag: () {
+              setState(() {
+                _flagged[_currentQuestionIndex] =
+                    !(_flagged[_currentQuestionIndex] ?? false);
+              });
+              _updateSidebar();
+            },
             onOptionSelected: (index, optionId) {
               setState(() {
                 _selectedAnswers[index] = optionId;
               });
+              _updateSidebar();
             },
             onSaveSession: () {},
             onPrevious: _currentQuestionIndex > 0
@@ -161,6 +313,7 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
                     setState(() {
                       _currentQuestionIndex--;
                     });
+                    _updateSidebar();
                   }
                 : null,
             onNext: () {
@@ -169,6 +322,7 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
                 setState(() {
                   _currentQuestionIndex++;
                 });
+                _updateSidebar();
               } else {
                 if (!_isSubmitting) _submitQuiz();
               }

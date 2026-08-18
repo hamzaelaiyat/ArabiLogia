@@ -15,7 +15,7 @@ class CategoryMetadata {
   });
 
   static List<CategoryMetadata> _categories = _defaultCategories;
-  static bool _isLoaded = true;
+  static bool _isLoaded = false;
 
   static IconData _iconFromString(String iconName) {
     const iconMap = {
