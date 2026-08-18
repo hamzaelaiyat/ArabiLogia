@@ -7,6 +7,7 @@ import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/auth/login/screens/login_screen.dart';
 import 'package:arabilogia/features/auth/register/screens/register_screen.dart';
+import 'package:arabilogia/features/auth/forgot_password/screens/forgot_password_screen.dart';
 import 'package:arabilogia/features/auth/update_confirm/screens/update_confirm_page.dart';
 import 'package:arabilogia/features/dashboard/screens/dashboard_shell.dart';
 import 'package:arabilogia/features/dashboard/home/screens/home_screen.dart';
@@ -31,6 +32,7 @@ import 'package:arabilogia/features/dashboard/lectures/screens/lecture_detail_sc
 import 'package:arabilogia/features/dashboard/lectures/screens/practice_quiz_screen.dart';
 import 'package:arabilogia/features/dashboard/lectures/widgets/practice_result_screen.dart';
 import 'package:arabilogia/features/dashboard/lectures/models/lecture.dart';
+import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/admin/screens/lecture_editor_screen.dart';
 // PRIVATE: gate feature (gitignored; do not commit this import or the route below).
 import 'package:arabilogia/features/gate/screens/gate_screen.dart';
@@ -218,6 +220,15 @@ class AppRouter {
         ),
       ),
       GoRoute(
+        path: AppRoutes.forgotPassword,
+        name: 'forgot-password',
+        pageBuilder: (context, state) => AppRouter._buildPage(
+          context: context,
+          state: state,
+          child: const ForgotPasswordScreen(),
+        ),
+      ),
+      GoRoute(
         path: AppRoutes.updateConfirm,
         name: 'update-confirm',
         parentNavigatorKey: _rootNavigatorKey,
@@ -318,29 +329,6 @@ class AppRouter {
         ),
       ),
       GoRoute(
-        path: AppRoutes.practiceQuiz,
-        name: 'practice-quiz',
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) {
-          final id = state.pathParameters['id'] ?? '';
-          final extra = state.extra as Map<String, dynamic>?;
-          final examId = extra?['examId'] as String? ?? id;
-          final subjectId = extra?['subjectId'] as String? ?? 'nahw';
-          final subjectName = extra?['subjectName'] as String? ?? 'النحو';
-          final lectureId = extra?['lectureId'] as String? ?? '';
-          return AppRouter._buildPage(
-            context: context,
-            state: state,
-            child: PracticeQuizScreen(
-              examId: examId,
-              subjectId: subjectId,
-              subjectName: subjectName,
-              lectureId: lectureId,
-            ),
-          );
-        },
-      ),
-      GoRoute(
         path: AppRoutes.practiceResult,
         name: 'practice-result',
         parentNavigatorKey: _rootNavigatorKey,
@@ -353,26 +341,6 @@ class AppRouter {
               exam: extra['exam'] as Exam,
               userAnswers: extra['userAnswers'] as Map<int, String?>,
               correctCount: extra['correctCount'] as int,
-            ),
-          );
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.examInteraction,
-        name: 'exam-interaction',
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) {
-          final id = state.pathParameters['id'] ?? '';
-          final extra = state.extra as Map<String, dynamic>?;
-          final subjectId = extra?['subjectId'] as String? ?? 'nahw';
-          final subjectName = extra?['subjectName'] as String? ?? 'النحو';
-          return AppRouter._buildPage(
-            context: context,
-            state: state,
-            child: ExamInteractionScreen(
-              examId: id,
-              subjectId: subjectId,
-              subjectName: subjectName,
             ),
           );
         },
@@ -470,6 +438,47 @@ class AppRouter {
             },
           ),
           GoRoute(
+            path: AppRoutes.examInteraction,
+            name: 'exam-interaction',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              final extra = state.extra as Map<String, dynamic>?;
+              final subjectId = extra?['subjectId'] as String? ?? 'nahw';
+              final subjectName = extra?['subjectName'] as String? ?? 'النحو';
+              return AppRouter._buildPage(
+                context: context,
+                state: state,
+                child: ExamInteractionScreen(
+                  examId: id,
+                  subjectId: subjectId,
+                  subjectName: subjectName,
+                ),
+              );
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.practiceQuiz,
+            name: 'practice-quiz',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              final extra = state.extra as Map<String, dynamic>?;
+              final examId = extra?['examId'] as String? ?? id;
+              final subjectId = extra?['subjectId'] as String? ?? 'nahw';
+              final subjectName = extra?['subjectName'] as String? ?? 'النحو';
+              final lectureId = extra?['lectureId'] as String? ?? '';
+              return AppRouter._buildPage(
+                context: context,
+                state: state,
+                child: PracticeQuizScreen(
+                  examId: examId,
+                  subjectId: subjectId,
+                  subjectName: subjectName,
+                  lectureId: lectureId,
+                ),
+              );
+            },
+          ),
+          GoRoute(
             path: AppRoutes.leaderboard,
             name: 'leaderboard',
             pageBuilder: (context, state) => AppRouter._buildPage(
@@ -508,11 +517,26 @@ class AppRouter {
           GoRoute(
             path: AppRoutes.lectures,
             name: 'lectures',
-            pageBuilder: (context, state) => AppRouter._buildPage(
-              context: context,
-              state: state,
-              child: const LecturesScreen(),
-            ),
+            pageBuilder: (context, state) {
+              int tabIndex = 0;
+              if (state.extra is Map<String, dynamic>) {
+                tabIndex = (state.extra as Map<String, dynamic>)['initialTabIndex'] as int? ?? 0;
+              } else if (state.extra is int) {
+                tabIndex = state.extra as int;
+              }
+              final subjectQuery = state.uri.queryParameters['subject'] ?? state.uri.queryParameters['tab'];
+              if (subjectQuery != null) {
+                final idx = CategoryMetadata.categories.indexWhere(
+                  (c) => c.id == subjectQuery || c.name == subjectQuery,
+                );
+                if (idx != -1) tabIndex = idx;
+              }
+              return AppRouter._buildPage(
+                context: context,
+                state: state,
+                child: LecturesScreen(initialTabIndex: tabIndex),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.lectureDetail,

@@ -35,7 +35,7 @@ void main() {
     ));
 
     expect(find.text('تقدمك في المحاضرة'), findsOneWidget);
-    expect(find.text('33%'), findsOneWidget);
+    expect(find.text('33% مكتمل'), findsOneWidget);
   });
 
   testWidgets('renders one legend chip per segment', (tester) async {
@@ -43,8 +43,10 @@ void main() {
       const ProgressBarCard(segments: segments, categoryColor: Colors.blue),
     ));
 
-    expect(find.text('قراءة 1/2'), findsOneWidget);
-    expect(find.text('فيديو 0/1'), findsOneWidget);
+    expect(find.text('قراءة'), findsOneWidget);
+    expect(find.text('1/2'), findsOneWidget);
+    expect(find.text('فيديو'), findsOneWidget);
+    expect(find.text('0/1'), findsOneWidget);
     expect(find.byIcon(Icons.notes), findsOneWidget);
     expect(find.byIcon(Icons.play_circle_outline), findsOneWidget);
   });

@@ -19,6 +19,7 @@ import 'package:arabilogia/features/dashboard/exams/providers/exam_provider.dart
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/admin/providers/teacher_exam_defaults_provider.dart';
 import 'package:arabilogia/features/dashboard/profile/providers/accounts_provider.dart';
+import 'package:arabilogia/providers/contextual_sidebar_provider.dart';
 import 'package:arabilogia/core/models/grade_metadata.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -40,7 +41,10 @@ Future<void> initializeApp({
   await dotenv.load(fileName: ".env");
   await AppVersion.preload();
 
-  if (enableAds && !kIsWeb) {
+  if (enableAds &&
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS)) {
     unawaited(_initializeMobileAds());
   }
 
@@ -58,10 +62,14 @@ void main() async {
 }
 
 Future<void> _initializeMobileAds() async {
-  if (!kIsWeb) {
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS)) {
     try {
       await MobileAds.instance.initialize();
-    } catch (e) {}
+    } catch (e) {
+      // Ignore mobile ads initialization errors when unavailable
+    }
   }
 }
 
@@ -154,6 +162,10 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
           lazy: true,
         ),
         ChangeNotifierProvider(create: (_) => AccountsProvider(), lazy: true),
+        ChangeNotifierProvider(
+          create: (_) => ContextualSidebarProvider(),
+          lazy: true,
+        ),
       ],
       child: Builder(
         builder: (context) {

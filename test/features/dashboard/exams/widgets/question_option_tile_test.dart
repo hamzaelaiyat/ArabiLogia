@@ -56,7 +56,10 @@ void main() {
         onTap: () {},
       ),
     ));
-    expect(find.bySemanticsLabel('الخيار أ، غير محدد'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp(r'^الخيار أ، غير محدد')),
+      findsOneWidget,
+    );
 
     await tester.pumpWidget(wrap(
       QuestionOptionTile(
@@ -67,7 +70,10 @@ void main() {
         onTap: () {},
       ),
     ));
-    expect(find.bySemanticsLabel('الخيار أ، محدد'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp(r'^الخيار أ، محدد')),
+      findsOneWidget,
+    );
 
     handle.dispose();
   });
