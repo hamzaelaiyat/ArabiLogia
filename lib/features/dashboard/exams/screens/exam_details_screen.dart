@@ -12,6 +12,8 @@ import 'package:arabilogia/features/dashboard/exams/widgets/exam_header.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_stats_row.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_instructions_section.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_bottom_bar.dart';
+import 'package:arabilogia/features/dashboard/exams/models/question_style.dart';
+import 'package:arabilogia/features/admin/widgets/exam_editor_preview_overlay.dart';
 
 class ExamDetailsScreen extends StatefulWidget {
   final String examId;
@@ -35,6 +37,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
   Exam? _exam;
   bool _isLoading = true;
   double? _bestScore;
+  bool _showPreview = false;
 
   @override
   void initState() {
@@ -261,7 +264,21 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                         durationMinutes: _exam!.durationMinutes,
                         subjectId: widget.subjectId,
                       ),
-                      const SizedBox(height: AppTokens.spacing24),
+                      const SizedBox(height: AppTokens.spacing12),
+                      OutlinedButton.icon(
+                        onPressed: () =>
+                            setState(() => _showPreview = true),
+                        icon: const Icon(Icons.visibility_outlined, size: 18),
+                        label: const Text('معاينة سريعة'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: category.color,
+                          side: BorderSide(color: category.color),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppTokens.spacing6,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppTokens.spacing12),
                       ExamInstructionsSection(
                         subjectName: _exam!.subject,
                         durationMinutes: _exam!.durationMinutes,
@@ -282,6 +299,16 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                 color: category.color,
                 onPressed: _startExam,
               ),
+            ),
+            ExamPreviewOverlay(
+              isVisible: _showPreview,
+              isDesktop: AppTokens.isDesktop(context),
+              questions: _exam!.questions,
+              questionSettings: List.generate(
+                _exam!.questions.length,
+                (_) => const QuestionSettings(),
+              ),
+              onClose: () => setState(() => _showPreview = false),
             ),
           ],
         ),
