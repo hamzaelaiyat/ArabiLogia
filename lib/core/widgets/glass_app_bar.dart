@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -15,6 +16,7 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double blurSigma;
   final double opacity;
   final PreferredSizeWidget? bottom;
+  final bool forceShowOnDesktop;
 
   const GlassAppBar({
     super.key,
@@ -28,15 +30,32 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.blurSigma = 10.0,
     this.opacity = 0.7,
     this.bottom,
+    this.forceShowOnDesktop = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final canPop = ModalRoute.of(context)?.canPop ?? false;
+    final showDesktopAppBar = forceShowOnDesktop || leading != null || (automaticallyImplyLeading && canPop);
+
+    if (!AppTokens.isMobile(context) && !showDesktopAppBar) {
+      if (bottom != null) {
+        final effectiveColor = backgroundColor ?? AppColors.background(context);
+        return Container(
+          height: bottom!.preferredSize.height,
+          color: effectiveColor,
+          child: Material(
+            color: Colors.transparent,
+            child: bottom!,
+          ),
+        );
+      }
+      return const SizedBox.shrink();
+    }
+
     final potato = context.watch<PotatoModeProvider>();
     final effectiveColor = backgroundColor ?? AppColors.background(context);
 
-    // In potato mode: SOLID background (no glassmorphism)
-    // Normal mode: Apply glassmorphism effect
     final effectiveOpacity = potato.blurEffectsEnabled ? opacity : 1.0;
     final hasBlur = potato.blurEffectsEnabled;
 

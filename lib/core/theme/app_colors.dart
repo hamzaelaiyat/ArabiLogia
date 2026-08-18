@@ -10,7 +10,13 @@ class AppColors {
   static const Color accentSecondary = Color(0xFFFF8C42);
 
   static const Color bgLight = Color(0xFFF7FCFF);
-  static const Color bgDark = Color(0xFF191B1D);
+  static const Color bgDark = Color(0xFF16181A); // Dark outer background & sidebar
+
+  static const Color dashboardContentBgLight = Color(0xFFFFFFFF);
+  static const Color dashboardContentBgDark = Color(0xFF262B32); // Distinct lighter background for main widget card!
+
+  static const Color authBgLight = Color(0xFFE5F3FF);
+  static const Color authBgDark = Color(0xFF1D2023);
 
   static const Color fgLight = Color(0xFF1A222B);
   static const Color fgDark = Color(0xFFEAEFF5);
@@ -19,7 +25,7 @@ class AppColors {
   static const Color mutedLight = Color(0xFF6B7280);
 
   static const Color secondaryLight = Color(0xFFEDF2F8);
-  static const Color secondaryDark = Color(0xFF212325);
+  static const Color secondaryDark = Color(0xFF212325); // Restored original button surface color
 
   static const Color error = Color(0xFFFF3B30);
   static const Color success = Color(0xFF34C759);
@@ -41,6 +47,18 @@ class AppColors {
 
   static Color background(BuildContext context) {
     return Theme.of(context).brightness == Brightness.light ? bgLight : bgDark;
+  }
+
+  static Color dashboardContentBackground(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light
+        ? dashboardContentBgLight
+        : dashboardContentBgDark;
+  }
+
+  static Color authBackground(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light
+        ? authBgLight
+        : authBgDark;
   }
 
   static Color foreground(BuildContext context) {

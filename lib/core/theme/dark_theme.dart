@@ -52,7 +52,7 @@ class DarkTheme {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        minimumSize: const Size(double.infinity, AppTokens.buttonHeightMd),
+        minimumSize: const Size(0, AppTokens.buttonHeightMd),
         padding: const EdgeInsets.symmetric(
           horizontal: AppTokens.spacing12,
           vertical: AppTokens.spacing10,
@@ -69,7 +69,7 @@ class DarkTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.primary,
-        minimumSize: const Size(double.infinity, AppTokens.buttonHeightMd),
+        minimumSize: const Size(0, AppTokens.buttonHeightMd),
         padding: const EdgeInsets.symmetric(
           horizontal: AppTokens.spacing12,
           vertical: AppTokens.spacing10,
