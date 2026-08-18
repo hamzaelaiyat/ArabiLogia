@@ -12,9 +12,11 @@ import 'package:arabilogia/features/dashboard/exams/services/exam_session_servic
 import 'package:arabilogia/features/dashboard/exams/providers/exam_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:arabilogia/core/widgets/palette_slide_up.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_interaction_body.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_timer.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exit_confirmation_dialog.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/question_palette_sheet.dart';
 
 class ExamInteractionScreen extends StatefulWidget {
   final String examId;
@@ -44,7 +46,9 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
   late ValueNotifier<int> _timerNotifier;
   bool _isSubmitting = false;
   bool _isFirstAttempt = true;
-  DateTime? _backgroundTimestamp;
+  final List<DateTime> _pausedAt = [];
+  final Map<int, bool> _flagged = {};
+  final ValueNotifier<String?> _timerWarning = ValueNotifier<String?>(null);
   // In-memory only; server anchors the speed bonus.
   String? _serverSessionId;
 
@@ -53,18 +57,28 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _timerNotifier = ValueNotifier<int>(0);
+    _timerWarning.addListener(_showTimerWarning);
     _screenCapture.enableSecureMode();
     _loadExam();
+  }
+
+  void _showTimerWarning() {
+    final message = _timerWarning.value;
+    if (message != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.paused) {
-      _backgroundTimestamp = DateTime.now();
+      _pausedAt.add(DateTime.now());
       _saveSession();
     } else if (state == AppLifecycleState.resumed) {
-      if (_backgroundTimestamp != null && _exam != null) {
+      if (_pausedAt.isNotEmpty && _exam != null) {
         _deductBackgroundTime();
       }
     }
@@ -86,8 +100,8 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
   }
 
   void _deductBackgroundTime() {
-    final elapsed = DateTime.now().difference(_backgroundTimestamp!).inSeconds;
-    _backgroundTimestamp = null;
+    final pausedAt = _pausedAt.removeLast();
+    final elapsed = DateTime.now().difference(pausedAt).inSeconds;
     if (elapsed > 0) {
       _timerNotifier.value =
           (_timerNotifier.value - elapsed).clamp(0, _timerNotifier.value);
@@ -95,6 +109,30 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     if (_timerNotifier.value <= 0) {
       _submitExam();
     }
+  }
+
+  void _toggleFlag() {
+    setState(() {
+      _flagged[_currentQuestionIndex] =
+          !(_flagged[_currentQuestionIndex] ?? false);
+    });
+  }
+
+  void _openPalette(Color categoryColor) {
+    showPaletteSlideUp(
+      context,
+      builder: (sheetContext) => QuestionPaletteSheet(
+        totalQuestions: _exam!.questions.length,
+        currentIndex: _currentQuestionIndex,
+        selectedAnswers: _selectedAnswers,
+        flagged: _flagged,
+        categoryColor: categoryColor,
+        onQuestionTap: (index) {
+          Navigator.of(sheetContext).pop();
+          setState(() => _currentQuestionIndex = index);
+        },
+      ),
+    );
   }
 
   Future<void> _loadExam() async {
@@ -210,6 +248,8 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _screenCapture.disableSecureMode();
+    _timerWarning.removeListener(_showTimerWarning);
+    _timerWarning.dispose();
     _timerNotifier.dispose();
     super.dispose();
   }
@@ -269,7 +309,11 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
                 ],
               ),
               actions: [
-                ExamTimer(timerNotifier: _timerNotifier, onTimerEnd: _submitExam),
+                ExamTimer(
+                  timerNotifier: _timerNotifier,
+                  onTimerEnd: _submitExam,
+                  warningNotifier: _timerWarning,
+                ),
               ],
             ),
             body: ExamInteractionBody(
@@ -279,6 +323,9 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
               categoryColor: categoryColor,
               progress: progress,
               isSubmitting: _isSubmitting,
+              isFlagged: _flagged[_currentQuestionIndex] ?? false,
+              onToggleFlag: _toggleFlag,
+              onOpenPalette: () => _openPalette(categoryColor),
               onOptionSelected: (index, optionId) {
                 setState(() {
                   _selectedAnswers[index] = optionId;

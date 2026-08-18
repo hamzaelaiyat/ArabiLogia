@@ -5,6 +5,7 @@ import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dar
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_interaction_body.dart';
+import 'package:arabilogia/features/dashboard/exams/widgets/exit_confirmation_dialog.dart';
 import 'package:go_router/go_router.dart';
 
 class PracticeQuizScreen extends StatefulWidget {
@@ -121,32 +122,12 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        showDialog<bool>(
-          context: context,
-          builder: (context) => Directionality(
-            textDirection: TextDirection.rtl,
-            child: AlertDialog(
-              title: const Text('هل أنت متأكد؟'),
-              content: const Text('إذا خرجت الآن، ستفقد تقدمك في هذا الاختبار.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('إلغاء'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context, true);
-                    context.pop();
-                  },
-                  style: TextButton.styleFrom(foregroundColor: AppColors.error),
-                  child: const Text('خروج على أي حال'),
-                ),
-              ],
-            ),
-          ),
-        );
+        final shouldPop = await showExitConfirmationDialog(context);
+        if (shouldPop && context.mounted) {
+          context.pop();
+        }
       },
       child: Directionality(
         textDirection: TextDirection.rtl,

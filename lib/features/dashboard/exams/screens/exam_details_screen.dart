@@ -4,12 +4,16 @@ import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:go_router/go_router.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/dashboard/exams/models/exam_model.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository.dart';
+import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/features/dashboard/exams/services/exam_session_service.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_header.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_stats_row.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_instructions_section.dart';
 import 'package:arabilogia/features/dashboard/exams/widgets/exam_bottom_bar.dart';
+import 'package:arabilogia/features/dashboard/exams/models/question_style.dart';
+import 'package:arabilogia/features/admin/widgets/exam_editor_preview_overlay.dart';
 
 class ExamDetailsScreen extends StatefulWidget {
   final String examId;
@@ -32,6 +36,8 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
   final ExamSessionService _sessionService = ExamSessionService();
   Exam? _exam;
   bool _isLoading = true;
+  double? _bestScore;
+  bool _showPreview = false;
 
   @override
   void initState() {
@@ -44,9 +50,14 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
       widget.subjectId,
       widget.examId,
     );
+    final scores = await ScoreRepository().getLocalScores();
+    final scoreData = scores[widget.examId];
     if (mounted) {
       setState(() {
         _exam = exam;
+        _bestScore = scoreData == null
+            ? null
+            : ((scoreData['score'] as num?)?.toDouble());
         _isLoading = false;
       });
     }
@@ -166,14 +177,37 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                   flexibleSpace: FlexibleSpaceBar(
                     background: Container(
                       decoration: BoxDecoration(
-                        color: category.color,
-                      ),
-                      child: Center(
-                        child: Icon(
-                          category.icon,
-                          size: 80,
-                          color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5),
+                        gradient: LinearGradient(
+                          begin: Alignment.topRight,
+                          end: Alignment.bottomLeft,
+                          colors: [
+                            category.color,
+                            category.color.withValues(alpha: 0.6),
+                          ],
                         ),
+                      ),
+                      child: Stack(
+                        children: [
+                          PositionedDirectional(
+                            bottom: -30,
+                            start: -30,
+                            child: Icon(
+                              category.icon,
+                              size: 180,
+                              color: Colors.white.withValues(alpha: 0.08),
+                            ),
+                          ),
+                          Center(
+                            child: Icon(
+                              category.icon,
+                              size: 80,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimary
+                                  .withValues(alpha: 0.5),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -187,13 +221,64 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                         subjectId: widget.subjectId,
                         title: _exam!.title,
                       ),
+                      if (_bestScore != null) ...[
+                        const SizedBox(height: AppTokens.spacing8),
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppTokens.spacing6,
+                              vertical: AppTokens.spacing2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.examPass.withValues(
+                                alpha: 0.12,
+                              ),
+                              borderRadius: AppTokens.radiusFullAll,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.emoji_events,
+                                  size: AppTokens.iconSizeXs,
+                                  color: AppColors.examPass,
+                                ),
+                                const SizedBox(width: AppTokens.spacing2),
+                                Text(
+                                  'أفضل نتيجة: ${_bestScore!.toStringAsFixed(0)}%',
+                                  style: const TextStyle(
+                                    color: AppColors.examPass,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: AppTokens.fontSizeSm,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: AppTokens.spacing24),
                       ExamStatsRow(
                         questionCount: _exam!.questions.length,
                         durationMinutes: _exam!.durationMinutes,
                         subjectId: widget.subjectId,
                       ),
-                      const SizedBox(height: AppTokens.spacing24),
+                      const SizedBox(height: AppTokens.spacing12),
+                      OutlinedButton.icon(
+                        onPressed: () =>
+                            setState(() => _showPreview = true),
+                        icon: const Icon(Icons.visibility_outlined, size: 18),
+                        label: const Text('معاينة سريعة'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: category.color,
+                          side: BorderSide(color: category.color),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppTokens.spacing6,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppTokens.spacing12),
                       ExamInstructionsSection(
                         subjectName: _exam!.subject,
                         durationMinutes: _exam!.durationMinutes,
@@ -214,6 +299,16 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                 color: category.color,
                 onPressed: _startExam,
               ),
+            ),
+            ExamPreviewOverlay(
+              isVisible: _showPreview,
+              isDesktop: AppTokens.isDesktop(context),
+              questions: _exam!.questions,
+              questionSettings: List.generate(
+                _exam!.questions.length,
+                (_) => const QuestionSettings(),
+              ),
+              onClose: () => setState(() => _showPreview = false),
             ),
           ],
         ),
