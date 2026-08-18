@@ -20,8 +20,6 @@ node_modules/
 
 # Vercel
 .vercel/
-vercel.json
-.vercelignore
 
 # Node (used by supabase functions)
 package.json
@@ -64,6 +62,7 @@ opencode.json
 .pub-cache/
 .pub/
 /build/
+!/build/web/
 /coverage/
 
 # Build outputs (APK, EXE, Linux binaries, installers)
@@ -100,3 +99,4 @@ assets/images/album/
 lib/features/admin/
 lib/features/gate/
 supabase/
+build/web/assets/.env
