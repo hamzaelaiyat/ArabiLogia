@@ -3,7 +3,7 @@ import 'package:arabilogia/core/constants/app_version.dart';
 class LegalContent {
   LegalContent._();
 
-  static const String lastUpdated = 'يوليو 2026';
+  static const String lastUpdated = 'أغسطس 2026';
   static const String termsTitle = 'شروط وأحكام الاستخدام';
   static const String privacyTitle = 'سياسة الخصوصية وحماية البيانات';
 

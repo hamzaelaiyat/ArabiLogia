@@ -24,7 +24,7 @@ class AppVersion {
         }
       }
     } catch (_) {
-      _cachedVersion = '26.8.4';
+      _cachedVersion = '26.8.18';
       _cachedBuildNumber = '1';
     }
 
@@ -35,7 +35,7 @@ class AppVersion {
 
   /// Get version synchronously (returns cached or fallback)
   static String get versionSync {
-    return _cachedVersion ?? '26.8.4';
+    return _cachedVersion ?? '26.8.18';
   }
 
   /// Get build number
