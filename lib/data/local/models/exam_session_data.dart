@@ -23,8 +23,10 @@ class ExamSessionData {
       examTitle: json['exam_title'] as String,
       durationMinutes: json['duration_minutes'] as int,
       startTimestamp: json['start_timestamp'] as int,
-      selectedAnswers: (jsonDecode(json['selected_answers'] as String) as Map<String, dynamic>)
-          .map((k, v) => MapEntry(int.parse(k), v as String?)),
+      selectedAnswers:
+          (jsonDecode(json['selected_answers'] as String)
+                  as Map<String, dynamic>)
+              .map((k, v) => MapEntry(int.parse(k), v as String?)),
       expiresAt: json['expires_at'] as int,
     );
   }

@@ -20,8 +20,9 @@ class WidgetImageCaptureService {
     GlobalKey boundaryKey, {
     double pixelRatio = 3.0,
   }) async {
-    final boundary = boundaryKey.currentContext?.findRenderObject()
-        as RenderRepaintBoundary?;
+    final boundary =
+        boundaryKey.currentContext?.findRenderObject()
+            as RenderRepaintBoundary?;
     if (boundary == null) return null;
 
     try {

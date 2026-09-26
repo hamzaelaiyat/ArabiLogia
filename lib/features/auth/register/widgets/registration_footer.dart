@@ -55,7 +55,7 @@ class RegistrationFooter extends StatelessWidget {
                   ? AppTokens.buttonHeightLg
                   : AppTokens.buttonHeightMd,
               decoration: BoxDecoration(
-                color: showSuccess ? Colors.green : const Color(0xFFEB8A00),
+                color: showSuccess ? Colors.green : AppColors.primary,
                 borderRadius: BorderRadius.circular(AppTokens.radiusFull),
               ),
               child: ElevatedButton(
@@ -71,22 +71,25 @@ class RegistrationFooter extends StatelessWidget {
                   ),
                 ),
                 child: showSuccess
-                    ? const Icon(Icons.check_circle,
-                        color: Colors.white, size: 24)
+                    ? const Icon(
+                        Icons.check_circle,
+                        color: Colors.white,
+                        size: 24,
+                      )
                     : isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            nextLabel ??
-                                (isLastStep
-                                    ? AppStrings.createAccount
-                                    : AppStrings.next),
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        nextLabel ??
+                            (isLastStep
+                                ? AppStrings.createAccount
+                                : AppStrings.next),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class AppVersion {
@@ -23,19 +24,20 @@ class AppVersion {
           break;
         }
       }
-    } catch (_) {
-      _cachedVersion = '26.8.18';
+    } catch (e) {
+      debugPrint('Failed to read pubspec version, using fallback: $e');
+      _cachedVersion = '26.9.25';
       _cachedBuildNumber = '1';
     }
 
-    _cachedVersion ??= '26.8.4';
+    _cachedVersion ??= '26.9.25';
     _cachedBuildNumber ??= '1';
     return _cachedVersion!;
   }
 
   /// Get version synchronously (returns cached or fallback)
   static String get versionSync {
-    return _cachedVersion ?? '26.8.18';
+    return _cachedVersion ?? '26.9.25';
   }
 
   /// Get build number

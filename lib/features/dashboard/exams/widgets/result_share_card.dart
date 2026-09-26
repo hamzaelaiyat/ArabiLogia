@@ -36,9 +36,7 @@ class ResultShareCard extends StatelessWidget {
     return Container(
       width: 600,
       height: 980,
-      decoration: const BoxDecoration(
-        color: AppColors.bgDark,
-      ),
+      decoration: const BoxDecoration(color: AppColors.bgDark),
       child: Stack(
         children: [
           // ── Full-bleed clouds background — same as auth screens ──
@@ -154,17 +152,9 @@ class ResultShareCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildStat('الدقة', '$accuracy%'),
-                      Container(
-                        width: 1,
-                        height: 36,
-                        color: Colors.white12,
-                      ),
+                      Container(width: 1, height: 36, color: Colors.white12),
                       _buildStat('النقاط', '+$speedBonus'),
-                      Container(
-                        width: 1,
-                        height: 36,
-                        color: Colors.white12,
-                      ),
+                      Container(width: 1, height: 36, color: Colors.white12),
                       _buildStat('الصحيحة', '$correctCount/$totalQuestions'),
                     ],
                   ),
@@ -268,8 +258,7 @@ class ResultShareCard extends StatelessWidget {
             value: score / 100,
             strokeWidth: 10,
             backgroundColor: Colors.white10,
-            valueColor:
-                const AlwaysStoppedAnimation<Color>(AppColors.primary),
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
             strokeCap: StrokeCap.round,
           ),
         ),

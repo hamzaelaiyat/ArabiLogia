@@ -74,7 +74,11 @@ class _PrivacySectionState extends State<PrivacySection> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(hideName == true ? 'سيظهر اسم عشوائي في لوحة الصدارة' : 'تم الحفظ'),
+            content: Text(
+              hideName == true
+                  ? 'سيظهر اسم عشوائي في لوحة الصدارة'
+                  : 'تم الحفظ',
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -104,7 +108,9 @@ class _PrivacySectionState extends State<PrivacySection> {
       padding: const EdgeInsets.only(bottom: AppTokens.spacing8),
       child: Text(
         'الخصوصية',
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primary),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(color: AppColors.primary),
       ),
     );
 
@@ -150,9 +156,10 @@ class _PrivacySectionState extends State<PrivacySection> {
                         onChanged: (value) async {
                           if (value) {
                             try {
-                              final name = await AnonymousNameGenerator.generate(
-                                supabase: Supabase.instance.client,
-                              );
+                              final name =
+                                  await AnonymousNameGenerator.generate(
+                                    supabase: Supabase.instance.client,
+                                  );
                               setState(() => _hideName = true);
                               await _saveToDb(hideName: true, randomName: name);
                             } catch (e) {

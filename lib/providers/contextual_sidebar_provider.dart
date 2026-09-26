@@ -68,7 +68,8 @@ class ContextualSidebarProvider extends ChangeNotifier {
   LectureSidebarData? get lectureData => _lectureData;
   ExamSidebarData? get examData => _examData;
   bool get isTocTemporarilyHidden => _isTocTemporarilyHidden;
-  bool get shouldHideBottomNav => _forceHideBottomNav || _mode == SidebarMode.examNavigation;
+  bool get shouldHideBottomNav =>
+      _forceHideBottomNav || _mode == SidebarMode.examNavigation;
 
   void setHideBottomNav(bool hide) {
     _forceHideBottomNav = hide;
@@ -130,8 +131,12 @@ class ContextualSidebarProvider extends ChangeNotifier {
         categoryColor: _examData!.categoryColor,
         questionCount: _examData!.questionCount,
         currentIndex: currentIndex ?? _examData!.currentIndex,
-        selectedAnswers: Map.from(selectedAnswers ?? _examData!.selectedAnswers),
-        flaggedQuestions: Map.from(flaggedQuestions ?? _examData!.flaggedQuestions),
+        selectedAnswers: Map.from(
+          selectedAnswers ?? _examData!.selectedAnswers,
+        ),
+        flaggedQuestions: Map.from(
+          flaggedQuestions ?? _examData!.flaggedQuestions,
+        ),
         timerNotifier: _examData!.timerNotifier,
         onSelectQuestion: _examData!.onSelectQuestion,
         onToggleFlag: _examData!.onToggleFlag,

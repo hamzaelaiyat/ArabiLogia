@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'package:arabilogia/data/local/database.dart';
 import 'package:arabilogia/data/local/daos/session_dao.dart';
 import 'package:arabilogia/data/local/models/exam_session_data.dart';
@@ -49,7 +51,8 @@ class ExamSessionService {
         return null;
       }
       return session;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Failed to load exam session, clearing: $e');
       await _dao.deleteSession();
       return null;
     }

@@ -21,17 +21,14 @@ class ScoreDao extends DatabaseAccessor<AppDatabase> with _$ScoreDaoMixin {
     final scores = await select(examScores).get();
     return {
       for (final s in scores)
-        s.examId: {
-          'score': s.score,
-          'points': s.points,
-          'synced': s.synced,
-        },
+        s.examId: {'score': s.score, 'points': s.points, 'synced': s.synced},
     };
   }
 
   Future<void> markSynced(String examId) =>
-      (update(examScores)..where((t) => t.examId.equals(examId)))
-        .write(const ExamScoresCompanion(synced: Value(true)));
+      (update(examScores)..where((t) => t.examId.equals(examId))).write(
+        const ExamScoresCompanion(synced: Value(true)),
+      );
 
   Future<List<ExamScore>> getUnsyncedScores() =>
       (select(examScores)..where((t) => t.synced.equals(false))).get();

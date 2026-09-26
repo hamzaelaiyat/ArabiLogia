@@ -20,46 +20,51 @@ class DashboardSidebarNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTokens.spacing8,
-        vertical: AppTokens.spacing2,
-      ),
-      child: Material(
-        color: isSelected
-            ? AppColors.primary.withValues(alpha: 0.1)
-            : Colors.transparent,
-        borderRadius: AppTokens.radiusMdAll,
-        child: InkWell(
-          onTap: onTap,
+    return Semantics(
+      selected: isSelected,
+      label: label,
+      button: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTokens.spacing8,
+          vertical: AppTokens.spacing2,
+        ),
+        child: Material(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : Colors.transparent,
           borderRadius: AppTokens.radiusMdAll,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTokens.spacing8,
-              vertical: AppTokens.spacing6,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isSelected ? selectedIcon : icon,
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.mutedColor(context),
-                  size: AppTokens.iconSizeMd,
-                ),
-                const SizedBox(width: AppTokens.spacing8),
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: AppTokens.radiusMdAll,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTokens.spacing8,
+                vertical: AppTokens.spacing6,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isSelected ? selectedIcon : icon,
                     color: isSelected
                         ? AppColors.primary
-                        : AppColors.foreground(context),
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
+                        : AppColors.mutedColor(context),
+                    size: AppTokens.iconSizeMd,
                   ),
-                ),
-              ],
+                  const SizedBox(width: AppTokens.spacing8),
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.foreground(context),
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

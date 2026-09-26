@@ -71,7 +71,10 @@ class StatsRowWidget extends StatelessWidget {
             Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
             Text(
               label,
-              style: TextStyle(fontSize: 10, color: AppColors.mutedColor(context)),
+              style: TextStyle(
+                fontSize: 10,
+                color: AppColors.mutedColor(context),
+              ),
             ),
           ],
         ),

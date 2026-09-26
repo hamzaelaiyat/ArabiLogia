@@ -57,6 +57,7 @@ class _ExamsScreenState extends State<ExamsScreen>
     );
     _tabController.addListener(_handleTabChange);
     _syncAndFetch();
+    _preloadAdjacent(widget.initialTabIndex);
   }
 
   Future<void> _syncAndFetch() async {
@@ -66,25 +67,43 @@ class _ExamsScreenState extends State<ExamsScreen>
 
   void _handleTabChange() {
     if (_tabController.indexIsChanging) return;
+    final index = _tabController.index;
     _fetchExams();
+    _preloadAdjacent(index);
+  }
+
+  void _preloadAdjacent(int currentIndex) {
+    for (final offset in const [-1, 1]) {
+      final idx = currentIndex + offset;
+      if (idx >= 0 && idx < _subjects.length) {
+        if (!_examsByTab.containsKey(idx) && _isLoadingByTab[idx] != true) {
+          _fetchExamsFor(idx);
+        }
+      }
+    }
   }
 
   Future<void> _fetchExams() async {
     final index = _tabController.index;
+    await _fetchExamsFor(index);
+  }
+
+  Future<void> _fetchExamsFor(int index) async {
     if (_examsByTab.containsKey(index) && _isLoadingByTab[index] == false) {
-      // Already loaded, we can skip or refresh in background
-      // For now, let's refresh to ensure sync works
+      return;
     }
 
     if (!mounted) return;
     setState(() {
       _isLoadingByTab[index] = true;
-      _errorByTab[index] = null; // Clear previous error
+      _errorByTab[index] = null;
     });
 
     try {
       final subjectId = _subjects[index].id;
-      final lectures = await LectureRepository().getLecturesByCategory(subjectId);
+      final lectures = await LectureRepository().getLecturesByCategory(
+        subjectId,
+      );
 
       if (mounted) {
         setState(() {
@@ -95,7 +114,7 @@ class _ExamsScreenState extends State<ExamsScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorByTab[index] = 'فشل تحميل المحاضرات'; // Error message
+          _errorByTab[index] = 'فشل تحميل المحاضرات';
           _isLoadingByTab[index] = false;
         });
       }
@@ -202,8 +221,8 @@ class _ExamsScreenState extends State<ExamsScreen>
 
     // Calculate total item count including ads
     // Each ad is inserted after every X exams based on mode
-    final int adCount = displayExams.length > examsPerAd 
-        ? (displayExams.length - 1) ~/ examsPerAd 
+    final int adCount = displayExams.length > examsPerAd
+        ? (displayExams.length - 1) ~/ examsPerAd
         : 0;
     final int totalItems = displayExams.length + adCount;
 
@@ -218,15 +237,17 @@ class _ExamsScreenState extends State<ExamsScreen>
         // Check if this position should be an ad
         // Ad appears after every X exams based on potato mode level
         // ad appears at: X+1, 2X+2, 3X+3... (0-based indices)
-        if ((index + 1) % adInterval == 0 && index > 0 && displayExams.length > examsPerAd) {
+        if ((index + 1) % adInterval == 0 &&
+            index > 0 &&
+            displayExams.length > examsPerAd) {
           // This is an ad position
           return const SimpleNativeAdWidget();
         }
 
         // This is an exam - find the actual exam index
         // The actual exam index = position - number of ads before this position
-        final int adsBeforeThis = displayExams.length > examsPerAd 
-            ? (index ~/ adInterval) 
+        final int adsBeforeThis = displayExams.length > examsPerAd
+            ? (index ~/ adInterval)
             : 0;
         final int actualExamIndex = index - adsBeforeThis;
 

@@ -28,13 +28,18 @@ class LegalBottomSheet extends StatelessWidget {
   }
 
   static void _show(
-      BuildContext context, String title, List<Map<String, String>> sections) {
+    BuildContext context,
+    String title,
+    List<Map<String, String>> sections,
+  ) {
     final isMobile = AppTokens.isMobile(context);
 
     if (isMobile) {
       showModalBottomSheet(
         context: context,
-        backgroundColor: Theme.of(context).bottomSheetTheme.modalBackgroundColor,
+        backgroundColor: Theme.of(
+          context,
+        ).bottomSheetTheme.modalBackgroundColor,
         barrierColor: Colors.black.withValues(alpha: 0.5),
         isScrollControlled: true,
         enableDrag: true,
@@ -42,7 +47,8 @@ class LegalBottomSheet extends StatelessWidget {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
-        builder: (context) => LegalBottomSheet(title: title, sections: sections),
+        builder: (context) =>
+            LegalBottomSheet(title: title, sections: sections),
       );
     } else {
       showDialog(
@@ -84,7 +90,7 @@ class LegalBottomSheet extends StatelessWidget {
               AppTokens.spacing32,
             ),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              color: isDark ? AppColors.cardDark : Colors.white,
               borderRadius: isDialog
                   ? BorderRadius.circular(32)
                   : const BorderRadius.vertical(top: Radius.circular(32)),
@@ -97,9 +103,9 @@ class LegalBottomSheet extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFEB8A00),
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppTokens.spacing24),
@@ -109,8 +115,13 @@ class LegalBottomSheet extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ...sections.map((section) => _buildSection(context,
-                            section['title']!, section['content']!)),
+                        ...sections.map(
+                          (section) => _buildSection(
+                            context,
+                            section['title']!,
+                            section['content']!,
+                          ),
+                        ),
                         const SizedBox(height: AppTokens.spacing16),
                         Center(
                           child: Text(
@@ -133,10 +144,11 @@ class LegalBottomSheet extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEB8A00),
+                      backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppTokens.radiusFull),
+                        borderRadius: BorderRadius.circular(
+                          AppTokens.radiusFull,
+                        ),
                       ),
                     ),
                     child: const Text(

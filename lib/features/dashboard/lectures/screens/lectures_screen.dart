@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arabilogia/core/constants/test_keys.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/widgets/empty_state.dart';
 import 'package:arabilogia/core/widgets/error_state.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/loading_skeleton.dart';
+import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
 import 'package:arabilogia/core/widgets/skeletons.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/dashboard/lectures/repositories/lecture_repository.dart';
@@ -47,7 +49,8 @@ class _LecturesScreenState extends State<LecturesScreen>
       initialIndex: widget.initialTabIndex,
     );
     _tabController.addListener(_handleTabChange);
-    _fetchLectures();
+    _fetchLectures(widget.initialTabIndex);
+    _preloadAdjacent(widget.initialTabIndex);
     SharedPreferences.getInstance().then((prefs) {
       if (mounted) setState(() => _prefs = prefs);
     });
@@ -55,11 +58,12 @@ class _LecturesScreenState extends State<LecturesScreen>
 
   void _handleTabChange() {
     if (_tabController.indexIsChanging) return;
-    _fetchLectures();
+    final index = _tabController.index;
+    _fetchLectures(index);
+    _preloadAdjacent(index);
   }
 
-  Future<void> _fetchLectures() async {
-    final index = _tabController.index;
+  Future<void> _fetchLectures(int index) async {
     if (_lecturesByTab.containsKey(index) && _isLoadingByTab[index] == false) {
       return;
     }
@@ -72,7 +76,9 @@ class _LecturesScreenState extends State<LecturesScreen>
 
     try {
       final subjectId = _subjects[index].id;
-      final lectures = await _lectureRepository.getLecturesByCategory(subjectId);
+      final lectures = await _lectureRepository.getLecturesByCategory(
+        subjectId,
+      );
 
       if (mounted) {
         setState(() {
@@ -90,35 +96,15 @@ class _LecturesScreenState extends State<LecturesScreen>
     }
   }
 
-  int _progressCount(Map<String, dynamic> lecture) {
-    final id = lecture['id']?.toString() ?? '';
-    if (id.isEmpty) return 0;
-    return _prefs?.getStringList('lecture_progress_$id')?.length ?? 0;
-  }
-
-  List<Map<String, dynamic>> _visibleLectures(
-    List<Map<String, dynamic>> lectures,
-  ) {
-    var list = List<Map<String, dynamic>>.from(lectures);
-    final query = _searchQuery.trim();
-    if (query.isNotEmpty) {
-      list = list
-          .where((l) =>
-              (l['title']?.toString() ?? '').contains(query) ||
-              (l['description']?.toString() ?? '').contains(query))
-          .toList();
+  void _preloadAdjacent(int currentIndex) {
+    for (final offset in const [-1, 1]) {
+      final idx = currentIndex + offset;
+      if (idx >= 0 && idx < _subjects.length) {
+        if (!_lecturesByTab.containsKey(idx) && _isLoadingByTab[idx] != true) {
+          _fetchLectures(idx);
+        }
+      }
     }
-    switch (_sort) {
-      case _LectureSort.order:
-        list.sort((a, b) => ((a['sort_order'] ?? 0) as num)
-            .compareTo((b['sort_order'] ?? 0) as num));
-      case _LectureSort.latest:
-        list.sort((a, b) => (b['created_at']?.toString() ?? '')
-            .compareTo(a['created_at']?.toString() ?? ''));
-      case _LectureSort.progress:
-        list.sort((a, b) => _progressCount(b).compareTo(_progressCount(a)));
-    }
-    return list;
   }
 
   @override
@@ -130,25 +116,49 @@ class _LecturesScreenState extends State<LecturesScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = AppTokens.isMobile(context);
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         key: TestKeys.lecturesScreen,
+        backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
-          title: const Text('المحاضرات'),
+          title: const ResponsiveAppBarTitle('المحاضرات'),
           bottom: TabBar(
             controller: _tabController,
             isScrollable: true,
             tabAlignment: TabAlignment.start,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTokens.spacing16,
+            dividerColor: Colors.transparent,
+            dividerHeight: 0.0,
+            indicatorColor: AppColors.blue,
+            indicatorWeight: 3.5,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : Colors.black,
+            labelStyle: TextStyle(
+              fontSize: isMobile ? 14 : 18,
+              fontWeight: FontWeight.w900,
+            ),
+            unselectedLabelColor:
+                Theme.of(context).brightness == Brightness.dark
+                ? AppColors.mutedDark
+                : AppColors.textMuted,
+            unselectedLabelStyle: TextStyle(
+              fontSize: isMobile ? 13 : 16,
+              fontWeight: FontWeight.w600,
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? AppTokens.spacing4 : AppTokens.spacing16,
             ),
             tabs: _subjects
                 .map(
                   (s) => Tab(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppTokens.spacing4,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile
+                            ? AppTokens.spacing2
+                            : AppTokens.spacing16,
                       ),
                       child: Text(s.name),
                     ),
@@ -157,122 +167,192 @@ class _LecturesScreenState extends State<LecturesScreen>
                 .toList(),
           ),
         ),
-        body: TabBarView(
-          controller: _tabController,
-          children: List.generate(
-            _subjects.length,
-            (index) => _buildLectureList(context, index),
-          ),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppTokens.spacing8,
+                AppTokens.spacing8,
+                AppTokens.spacing8,
+                0,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) =>
+                          setState(() => _searchQuery = value),
+                      decoration: InputDecoration(
+                        hintText: 'ابحث عن محاضرة...',
+                        prefixIcon: const Icon(Icons.search),
+                        isDense: true,
+                        suffixIcon: _searchQuery.isEmpty
+                            ? null
+                            : IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              ),
+                        border: OutlineInputBorder(
+                          borderRadius: AppTokens.radiusMdAll,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppTokens.spacing4),
+                  PopupMenuButton<_LectureSort>(
+                    tooltip: 'ترتيب',
+                    initialValue: _sort,
+                    onSelected: (value) => setState(() => _sort = value),
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: _LectureSort.order,
+                        child: Text('الترتيب'),
+                      ),
+                      PopupMenuItem(
+                        value: _LectureSort.latest,
+                        child: Text('الأحدث'),
+                      ),
+                      PopupMenuItem(
+                        value: _LectureSort.progress,
+                        child: Text('التقدم'),
+                      ),
+                    ],
+                    icon: const Icon(Icons.sort),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: List.generate(
+                  _subjects.length,
+                  (index) => _LectureTabContent(
+                    key: ValueKey(index),
+                    tabIndex: index,
+                    lecturesByTab: _lecturesByTab,
+                    isLoadingByTab: _isLoadingByTab,
+                    errorByTab: _errorByTab,
+                    subjects: _subjects,
+                    prefs: _prefs,
+                    searchQuery: _searchQuery,
+                    sort: _sort,
+                    onRetry: () {
+                      setState(() => _lecturesByTab.remove(index));
+                      _fetchLectures(index);
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildLectureList(BuildContext context, int tabIndex) {
-    final isLoading = _isLoadingByTab[tabIndex] ?? true;
-    final allLectures = _lecturesByTab[tabIndex] ?? [];
-    final error = _errorByTab[tabIndex];
+class _LectureTabContent extends StatefulWidget {
+  final int tabIndex;
+  final Map<int, List<Map<String, dynamic>>> lecturesByTab;
+  final Map<int, bool> isLoadingByTab;
+  final Map<int, String?> errorByTab;
+  final List<CategoryMetadata> subjects;
+  final SharedPreferences? prefs;
+  final String searchQuery;
+  final _LectureSort sort;
+  final VoidCallback onRetry;
+
+  const _LectureTabContent({
+    required super.key,
+    required this.tabIndex,
+    required this.lecturesByTab,
+    required this.isLoadingByTab,
+    required this.errorByTab,
+    required this.subjects,
+    required this.prefs,
+    required this.searchQuery,
+    required this.sort,
+    required this.onRetry,
+  });
+
+  @override
+  State<_LectureTabContent> createState() => _LectureTabContentState();
+}
+
+class _LectureTabContentState extends State<_LectureTabContent>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  int _progressCount(Map<String, dynamic> lecture) {
+    final id = lecture['id']?.toString() ?? '';
+    if (id.isEmpty) return 0;
+    return widget.prefs?.getStringList('lecture_progress_$id')?.length ?? 0;
+  }
+
+  List<Map<String, dynamic>> _visibleLectures(
+    List<Map<String, dynamic>> lectures,
+  ) {
+    var list = List<Map<String, dynamic>>.from(lectures);
+    final query = widget.searchQuery.trim();
+    if (query.isNotEmpty) {
+      list = list
+          .where(
+            (l) =>
+                (l['title']?.toString() ?? '').contains(query) ||
+                (l['description']?.toString() ?? '').contains(query),
+          )
+          .toList();
+    }
+    switch (widget.sort) {
+      case _LectureSort.order:
+        list.sort(
+          (a, b) => ((a['sort_order'] ?? 0) as num).compareTo(
+            (b['sort_order'] ?? 0) as num,
+          ),
+        );
+      case _LectureSort.latest:
+        list.sort(
+          (a, b) => (b['created_at']?.toString() ?? '').compareTo(
+            a['created_at']?.toString() ?? '',
+          ),
+        );
+      case _LectureSort.progress:
+        list.sort((a, b) => _progressCount(b).compareTo(_progressCount(a)));
+    }
+    return list;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final tabIndex = widget.tabIndex;
+    final isLoading = widget.isLoadingByTab[tabIndex] ?? true;
+    final allLectures = widget.lecturesByTab[tabIndex] ?? [];
+    final error = widget.errorByTab[tabIndex];
 
     if (isLoading && allLectures.isEmpty) {
-      return ListSkeleton(
-        itemCount: 6,
-        itemBuilder: () => const SkeletonCard(height: 72),
-      );
+      return const ListSkeleton(itemCount: 6, itemBuilder: SkeletonCard.new);
     }
 
     if (error != null) {
-      return ErrorState(
-        title: error,
-        onRetry: () {
-          setState(() => _lecturesByTab.remove(tabIndex));
-          _fetchLectures();
-        },
-      );
+      return ErrorState(title: error, onRetry: widget.onRetry);
     }
 
     final lectures = _visibleLectures(allLectures);
+    final currentSubject = widget.subjects[tabIndex];
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppTokens.spacing8,
-            AppTokens.spacing8,
-            AppTokens.spacing8,
-            0,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (value) => setState(() => _searchQuery = value),
-                  decoration: InputDecoration(
-                    hintText: 'ابحث عن محاضرة...',
-                    prefixIcon: const Icon(Icons.search),
-                    isDense: true,
-                    suffixIcon: _searchQuery.isEmpty
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _searchQuery = '');
-                            },
-                          ),
-                    border: OutlineInputBorder(
-                      borderRadius: AppTokens.radiusMdAll,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppTokens.spacing4),
-              PopupMenuButton<_LectureSort>(
-                tooltip: 'ترتيب',
-                initialValue: _sort,
-                onSelected: (value) => setState(() => _sort = value),
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
-                    value: _LectureSort.order,
-                    child: Text('الترتيب'),
-                  ),
-                  PopupMenuItem(
-                    value: _LectureSort.latest,
-                    child: Text('الأحدث'),
-                  ),
-                  PopupMenuItem(
-                    value: _LectureSort.progress,
-                    child: Text('التقدم'),
-                  ),
-                ],
-                icon: const Icon(Icons.sort),
-              ),
-            ],
-          ),
-        ),
-        Expanded(child: _buildListContent(context, tabIndex, lectures)),
-      ],
-    );
-  }
-
-  Widget _buildListContent(
-    BuildContext context,
-    int tabIndex,
-    List<Map<String, dynamic>> lectures,
-  ) {
     if (lectures.isEmpty) {
-      if (_searchQuery.trim().isNotEmpty) {
-        return EmptyState(
+      if (widget.searchQuery.trim().isNotEmpty) {
+        return const EmptyState(
           icon: Icons.search_off,
           title: 'لا توجد نتائج',
           message: 'جرب كلمات بحث مختلفة',
-          action: TextButton(
-            onPressed: () {
-              _searchController.clear();
-              setState(() => _searchQuery = '');
-            },
-            child: const Text('مسح البحث'),
-          ),
         );
       }
       return const EmptyState(
@@ -282,54 +362,29 @@ class _LecturesScreenState extends State<LecturesScreen>
       );
     }
 
-    final currentSubject = _subjects[tabIndex];
-
-    Widget buildCard(int index) {
-      final lecture = lectures[index];
-      return LectureCard(
-        lecture: lecture,
-        categoryColor: currentSubject.color,
-        onTap: () {
-          context.pushNamed(
-            'lecture-detail',
-            pathParameters: {'id': lecture['id']},
-            extra: {
-              'subjectId': currentSubject.id,
-              'subjectName': currentSubject.name,
-            },
-          );
-        },
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= AppTokens.breakpointTablet) {
-          return GridView.builder(
-            padding: const EdgeInsets.fromLTRB(
-              AppTokens.spacing8,
-              AppTokens.spacing8,
-              AppTokens.spacing8,
-              80,
-            ),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisExtent: 110,
-              crossAxisSpacing: AppTokens.spacing8,
-            ),
-            itemCount: lectures.length,
-            itemBuilder: (context, index) => buildCard(index),
-          );
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(
-            AppTokens.spacing8,
-            AppTokens.spacing8,
-            AppTokens.spacing8,
-            80,
-          ),
-          itemCount: lectures.length,
-          itemBuilder: (context, index) => buildCard(index),
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(
+        AppTokens.spacing12,
+        AppTokens.spacing12,
+        AppTokens.spacing12,
+        80,
+      ),
+      itemCount: lectures.length,
+      itemBuilder: (context, index) {
+        final lecture = lectures[index];
+        return LectureCard(
+          lecture: lecture,
+          categoryColor: currentSubject.color,
+          onTap: () {
+            context.pushNamed(
+              'lecture-detail',
+              pathParameters: {'id': lecture['id']},
+              extra: {
+                'subjectId': currentSubject.id,
+                'subjectName': currentSubject.name,
+              },
+            );
+          },
         );
       },
     );

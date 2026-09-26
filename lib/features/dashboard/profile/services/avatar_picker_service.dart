@@ -5,14 +5,11 @@ import 'package:image/image.dart' as img;
 class AvatarPickerService {
   final ImagePicker _picker;
 
-  AvatarPickerService({
-    ImagePicker? picker,
-  }) : _picker = picker ?? ImagePicker();
+  AvatarPickerService({ImagePicker? picker})
+    : _picker = picker ?? ImagePicker();
 
   Future<Uint8List?> pickBytes() async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-    );
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image == null) return null;
     return image.readAsBytes();
   }

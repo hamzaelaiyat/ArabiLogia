@@ -18,7 +18,9 @@ class ForgotPasswordOverlay extends StatefulWidget {
     if (isMobile) {
       return showModalBottomSheet(
         context: context,
-        backgroundColor: Theme.of(context).bottomSheetTheme.modalBackgroundColor,
+        backgroundColor: Theme.of(
+          context,
+        ).bottomSheetTheme.modalBackgroundColor,
         barrierColor: Colors.black.withValues(alpha: 0.5),
         isScrollControlled: true,
         enableDrag: true,
@@ -34,9 +36,7 @@ class ForgotPasswordOverlay extends StatefulWidget {
       barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (context) => Dialog(
         backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: const ForgotPasswordOverlay(),
       ),
     );
@@ -183,11 +183,15 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+        borderSide: BorderSide(
+          color: colorScheme.outline.withValues(alpha: 0.3),
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+        borderSide: BorderSide(
+          color: colorScheme.outline.withValues(alpha: 0.3),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
@@ -197,7 +201,9 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
         borderSide: BorderSide(color: colorScheme.error, width: 2),
       ),
-      labelStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
+      labelStyle: TextStyle(
+        color: colorScheme.onSurface.withValues(alpha: 0.7),
+      ),
       prefixIconColor: colorScheme.onSurface.withValues(alpha: 0.7),
     );
 
@@ -324,5 +330,4 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
       ),
     );
   }
-
 }

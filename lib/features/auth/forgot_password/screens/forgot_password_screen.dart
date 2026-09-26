@@ -115,12 +115,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(
-                'assets/images/logo-removedbg.png',
-                height: 90,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: AppTokens.spacing12),
               ForgotPasswordHeader(isSubmitted: _isSubmitted),
               const SizedBox(height: AppTokens.spacing24),
               if (!_isSubmitted) ...[
@@ -130,11 +124,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    final trimmed = value?.trim();
+                    if (trimmed == null || trimmed.isEmpty) {
                       return 'يرجى إدخال البريد الإلكتروني';
                     }
-                    if (!value.contains('@')) {
-                      return 'البريد الإلكتروني غير صالح';
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(trimmed)) {
+                      return 'البريد الإلكتروني غير صالح (مثال: name@gmail.com)';
                     }
                     return null;
                   },
@@ -149,13 +146,41 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                 ),
               ] else ...[
+                Container(
+                  padding: const EdgeInsets.all(AppTokens.spacing12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.info_outline,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'تم إرسال رمز التفعيل. يرجى مراجعة صندوق الوارد ومجلد البريد غير المرغوب (Spam).',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.authHeaderColor(context),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppTokens.spacing16),
                 AuthTextField(
                   controller: _otpController,
                   label: 'رمز التفعيل',
                   icon: Icons.vpn_key_outlined,
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'يرجى إدخال الرمز';
+                    if (value == null || value.isEmpty)
+                      return 'يرجى إدخال الرمز';
                     if (value.length < 6 || value.length > 8) {
                       return 'الرمز يجب أن يكون 6 إلى 8 أرقام';
                     }
@@ -191,12 +216,41 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                 ),
                 const SizedBox(height: AppTokens.spacing12),
-                TextButton(
-                  onPressed: () => setState(() => _isSubmitted = false),
-                  child: Text(
-                    'تغيير البريد الإلكتروني',
-                    style: TextStyle(color: AppColors.authHeaderColor(context)),
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        await _handleReset();
+                        if (mounted) {
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'تمت إعادة إرسال الرمز، يرجى مراجعة بريدك',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text(
+                        'إعادة إرسال الرمز',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => _isSubmitted = false),
+                      child: Text(
+                        'تغيير البريد الإلكتروني',
+                        style: TextStyle(
+                          color: AppColors.authHeaderColor(context),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
               const SizedBox(height: AppTokens.spacing20),
@@ -215,7 +269,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     child: const Text(
                       AppStrings.login,
                       style: TextStyle(
-                        color: Color(0xFFEB8A00),
+                        color: AppColors.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

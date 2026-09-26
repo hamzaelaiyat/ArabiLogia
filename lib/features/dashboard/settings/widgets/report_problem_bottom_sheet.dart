@@ -20,7 +20,9 @@ class ReportProblemBottomSheet extends StatefulWidget {
     if (isMobile) {
       showModalBottomSheet(
         context: context,
-        backgroundColor: Theme.of(context).bottomSheetTheme.modalBackgroundColor,
+        backgroundColor: Theme.of(
+          context,
+        ).bottomSheetTheme.modalBackgroundColor,
         barrierColor: Colors.black.withValues(alpha: 0.5),
         isScrollControlled: true,
         enableDrag: true,
@@ -76,8 +78,9 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
         final fileName = 'report_${userId}_$timestamp$extension';
 
         await supabase.storage.from('reports').upload(fileName, file);
-        final publicUrl =
-            supabase.storage.from('reports').getPublicUrl(fileName);
+        final publicUrl = supabase.storage
+            .from('reports')
+            .getPublicUrl(fileName);
         uploadedUrls.add(publicUrl);
       } catch (e) {
         debugPrint('Failed to upload attachment: $e');
@@ -180,8 +183,10 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
               AppTokens.spacing32,
             ),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              color: isDark ? AppColors.cardDark : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(32),
+              ),
             ),
             child: _submitted ? const ReportSuccessView() : _buildFormView(),
           ),
@@ -198,17 +203,17 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
         Text(
           'الإبلاغ عن مشكلة',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFFEB8A00),
-              ),
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppTokens.spacing8),
         Text(
           'سيتم جمع معلومات الجهاز والتطبيق تلقائياً لمساعدتنا في تشخيص المشكلة.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.mutedColor(context),
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.mutedColor(context)),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppTokens.spacing24),
@@ -288,7 +293,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
             key: TestKeys.reportProblemSubmit,
             onPressed: _isSubmitting ? null : _submitReport,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEB8A00),
+              backgroundColor: AppColors.primary,
               disabledBackgroundColor: Colors.grey,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppTokens.radiusFull),
@@ -360,9 +365,7 @@ class _ReportProblemBottomSheetState extends State<ReportProblemBottomSheet> {
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(
-              color: AppColors.mutedColor(context),
-            ),
+            hintStyle: TextStyle(color: AppColors.mutedColor(context)),
             filled: true,
             fillColor: isDark
                 ? Colors.white10

@@ -37,10 +37,7 @@ class GradeStepForm extends StatelessWidget {
           onChanged: onGradeChanged,
         ),
         const SizedBox(height: AppTokens.spacing12),
-        TermsAgreement(
-          value: termsAccepted,
-          onChanged: onTermsChanged,
-        ),
+        TermsAgreement(value: termsAccepted, onChanged: onTermsChanged),
         if (fieldErrors.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 8),

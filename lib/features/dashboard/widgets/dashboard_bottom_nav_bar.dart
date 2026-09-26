@@ -15,10 +15,21 @@ class DashboardBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Map shell index (0: Home, 1: Lectures, 2: Leaderboard, 3: Profile, 4: Settings) to 4-item bottom bar
+    int navIndex = selectedIndex;
+    if (navIndex >= 3) {
+      navIndex = selectedIndex == 4 ? 3 : 0;
+    }
+
     return NavigationBar(
       backgroundColor: backgroundColor,
-      selectedIndex: selectedIndex,
-      onDestinationSelected: onDestinationSelected,
+      selectedIndex: navIndex,
+      onDestinationSelected: (index) {
+        // Map 4 bottom bar items back to shell indices (0: Home, 1: Lectures, 2: Leaderboard, 4: Settings)
+        int targetIndex = index;
+        if (index == 3) targetIndex = 4;
+        onDestinationSelected(targetIndex);
+      },
       destinations: const [
         NavigationDestination(
           key: TestKeys.navHome,
@@ -37,12 +48,6 @@ class DashboardBottomNavBar extends StatelessWidget {
           icon: Icon(Icons.leaderboard_outlined),
           selectedIcon: Icon(Icons.leaderboard),
           label: 'المتصدرون',
-        ),
-        NavigationDestination(
-          key: TestKeys.navProfile,
-          icon: Icon(Icons.person_outline),
-          selectedIcon: Icon(Icons.person),
-          label: 'ملفي',
         ),
         NavigationDestination(
           key: TestKeys.navSettings,

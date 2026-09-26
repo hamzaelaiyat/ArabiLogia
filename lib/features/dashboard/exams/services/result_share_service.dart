@@ -160,8 +160,9 @@ class ResultShareService {
     await WidgetsBinding.instance.endOfFrame;
 
     try {
-      final boundary = captureKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
+      final boundary =
+          captureKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
       if (boundary == null) return null;
 
       final image = await boundary.toImage(pixelRatio: 3.0);

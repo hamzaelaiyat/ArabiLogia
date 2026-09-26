@@ -9,8 +9,13 @@ class SignInResult {
 
 class SignUpResult {
   final User? user;
-  const SignUpResult({this.user});
-  bool get alreadyExists => user == null;
+  final bool alreadyExists;
+  final String? errorMessage;
+  const SignUpResult({
+    this.user,
+    this.alreadyExists = false,
+    this.errorMessage,
+  });
 }
 
 class VerifyEmailResult {
@@ -54,16 +59,23 @@ class AuthService {
       final response = await _auth.signUp(
         email: email,
         password: password,
-        data: {
-          'full_name': fullName,
-          'username': username,
-          'grade': grade,
-        },
+        data: {'full_name': fullName, 'username': username, 'grade': grade},
       );
+
+      // In Supabase Auth, when email is already registered and email confirmations are ON,
+      // response.user.identities is empty.
+      if (response.user != null &&
+          response.user!.identities != null &&
+          response.user!.identities!.isEmpty) {
+        return const SignUpResult(alreadyExists: true);
+      }
+
       return SignUpResult(user: response.user);
     } on AuthException catch (e) {
-      if (e.message.contains('already') || e.message.contains('exists')) {
-        return const SignUpResult();
+      if (e.message.contains('already') ||
+          e.message.contains('exists') ||
+          e.message.contains('registered')) {
+        return const SignUpResult(alreadyExists: true);
       }
       rethrow;
     }
@@ -92,7 +104,9 @@ class AuthService {
   }
 
   Future<VerifyResetCodeResult> verifyResetCode(
-      String email, String token) async {
+    String email,
+    String token,
+  ) async {
     final response = await _auth.verifyOTP(
       type: OtpType.recovery,
       token: token,
@@ -112,7 +126,11 @@ class AuthService {
   }
 
   Future<void> resendOTP(String email, {OtpType type = OtpType.signup}) async {
-    await _auth.resend(type: type, email: email);
+    if (type == OtpType.recovery) {
+      await _auth.resetPasswordForEmail(email);
+    } else {
+      await _auth.resend(type: type, email: email);
+    }
   }
 
   Future<void> signOut() async {

@@ -9,28 +9,66 @@ class AppColors {
   static const Color accent = Color(0xFFFF6B35);
   static const Color accentSecondary = Color(0xFFFF8C42);
 
-  static const Color bgLight = Color(0xFFF7FCFF);
-  static const Color bgDark = Color(0xFF16181A); // Dark outer background & sidebar
+  static const Color bgLight = Color(
+    0xFFE5F3FF,
+  ); // Sidebar background & outer container #e5f3ff
+  static const Color bgDark = Color(
+    0xFF121417,
+  ); // Dark outer background & sidebar
 
-  static const Color dashboardContentBgLight = Color(0xFFFFFFFF);
-  static const Color dashboardContentBgDark = Color(0xFF262B32); // Distinct lighter background for main widget card!
+  static const Color dashboardContentBgLight = Color(
+    0xFFFFFFFF,
+  ); // Main content panel background #ffffff
+  static const Color dashboardContentBgDark = Color(
+    0xFF1A1D23,
+  ); // Dark main widget card background
 
   static const Color authBgLight = Color(0xFFE5F3FF);
-  static const Color authBgDark = Color(0xFF1D2023);
+  static const Color authBgDark = Color(0xFF15181D);
+
+  // Mobile app-wide background (used as the outer scaffold surface on mobile)
+  static const Color mobileBackground = Color(0xFFEBE7DF);
+  static const Color mobileDarkBackground = Color(0xFF191B1D);
 
   static const Color fgLight = Color(0xFF1A222B);
-  static const Color fgDark = Color(0xFFEAEFF5);
+  static const Color fgDark = Color(0xFFEDF1F7);
   static const Color muted = Color(0xFF4D5660);
-  static const Color mutedDark = Color(0xFF91A0B1);
+  static const Color mutedDark = Color(0xFF93A0B0);
   static const Color mutedLight = Color(0xFF6B7280);
 
   static const Color secondaryLight = Color(0xFFEDF2F8);
-  static const Color secondaryDark = Color(0xFF212325); // Restored original button surface color
+  static const Color secondaryDark = Color(
+    0xFF23272E,
+  ); // Card / input-surface color in dark mode
+
+  // Consistent dark card/sheet surface (matches secondaryDark so every surface layers cleanly)
+  static const Color cardDark = Color(0xFF23272E);
+  // Light card surface (matches the historical 0xFFE5F3FF tint)
+  static const Color cardLight = Color(0xFFE5F3FF);
+  // Subtle dark hairline for dividers / outlines on dark surfaces
+  static const Color hairlineDark = Color(0xFF323945);
 
   static const Color error = Color(0xFFFF3B30);
+  static const Color errorDark = Color(0xFFD32F2F);
   static const Color success = Color(0xFF34C759);
   static const Color emerald = Color(0xFF30D158);
   static const Color warning = Color(0xFFFFCC00);
+  static const Color blue = Color(0xFF2582FF);
+
+  // Text colors (light mode)
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF334155);
+  static const Color textMuted = Color(0xFF475569);
+  static const Color textLight = Color(0xFF64748B);
+
+  // Card / surface backgrounds
+  static const Color cardLightBg = Color(0xFFF9FCFF);
+
+  // Skeleton / shimmer placeholder colors
+  static const Color skeletonLight = Color(0xFFE0E0E0);
+  static const Color skeletonLightHighlight = Color(0xFFF5F5F5);
+  static const Color skeletonDark = Color(0xFF424242);
+  static const Color skeletonDarkHighlight = Color(0xFF616161);
 
   static const Color examPass = Color(0xFF34C759);
   static const Color examFail = Color(0xFFFF3B30);
@@ -71,10 +109,20 @@ class AppColors {
         : secondaryDark;
   }
 
-  static Color mutedColor(BuildContext context) {
+  static Color skeleton(BuildContext context) {
     return Theme.of(context).brightness == Brightness.light
-        ? muted
-        : mutedDark;
+        ? skeletonLight
+        : skeletonDark;
+  }
+
+  static Color skeletonHighlight(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light
+        ? skeletonLightHighlight
+        : skeletonDarkHighlight;
+  }
+
+  static Color mutedColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light ? muted : mutedDark;
   }
 
   static Color primaryContainer(BuildContext context) {
@@ -86,13 +134,13 @@ class AppColors {
   static Color glassBackgroundColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.light
         ? Colors.white.withValues(alpha: 0.7)
-        : const Color(0xFF1E1E1E).withValues(alpha: 0.6);
+        : AppColors.cardDark.withValues(alpha: 0.6);
   }
 
   static Color glassBorderColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.light
         ? Colors.white.withValues(alpha: 0.4)
-        : Colors.white.withValues(alpha: 0.1);
+        : AppColors.hairlineDark.withValues(alpha: 0.8);
   }
 
   static Color authTextColor(BuildContext context) {
@@ -131,7 +179,9 @@ class AppColors {
       case 1:
         return warning; // Gold
       case 2:
-        return isDark ? Colors.blueGrey.shade300 : Colors.grey.shade400; // Silver
+        return isDark
+            ? Colors.blueGrey.shade300
+            : Colors.grey.shade400; // Silver
       case 3:
         return isDark ? Colors.brown.shade200 : Colors.brown.shade300; // Bronze
       default:

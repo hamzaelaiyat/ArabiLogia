@@ -45,9 +45,7 @@ class GradeSelector extends StatelessWidget {
                 : isLocked
                 ? const Icon(Icons.lock_outline, size: 20)
                 : null,
-            onTap: isLocked
-                ? null
-                : () => onSelect(g['value'] as int),
+            onTap: isLocked ? null : () => onSelect(g['value'] as int),
             enabled: !isLocked,
           ),
         );

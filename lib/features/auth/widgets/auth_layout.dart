@@ -54,10 +54,7 @@ class AuthLayout extends StatelessWidget {
 
     return Center(
       child: Container(
-        constraints: const BoxConstraints(
-          maxWidth: 1400,
-          maxHeight: 900,
-        ),
+        constraints: const BoxConstraints(maxWidth: 1400, maxHeight: 900),
         child: Directionality(
           textDirection: TextDirection.ltr,
           child: Row(
@@ -95,9 +92,14 @@ class AuthLayout extends StatelessWidget {
                 flex: 30,
                 child: Container(
                   margin: const EdgeInsets.only(left: 12, right: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1D2023) : const Color(0xFFE5F3FF),
+                    color: isDark
+                        ? const Color(0xFF23272E)
+                        : const Color(0xFFE5F3FF),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(

@@ -41,11 +41,52 @@ class CategoryMetadata {
     return Color(int.parse(hex, radix: 16));
   }
 
-  static List<CategoryMetadata> get categories => _categories;
+  static List<CategoryMetadata> _orderCategories(List<CategoryMetadata> list) {
+    const desiredOrder = [
+      'nahw',
+      'balagha',
+      'adab',
+      'qiraa',
+      'qissa',
+      'nusus',
+      'shamil',
+      'nisf_shamel',
+    ];
+    const nameMap = {
+      'النحو': 'nahw',
+      'البلاغة': 'balagha',
+      'الأدب': 'adab',
+      'القراءة': 'qiraa',
+      'القصة': 'qissa',
+      'النصوص': 'nusus',
+      'شامل': 'shamil',
+      'نصف شامل': 'nisf_shamel',
+    };
+
+    final ordered = List<CategoryMetadata>.from(list);
+    ordered.sort((a, b) {
+      final keyA = nameMap[a.name] ?? a.id;
+      final keyB = nameMap[b.name] ?? b.id;
+      final indexA = desiredOrder.indexOf(keyA);
+      final indexB = desiredOrder.indexOf(keyB);
+      if (indexA != -1 && indexB != -1) {
+        return indexA.compareTo(indexB);
+      } else if (indexA != -1) {
+        return -1;
+      } else if (indexB != -1) {
+        return 1;
+      }
+      return 0;
+    });
+
+    return ordered;
+  }
+
+  static List<CategoryMetadata> get categories => _orderCategories(_categories);
 
   static Future<void> loadCategories() async {
     if (_isLoaded) return;
-    
+
     try {
       final supabase = Supabase.instance.client;
       final response = await supabase
@@ -53,30 +94,75 @@ class CategoryMetadata {
           .select('*')
           .eq('is_active', true)
           .order('sort_order');
-      
-      _categories = (response as List).map((c) => CategoryMetadata(
-        id: c['id'] as String,
-        name: c['name'] as String,
-        icon: _iconFromString(c['icon'] as String? ?? 'quiz'),
-        color: _colorFromHex(c['color'] as String? ?? '#607D8B'),
-      )).toList();
-      
+
+      final loaded = (response as List)
+          .map(
+            (c) => CategoryMetadata(
+              id: c['id'] as String,
+              name: c['name'] as String,
+              icon: _iconFromString(c['icon'] as String? ?? 'quiz'),
+              color: _colorFromHex(c['color'] as String? ?? '#EB8A00'),
+            ),
+          )
+          .toList();
+
+      _categories = _orderCategories(loaded);
       _isLoaded = true;
     } catch (e) {
-      _categories = _defaultCategories;
+      _categories = _orderCategories(_defaultCategories);
       _isLoaded = true;
     }
   }
 
   static const _defaultCategories = [
-    CategoryMetadata(id: 'nahw', name: 'النحو', icon: Icons.architecture, color: Color(0xFFE53935)),
-    CategoryMetadata(id: 'balagha', name: 'البلاغة', icon: Icons.format_paint, color: Color(0xFF3F51B5)),
-    CategoryMetadata(id: 'nusus', name: 'النصوص', icon: Icons.library_books, color: Color(0xFF009688)),
-    CategoryMetadata(id: 'qiraa', name: 'القراءة', icon: Icons.menu_book, color: Color(0xFFFB8C00)),
-    CategoryMetadata(id: 'qissa', name: 'القصة', icon: Icons.auto_stories, color: Color(0xFF795548)),
-    CategoryMetadata(id: 'adab', name: 'الأدب', icon: Icons.history_edu, color: Color(0xFFFFB300)),
-    CategoryMetadata(id: 'shamil', name: 'شامل', icon: Icons.all_inclusive, color: Color(0xFF607D8B)),
-    CategoryMetadata(id: 'nisf_shamil', name: 'نصف شامل', icon: Icons.pie_chart, color: Color(0xFF03A9F4)),
+    CategoryMetadata(
+      id: 'nahw',
+      name: 'النحو',
+      icon: Icons.architecture,
+      color: Color(0xFFDC2626),
+    ),
+    CategoryMetadata(
+      id: 'balagha',
+      name: 'البلاغة',
+      icon: Icons.format_paint,
+      color: Color(0xFF2563EB),
+    ),
+    CategoryMetadata(
+      id: 'adab',
+      name: 'الأدب',
+      icon: Icons.history_edu,
+      color: Color(0xFF65A30D),
+    ),
+    CategoryMetadata(
+      id: 'qiraa',
+      name: 'القراءة',
+      icon: Icons.menu_book,
+      color: Color(0xFF7C3AED),
+    ),
+    CategoryMetadata(
+      id: 'qissa',
+      name: 'القصة',
+      icon: Icons.auto_stories,
+      color: Color(0xFFEA580C),
+    ),
+    CategoryMetadata(
+      id: 'nusus',
+      name: 'النصوص',
+      icon: Icons.library_books,
+      color: Color(0xFF059669),
+    ),
+    CategoryMetadata(
+      id: 'shamil',
+      name: 'شامل',
+      icon: Icons.all_inclusive,
+      color: Color(0xFFD97706),
+    ),
+    CategoryMetadata(
+      id: 'nisf_shamel',
+      name: 'نصف شامل',
+      icon: Icons.pie_chart,
+      color: Color(0xFF03A9F4),
+    ),
   ];
 
   static CategoryMetadata? getByName(String? name) {
@@ -84,7 +170,8 @@ class CategoryMetadata {
     if (!_isLoaded) loadCategories();
     try {
       return _categories.firstWhere((c) => c.name == name);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Category not found by name "$name": $e');
       return null;
     }
   }
@@ -93,7 +180,8 @@ class CategoryMetadata {
     if (!_isLoaded) loadCategories();
     try {
       return _categories.firstWhere((c) => c.id == id);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Category not found by id "$id": $e');
       return null;
     }
   }
@@ -116,7 +204,8 @@ class CategoryMetadata {
     await loadCategories();
   }
 
-  static Future<void> updateCategory(String id, {
+  static Future<void> updateCategory(
+    String id, {
     String? name,
     String? icon,
     String? color,
@@ -130,15 +219,21 @@ class CategoryMetadata {
     if (color != null) updates['color'] = color;
     if (sortOrder != null) updates['sort_order'] = sortOrder;
     if (isActive != null) updates['is_active'] = isActive;
-    
+
     await supabase.from('categories').update(updates).eq('id', id);
     await loadCategories();
   }
 
-  static Future<void> deleteCategory(String id, {bool softDelete = true}) async {
+  static Future<void> deleteCategory(
+    String id, {
+    bool softDelete = true,
+  }) async {
     final supabase = Supabase.instance.client;
     if (softDelete) {
-      await supabase.from('categories').update({'is_active': false}).eq('id', id);
+      await supabase
+          .from('categories')
+          .update({'is_active': false})
+          .eq('id', id);
     } else {
       await supabase.from('categories').delete().eq('id', id);
     }

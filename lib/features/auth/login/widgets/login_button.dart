@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/core/constants/test_keys.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 
 class LoginButton extends StatelessWidget {
   final bool isLoading;
@@ -23,7 +24,7 @@ class LoginButton extends StatelessWidget {
           ? AppTokens.buttonHeightLg
           : AppTokens.buttonHeightMd,
       decoration: BoxDecoration(
-        color: showSuccess ? Colors.green : const Color(0xFFEB8A00),
+        color: showSuccess ? Colors.green : AppColors.primary,
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
       ),
       child: ElevatedButton(
@@ -40,21 +41,21 @@ class LoginButton extends StatelessWidget {
         child: showSuccess
             ? const Icon(Icons.check_circle, color: Colors.white, size: 24)
             : isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text(
-                    AppStrings.login,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Text(
+                AppStrings.login,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
     );
   }

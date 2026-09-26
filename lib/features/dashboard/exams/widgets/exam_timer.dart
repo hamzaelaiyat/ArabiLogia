@@ -59,8 +59,15 @@ class _ExamTimerState extends State<ExamTimer>
       _warned1 = true;
       widget.warningNotifier?.value = 'باقي دقيقة';
     }
-    if (seconds <= 30 && seconds > 0) {
+    if (seconds <= 120 && seconds > 0) {
       if (!_pulseController.isAnimating) {
+        _pulseController.duration = seconds <= 30
+            ? const Duration(milliseconds: 350)
+            : const Duration(milliseconds: 700);
+        _pulseController.repeat(reverse: true);
+      } else if (seconds <= 30 &&
+          _pulseController.duration?.inMilliseconds != 350) {
+        _pulseController.duration = const Duration(milliseconds: 350);
         _pulseController.repeat(reverse: true);
       }
     } else if (_pulseController.isAnimating) {
@@ -114,31 +121,45 @@ class _ExamTimerState extends State<ExamTimer>
         final remaining = seconds % 60;
         return Semantics(
           label: 'الوقت المتبقي: $minutes دقيقة و $remaining ثانية',
-          child: FadeTransition(
-            opacity: Tween<double>(begin: 1.0, end: 0.4)
-                .animate(_pulseController),
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: AppTokens.radiusFullAll,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.timer_outlined, size: 16, color: color),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatTime(seconds),
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'monospace',
-                    ),
+          child: ScaleTransition(
+            scale: Tween<double>(
+              begin: 1.0,
+              end: 1.05,
+            ).animate(_pulseController),
+            child: FadeTransition(
+              opacity: Tween<double>(
+                begin: 1.0,
+                end: 0.6,
+              ).animate(_pulseController),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: AppTokens.radiusFullAll,
+                  border: Border.all(
+                    color: color.withValues(alpha: seconds <= 120 ? 0.6 : 0.2),
+                    width: 1.5,
                   ),
-                ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.timer_outlined, size: 16, color: color),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatTime(seconds),
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

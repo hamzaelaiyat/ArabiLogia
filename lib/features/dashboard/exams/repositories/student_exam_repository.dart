@@ -6,6 +6,7 @@ import 'package:arabilogia/core/services/supabase_service_wrapper.dart';
 import 'package:arabilogia/data/local/database.dart';
 import '../models/exam_model.dart';
 import 'score_repository.dart';
+import 'package:arabilogia/core/models/grade_metadata.dart';
 
 class StudentExamRepository {
   final SupabaseServiceInterface _supabaseService;
@@ -25,7 +26,8 @@ class StudentExamRepository {
     final autoDownload = prefs.getBool('auto_download_exams') ?? true;
 
     final user = _supabaseService.auth.currentUser;
-    final studentGradeRaw = user?.userMetadata?['grade'] as int? ?? 1;
+    final studentGradeRaw =
+        user?.userMetadata?['grade'] as int? ?? GradeMetadata.defaultGradeId;
     final examGrade = studentGradeRaw;
 
     final Set<String> remoteExamIds = {};
@@ -127,12 +129,26 @@ class StudentExamRepository {
           .select('data')
           .eq('id', examId)
           .maybeSingle();
-      if (data != null) {
+      if (data != null && data['data'] != null) {
         final examData = data['data'] as Map<String, dynamic>;
         return Exam.fromMinifiedJson(examData);
       }
     } catch (e) {
       debugPrint('Error loading remote exam $examId: $e');
+    }
+
+    // Fallback: try practice RPC `get_practice_exam` if direct select returned null
+    try {
+      final practiceData = await _supabaseService.rpc(
+        'get_practice_exam',
+        params: {'p_exam_id': examId},
+      );
+      if (practiceData != null) {
+        final mapData = Map<String, dynamic>.from(practiceData as Map);
+        return Exam.fromMinifiedJson(mapData);
+      }
+    } catch (e) {
+      debugPrint('Error loading practice exam RPC for $examId: $e');
     }
 
     return null;

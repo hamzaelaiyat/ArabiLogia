@@ -41,9 +41,9 @@ class ExamResultView extends StatelessWidget {
       final question = exam.questions[i];
       final selectedId = userAnswers[i];
       final correctOption = question.options.cast<Option?>().firstWhere(
-            (o) => o?.isCorrect == true,
-            orElse: () => null,
-          );
+        (o) => o?.isCorrect == true,
+        orElse: () => null,
+      );
       if (selectedId != correctOption?.id) {
         wrong.add(i);
       }
@@ -123,9 +123,7 @@ class _PerfectBanner extends StatelessWidget {
           ],
         ),
         borderRadius: AppTokens.radiusLgAll,
-        border: Border.all(
-          color: AppColors.examPass.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: AppColors.examPass.withValues(alpha: 0.3)),
       ),
       child: const Column(
         children: [
@@ -139,10 +137,7 @@ class _PerfectBanner extends StatelessWidget {
             ),
           ),
           SizedBox(height: AppTokens.spacing2),
-          Text(
-            'نتيجة كاملة 🎉',
-            style: TextStyle(color: AppColors.examPass),
-          ),
+          Text('نتيجة كاملة 🎉', style: TextStyle(color: AppColors.examPass)),
         ],
       ),
     );
@@ -177,9 +172,7 @@ class _PracticeScoreSummary extends StatelessWidget {
                 width: 140,
                 height: 140,
                 child: CircularProgressIndicator(
-                  value: totalQuestions > 0
-                      ? correctCount / totalQuestions
-                      : 0,
+                  value: totalQuestions > 0 ? correctCount / totalQuestions : 0,
                   strokeWidth: 10,
                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   valueColor: const AlwaysStoppedAnimation<Color>(

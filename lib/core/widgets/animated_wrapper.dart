@@ -35,10 +35,7 @@ class _AnimatedWrapperState extends State<AnimatedWrapper>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.12),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.elasticOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
     _startAnimation();
   }
 
@@ -63,10 +60,7 @@ class _AnimatedWrapperState extends State<AnimatedWrapper>
         if (!widget.addAnimation || !potato.animationsEnabled) {
           return widget.child;
         }
-        return SlideTransition(
-          position: _slideAnimation,
-          child: widget.child,
-        );
+        return SlideTransition(position: _slideAnimation, child: widget.child);
       },
     );
   }

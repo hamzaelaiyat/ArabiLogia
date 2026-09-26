@@ -5,6 +5,8 @@ import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:provider/provider.dart';
 
+import 'package:arabilogia/core/widgets/user_avatar_action.dart';
+
 class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? title;
   final List<Widget>? actions;
@@ -35,35 +37,37 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final defaultBg = isDark ? AppColors.cardDark : Colors.white;
+    final effectiveColor = backgroundColor ?? defaultBg;
+
     final canPop = ModalRoute.of(context)?.canPop ?? false;
-    final showDesktopAppBar = forceShowOnDesktop || leading != null || (automaticallyImplyLeading && canPop);
+    final showDesktopAppBar =
+        forceShowOnDesktop ||
+        leading != null ||
+        (automaticallyImplyLeading && canPop);
 
     if (!AppTokens.isMobile(context) && !showDesktopAppBar) {
       if (bottom != null) {
-        final effectiveColor = backgroundColor ?? AppColors.background(context);
         return Container(
           height: bottom!.preferredSize.height,
-          color: effectiveColor,
-          child: Material(
-            color: Colors.transparent,
-            child: bottom!,
-          ),
+          color: Colors.transparent,
+          child: Material(color: Colors.transparent, child: bottom!),
         );
       }
       return const SizedBox.shrink();
     }
 
     final potato = context.watch<PotatoModeProvider>();
-    final effectiveColor = backgroundColor ?? AppColors.background(context);
-
     final effectiveOpacity = potato.blurEffectsEnabled ? opacity : 1.0;
     final hasBlur = potato.blurEffectsEnabled;
+    final effectiveActions = actions ?? const [UserAvatarAction()];
 
     final appBarContent = Container(
       color: effectiveColor.withValues(alpha: effectiveOpacity),
       child: AppBar(
         title: title,
-        actions: actions,
+        actions: effectiveActions,
         leading: leading,
         automaticallyImplyLeading: automaticallyImplyLeading,
         centerTitle: centerTitle,

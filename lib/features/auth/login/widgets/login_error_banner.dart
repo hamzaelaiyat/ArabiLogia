@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 
 class LoginErrorBanner extends StatelessWidget {
@@ -20,7 +21,7 @@ class LoginErrorBanner extends StatelessWidget {
           Text(
             error,
             style: const TextStyle(
-              color: Color(0xFFD32F2F),
+              color: AppColors.errorDark,
               fontWeight: FontWeight.bold,
               fontSize: AppTokens.fontSizeSm,
             ),
@@ -32,7 +33,7 @@ class LoginErrorBanner extends StatelessWidget {
               child: const Text(
                 'إعادة إرسال رمز التفعيل',
                 style: TextStyle(
-                  color: Color(0xFFEB8A00),
+                  color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),

@@ -30,19 +30,14 @@ class StandardExamWidget extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppTokens.spacing12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
       child: InkWell(
         onTap: () async {
           await context.pushNamed(
             'exam-interaction',
             pathParameters: {'id': examId},
-            extra: {
-              'subjectId': lectureCourseId,
-              'subjectName': categoryName,
-            },
+            extra: {'subjectId': lectureCourseId, 'subjectName': categoryName},
           );
           onScoreRefresh();
         },
@@ -57,25 +52,28 @@ class StandardExamWidget extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.emoji_events_outlined, color: AppColors.primary),
+                child: const Icon(
+                  Icons.emoji_events_outlined,
+                  color: AppColors.primary,
+                ),
               ),
               const SizedBox(width: AppTokens.spacing16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 6,
+                      runSpacing: 4,
                       children: [
-                        Flexible(
-                          child: Text(
-                            title,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
                           ),
                         ),
-                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
@@ -108,7 +106,9 @@ class StandardExamWidget extends StatelessWidget {
                       Text(
                         'أعلى درجة محققة: ${score.toStringAsFixed(0)}%',
                         style: TextStyle(
-                          color: score >= exam.passPercentage ? Colors.green : Colors.orange,
+                          color: score >= exam.passPercentage
+                              ? Colors.green
+                              : Colors.orange,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -121,11 +121,15 @@ class StandardExamWidget extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Row(
                 children: [
                   if (hasAttempted)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green.shade50,
                         border: Border.all(color: Colors.green.shade300),
@@ -133,7 +137,11 @@ class StandardExamWidget extends StatelessWidget {
                       ),
                       child: Text(
                         '${score.toStringAsFixed(0)}%',
-                        style: TextStyle(color: Colors.green.shade800, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.green.shade800,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   const SizedBox(width: 8),

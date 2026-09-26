@@ -99,9 +99,11 @@ class AndroidUpdateHandler {
       } else {
         _fallbackToBrowser();
       }
-    } on PlatformException catch (_) {
+    } on PlatformException catch (e) {
+      debugPrint('Android download initialization failed: $e');
       _fallbackToBrowser();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Android download initialization failed: $e');
       _fallbackToBrowser();
     }
   }
@@ -119,8 +121,7 @@ class AndroidUpdateHandler {
         });
         if (progress != null) {
           final bytesDownloaded = progress['bytesDownloaded'] as int? ?? 0;
-          final totalBytes =
-              progress['totalBytes'] as int? ?? fileSize;
+          final totalBytes = progress['totalBytes'] as int? ?? fileSize;
 
           if (totalBytes > 0) {
             onProgressUpdate(

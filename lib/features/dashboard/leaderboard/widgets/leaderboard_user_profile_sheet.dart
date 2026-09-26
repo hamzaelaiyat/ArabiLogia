@@ -9,10 +9,7 @@ import 'leaderboard_helpers.dart';
 class LeaderboardUserProfileSheet extends StatelessWidget {
   final Map<String, dynamic> userData;
 
-  const LeaderboardUserProfileSheet({
-    super.key,
-    required this.userData,
-  });
+  const LeaderboardUserProfileSheet({super.key, required this.userData});
 
   static Future<void> show({
     required BuildContext context,
@@ -50,7 +47,9 @@ class LeaderboardUserProfileSheet extends StatelessWidget {
     final userId = userData['user_id'] as String? ?? '';
     final fullName = userData['full_name'] as String? ?? '';
     final grade = userData['grade'];
-    final gradeName = getGradeName(grade is int ? grade : int.tryParse(grade?.toString() ?? '') ?? 0);
+    final gradeName = getGradeName(
+      grade is int ? grade : int.tryParse(grade?.toString() ?? '') ?? 0,
+    );
     final avatarLetters = getAvatar(fullName);
     final rawAvatarUrl = userData['avatar_url'] as String?;
     final avatarUpdatedAt = userData['avatar_updated_at'] as String?;
@@ -131,9 +130,9 @@ class LeaderboardUserProfileSheet extends StatelessWidget {
           const SizedBox(height: AppTokens.spacing16),
           Text(
             fullName,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppTokens.spacing4),
           Container(

@@ -31,7 +31,8 @@ class ProgressBarCard extends StatelessWidget {
 
   int get _total => segments.fold(0, (sum, s) => sum + s.total);
   int get _completed => segments.fold(0, (sum, s) => sum + s.completed);
-  double get _overallRatio => _total == 0 ? 0.0 : (_completed / _total).clamp(0.0, 1.0);
+  double get _overallRatio =>
+      _total == 0 ? 0.0 : (_completed / _total).clamp(0.0, 1.0);
 
   @override
   Widget build(BuildContext context) {
@@ -52,33 +53,42 @@ class ProgressBarCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: categoryColor.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: categoryColor.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isFullyCompleted
+                              ? Icons.verified_rounded
+                              : Icons.insights_rounded,
+                          size: 18,
+                          color: categoryColor,
+                        ),
                       ),
-                      child: Icon(
-                        isFullyCompleted
-                            ? Icons.verified_rounded
-                            : Icons.insights_rounded,
-                        size: 18,
-                        color: categoryColor,
+                      const SizedBox(width: AppTokens.spacing8),
+                      Expanded(
+                        child: Text(
+                          'تقدمك في المحاضرة',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppTokens.spacing8),
-                    Text(
-                      'تقدمك في المحاضرة',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: categoryColor.withValues(alpha: 0.12),
                     borderRadius: AppTokens.radiusFullAll,
@@ -103,7 +113,9 @@ class ProgressBarCard extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     Container(
-                      color: AppColors.mutedColor(context).withValues(alpha: 0.12),
+                      color: AppColors.mutedColor(
+                        context,
+                      ).withValues(alpha: 0.12),
                     ),
                     FractionallySizedBox(
                       alignment: AlignmentDirectional.centerStart,
@@ -147,11 +159,7 @@ class ProgressBarCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            segment.icon,
-                            size: 14,
-                            color: segment.color,
-                          ),
+                          Icon(segment.icon, size: 14, color: segment.color),
                           const SizedBox(width: AppTokens.spacing4),
                           Text(
                             segment.label,

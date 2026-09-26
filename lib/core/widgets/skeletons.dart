@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 
 class ExamCardSkeleton extends StatelessWidget {
@@ -7,9 +8,8 @@ class ExamCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final baseColor = AppColors.skeleton(context);
+    final highlightColor = AppColors.skeletonHighlight(context);
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -81,9 +81,8 @@ class LeaderboardRowSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final baseColor = AppColors.skeleton(context);
+    final highlightColor = AppColors.skeletonHighlight(context);
 
     return Shimmer.fromColors(
       baseColor: baseColor,

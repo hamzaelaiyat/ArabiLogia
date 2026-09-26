@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:arabilogia/core/constants/routes.dart';
+import 'package:arabilogia/core/services/update_service.dart';
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/features/auth/login/screens/login_screen.dart';
@@ -34,9 +35,12 @@ import 'package:arabilogia/features/dashboard/lectures/widgets/practice_result_s
 import 'package:arabilogia/features/dashboard/lectures/models/lecture.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/admin/screens/lecture_editor_screen.dart';
+import 'package:arabilogia/features/admin/screens/lecture_exam_results_screen.dart';
+import 'package:arabilogia/features/admin/screens/exam_student_results_screen.dart';
 // PRIVATE: gate feature (gitignored; do not commit this import or the route below).
 import 'package:arabilogia/features/gate/screens/gate_screen.dart';
 import 'package:arabilogia/features/gate/screens/gate_admin_screen.dart';
+import 'package:arabilogia/core/models/grade_metadata.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
@@ -64,22 +68,36 @@ class AppRouter {
     );
   }
 
-  static Page<dynamic> _buildPageWithFade({
+  static Page<dynamic> _buildPageWithSlide({
     required BuildContext context,
     required GoRouterState state,
     required Widget child,
   }) {
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
     return CustomTransitionPage(
       key: state.pageKey,
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return ScaleTransition(
-          scale: Tween<double>(begin: 0.9, end: 1.0).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+        // In RTL the new page enters from the left; in LTR from the right.
+        final enterBegin = isRtl ? const Offset(-1, 0) : const Offset(1, 0);
+        // The page underneath gently shifts to the opposite side.
+        final exitEnd = isRtl ? const Offset(0.15, 0) : const Offset(-0.15, 0);
+
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: enterBegin,
+            end: Offset.zero,
+          ).chain(CurveTween(curve: Curves.easeOutCubic)).animate(animation),
+          child: SlideTransition(
+            position: Tween<Offset>(begin: Offset.zero, end: exitEnd)
+                .chain(CurveTween(curve: Curves.easeOutCubic))
+                .animate(secondaryAnimation),
+            child: child,
           ),
-          child: child,
         );
       },
+      transitionDuration: const Duration(milliseconds: 280),
+      reverseTransitionDuration: const Duration(milliseconds: 240),
     );
   }
 
@@ -90,7 +108,11 @@ class AppRouter {
   }) {
     final potato = context.read<PotatoModeProvider>();
     if (potato.transitionsEnabled) {
-      return _buildPageWithFade(context: context, state: state, child: child);
+      return AppRouter._buildPageWithSlide(
+        context: context,
+        state: state,
+        child: child,
+      );
     }
     return _buildPageWithNoTransition(
       context: context,
@@ -150,6 +172,8 @@ class AppRouter {
       if (matched == AppRoutes.teacherPanel ||
           matched == AppRoutes.lecturePreview ||
           matched == AppRoutes.lectureEditor ||
+          matched == AppRoutes.lectureResults ||
+          matched == AppRoutes.examStudentResults ||
           matched == AppRoutes.pointsEditor) {
         if (!isAuthenticated) {
           return AppRoutes.login;
@@ -232,8 +256,10 @@ class AppRouter {
         path: AppRoutes.updateConfirm,
         name: 'update-confirm',
         parentNavigatorKey: _rootNavigatorKey,
+        redirect: (_, state) =>
+            state.extra is AppUpdate ? null : AppRoutes.dashboard,
         pageBuilder: (context, state) {
-          final update = state.extra as dynamic;
+          final update = state.extra as AppUpdate;
           return AppRouter._buildPage(
             context: context,
             state: state,
@@ -262,6 +288,9 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.lecturePreview,
         name: 'lecture-preview',
+        parentNavigatorKey: _rootNavigatorKey,
+        redirect: (_, state) =>
+            state.extra is Exam ? null : AppRoutes.dashboard,
         pageBuilder: (context, state) {
           final exam = state.extra as Exam;
           return AppRouter._buildPage(
@@ -317,6 +346,40 @@ class AppRouter {
         },
       ),
       GoRoute(
+        path: AppRoutes.lectureResults,
+        name: 'lecture-results',
+        parentNavigatorKey: _rootNavigatorKey,
+        redirect: (_, state) =>
+            state.extra is Lecture ? null : AppRoutes.teacherPanel,
+        pageBuilder: (context, state) {
+          final lecture = state.extra as Lecture;
+          return AppRouter._buildPage(
+            context: context,
+            state: state,
+            child: LectureExamResultsScreen(lecture: lecture),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.examStudentResults,
+        name: 'exam-student-results',
+        parentNavigatorKey: _rootNavigatorKey,
+        redirect: (_, state) =>
+            state.extra is Map<String, dynamic> ? null : AppRoutes.teacherPanel,
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return AppRouter._buildPage(
+            context: context,
+            state: state,
+            child: ExamStudentResultsScreen(
+              examId: extra['examId'] as String,
+              examTitle: extra['examTitle'] as String? ?? 'امتحان',
+              grade: extra['grade'] as int? ?? GradeMetadata.allGrades,
+            ),
+          );
+        },
+      ),
+      GoRoute(
         path: AppRoutes.pointsEditor,
         name: 'points-editor',
         pageBuilder: (context, state) => AppRouter._buildPage(
@@ -332,6 +395,8 @@ class AppRouter {
         path: AppRoutes.practiceResult,
         name: 'practice-result',
         parentNavigatorKey: _rootNavigatorKey,
+        redirect: (_, state) =>
+            state.extra is Map<String, dynamic> ? null : AppRoutes.dashboard,
         pageBuilder: (context, state) {
           final extra = state.extra as Map<String, dynamic>;
           return AppRouter._buildPage(
@@ -349,6 +414,8 @@ class AppRouter {
         path: AppRoutes.examResult,
         name: 'exam-result',
         parentNavigatorKey: _rootNavigatorKey,
+        redirect: (_, state) =>
+            state.extra is Map<String, dynamic> ? null : AppRoutes.dashboard,
         pageBuilder: (context, state) {
           final extra = state.extra as Map<String, dynamic>;
           return AppRouter._buildPage(
@@ -358,8 +425,9 @@ class AppRouter {
               exam: extra['exam'] as Exam,
               userAnswers: extra['userAnswers'] as Map<int, String?>,
               score: extra['score'] as int,
-              accuracy: extra['accuracy'] as int? ?? 0,
-              speedBonus: extra['speedBonus'] as int? ?? 0,
+              accuracy: extra['accuracy'] as int? ?? GradeMetadata.allGrades,
+              speedBonus:
+                  extra['speedBonus'] as int? ?? GradeMetadata.allGrades,
               correctCount: extra['correctCount'] as int,
             ),
           );
@@ -520,11 +588,16 @@ class AppRouter {
             pageBuilder: (context, state) {
               int tabIndex = 0;
               if (state.extra is Map<String, dynamic>) {
-                tabIndex = (state.extra as Map<String, dynamic>)['initialTabIndex'] as int? ?? 0;
+                tabIndex =
+                    (state.extra as Map<String, dynamic>)['initialTabIndex']
+                        as int? ??
+                    0;
               } else if (state.extra is int) {
                 tabIndex = state.extra as int;
               }
-              final subjectQuery = state.uri.queryParameters['subject'] ?? state.uri.queryParameters['tab'];
+              final subjectQuery =
+                  state.uri.queryParameters['subject'] ??
+                  state.uri.queryParameters['tab'];
               if (subjectQuery != null) {
                 final idx = CategoryMetadata.categories.indexWhere(
                   (c) => c.id == subjectQuery || c.name == subjectQuery,

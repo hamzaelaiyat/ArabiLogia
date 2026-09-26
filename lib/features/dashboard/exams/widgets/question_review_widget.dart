@@ -140,7 +140,13 @@ class _AnswerBox extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 10, color: AppColors.mutedColor(context))),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: AppColors.mutedColor(context),
+            ),
+          ),
           RichText(
             text: TextSpan(
               style: TextStyle(

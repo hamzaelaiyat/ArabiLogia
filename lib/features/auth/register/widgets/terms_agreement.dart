@@ -49,7 +49,7 @@ class _TermsAgreementState extends State<TermsAgreement> {
           child: Checkbox(
             value: widget.value,
             onChanged: widget.onChanged,
-            activeColor: const Color(0xFFEB8A00),
+            activeColor: AppColors.primary,
             side: BorderSide(color: AppColors.authLabelColor(context)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(4),
@@ -69,7 +69,7 @@ class _TermsAgreementState extends State<TermsAgreement> {
                 TextSpan(
                   text: AppStrings.terms,
                   style: const TextStyle(
-                    color: Color(0xFFEB8A00),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                     decoration: TextDecoration.underline,
                   ),
@@ -79,7 +79,7 @@ class _TermsAgreementState extends State<TermsAgreement> {
                 TextSpan(
                   text: AppStrings.privacy,
                   style: const TextStyle(
-                    color: Color(0xFFEB8A00),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                     decoration: TextDecoration.underline,
                   ),

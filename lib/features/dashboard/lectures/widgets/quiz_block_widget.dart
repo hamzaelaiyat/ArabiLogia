@@ -36,9 +36,7 @@ class QuizBlockWidget extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppTokens.spacing16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
       child: InkWell(
         onTap: () async {
@@ -76,18 +74,18 @@ class QuizBlockWidget extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 6,
+                      runSpacing: 4,
                       children: [
-                        Flexible(
-                          child: Text(
-                            title,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
                           ),
                         ),
-                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
@@ -126,11 +124,15 @@ class QuizBlockWidget extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Row(
                 children: [
                   if (hasAttempted)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green.shade50,
                         border: Border.all(color: Colors.green.shade300),
@@ -138,7 +140,11 @@ class QuizBlockWidget extends StatelessWidget {
                       ),
                       child: Text(
                         '${score.toStringAsFixed(0)}%',
-                        style: TextStyle(color: Colors.green.shade800, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.green.shade800,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   const SizedBox(width: 8),

@@ -65,7 +65,9 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
       if (mounted) {
         try {
           context.read<ExamProvider>().startExam();
-        } catch (_) {}
+        } catch (e) {
+          debugPrint("Silently caught error: $e");
+        }
       }
     });
     _loadExam();
@@ -74,9 +76,9 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
   void _showTimerWarning() {
     final message = _timerWarning.value;
     if (message != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -112,8 +114,10 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     final pausedAt = _pausedAt.removeLast();
     final elapsed = DateTime.now().difference(pausedAt).inSeconds;
     if (elapsed > 0) {
-      _timerNotifier.value =
-          (_timerNotifier.value - elapsed).clamp(0, _timerNotifier.value);
+      _timerNotifier.value = (_timerNotifier.value - elapsed).clamp(
+        0,
+        _timerNotifier.value,
+      );
     }
     if (_timerNotifier.value <= 0) {
       _submitExam();
@@ -130,7 +134,9 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     try {
       context.read<ExamProvider>().endExam();
       context.read<ContextualSidebarProvider>().clearSidebar();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint("Silently caught error: $e");
+    }
     super.dispose();
   }
 
@@ -138,11 +144,13 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     if (_exam == null || !mounted) return;
     try {
       context.read<ContextualSidebarProvider>().updateExamSidebarState(
-            currentIndex: _currentQuestionIndex,
-            selectedAnswers: _selectedAnswers,
-            flaggedQuestions: _flagged,
-          );
-    } catch (_) {}
+        currentIndex: _currentQuestionIndex,
+        selectedAnswers: _selectedAnswers,
+        flaggedQuestions: _flagged,
+      );
+    } catch (e) {
+      debugPrint("Silently caught error: $e");
+    }
   }
 
   void _registerSidebar() {
@@ -150,44 +158,48 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     try {
       final category = CategoryMetadata.getById(widget.subjectId);
       context.read<ContextualSidebarProvider>().setExamSidebar(
-            ExamSidebarData(
-              examId: widget.examId,
-              title: _exam!.title,
-              categoryName: widget.subjectName.isNotEmpty ? widget.subjectName : (category?.name ?? 'اختبار'),
-              categoryColor: category?.color ?? AppColors.primary,
-              questionCount: _exam!.questions.length,
-              currentIndex: _currentQuestionIndex,
-              selectedAnswers: _selectedAnswers,
-              flaggedQuestions: _flagged,
-              timerNotifier: _timerNotifier,
-              onSelectQuestion: (index) {
-                if (mounted) {
-                  setState(() => _currentQuestionIndex = index);
-                  _updateSidebar();
-                }
-              },
-              onToggleFlag: (index) {
-                if (mounted) {
-                  setState(() {
-                    _flagged[index] = !(_flagged[index] ?? false);
-                  });
-                  _updateSidebar();
-                }
-              },
-              onExitExam: () async {
-                final shouldPop = await showExitConfirmationDialog(context);
-                if (shouldPop && mounted) {
-                  context.read<ExamProvider>().endExam();
-                  if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop();
-                  } else {
-                    context.go(AppRoutes.exams);
-                  }
-                }
-              },
-            ),
-          );
-    } catch (_) {}
+        ExamSidebarData(
+          examId: widget.examId,
+          title: _exam!.title,
+          categoryName: widget.subjectName.isNotEmpty
+              ? widget.subjectName
+              : (category?.name ?? 'اختبار'),
+          categoryColor: category?.color ?? AppColors.primary,
+          questionCount: _exam!.questions.length,
+          currentIndex: _currentQuestionIndex,
+          selectedAnswers: _selectedAnswers,
+          flaggedQuestions: _flagged,
+          timerNotifier: _timerNotifier,
+          onSelectQuestion: (index) {
+            if (mounted) {
+              setState(() => _currentQuestionIndex = index);
+              _updateSidebar();
+            }
+          },
+          onToggleFlag: (index) {
+            if (mounted) {
+              setState(() {
+                _flagged[index] = !(_flagged[index] ?? false);
+              });
+              _updateSidebar();
+            }
+          },
+          onExitExam: () async {
+            final shouldPop = await showExitConfirmationDialog(context);
+            if (shouldPop && mounted) {
+              context.read<ExamProvider>().endExam();
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                context.go(AppRoutes.exams);
+              }
+            }
+          },
+        ),
+      );
+    } catch (e) {
+      debugPrint("Silently caught error: $e");
+    }
   }
 
   void _toggleFlag() {
@@ -228,9 +240,9 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
 
     if (exam == null) {
       context.pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('خطأ في تحميل الامتحان')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('خطأ في تحميل الامتحان')));
       return;
     }
 
@@ -240,12 +252,12 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
 
     final ExamSession? restoredSession =
         savedSession != null && savedSession.examId == widget.examId
-            ? savedSession
-            : null;
+        ? savedSession
+        : null;
 
-    final shuffledQuestions = (List<Question>.from(exam.questions)..shuffle())
-        .map((q) => q.shuffled())
-        .toList();
+    final shuffledQuestions = (List<Question>.from(
+      exam.questions,
+    )..shuffle()).map((q) => q.shuffled()).toList();
 
     // Start a server session unless we're resuming one we already own.
     if (restoredSession == null) {
@@ -308,7 +320,9 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
 
       try {
         context.read<ContextualSidebarProvider>().clearSidebar();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint("Silently caught error: $e");
+      }
 
       context.pushReplacementNamed(
         'exam-result',
@@ -322,7 +336,8 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
           'isFirstAttempt': _isFirstAttempt,
         },
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Failed to submit exam: $e');
       if (!mounted) return;
       setState(() => _isSubmitting = false);
     }
@@ -353,8 +368,11 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
                 child: ColoredBox(
                   color: AppColors.bgDark,
                   child: Center(
-                    child: Icon(Icons.screen_lock_portrait,
-                        color: Colors.white54, size: 64),
+                    child: Icon(
+                      Icons.screen_lock_portrait,
+                      color: Colors.white54,
+                      size: 64,
+                    ),
                   ),
                 ),
               ),

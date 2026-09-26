@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/features/dashboard/widgets/dashboard_sidebar_nav_item.dart';
-import 'package:arabilogia/features/dashboard/widgets/dashboard_sidebar_secondary_nav_item.dart';
+import 'package:arabilogia/features/dashboard/widgets/sidebar_legal_accordion.dart';
 
 class DashboardSidebar extends StatelessWidget {
   final int selectedIndex;
@@ -40,9 +40,7 @@ class DashboardSidebar extends StatelessWidget {
 
     return Container(
       width: width,
-      decoration: BoxDecoration(
-        color: AppColors.background(context),
-      ),
+      decoration: BoxDecoration(color: AppColors.background(context)),
       child: Column(
         children: [
           const SizedBox(height: AppTokens.spacing16),
@@ -73,9 +71,7 @@ class DashboardSidebar extends StatelessWidget {
                           : null,
                       child: IconButton(
                         icon: Icon(
-                          isPinned
-                              ? Icons.push_pin
-                              : Icons.push_pin_outlined,
+                          isPinned ? Icons.push_pin : Icons.push_pin_outlined,
                           color: isPinned
                               ? Theme.of(context).colorScheme.primary
                               : AppColors.mutedColor(context),
@@ -92,11 +88,11 @@ class DashboardSidebar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppTokens.spacing16),
+
+          // Navigation Links
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(
-                vertical: AppTokens.spacing8,
-              ),
+              padding: const EdgeInsets.symmetric(vertical: AppTokens.spacing8),
               children: [
                 DashboardSidebarNavItem(
                   isSelected: selectedIndex == 0,
@@ -120,13 +116,6 @@ class DashboardSidebar extends StatelessWidget {
                   onTap: () => onItemTapped(2),
                 ),
                 DashboardSidebarNavItem(
-                  isSelected: selectedIndex == 3,
-                  icon: Icons.person_outline,
-                  selectedIcon: Icons.person,
-                  label: showLabels ? 'الملف الشخصي' : '',
-                  onTap: () => onItemTapped(3),
-                ),
-                DashboardSidebarNavItem(
                   isSelected: selectedIndex == 4,
                   icon: Icons.settings_outlined,
                   selectedIcon: Icons.settings,
@@ -145,47 +134,35 @@ class DashboardSidebar extends StatelessWidget {
                     onTap: onTeacherPanelTap,
                   ),
                 ],
-                if (showLabels) ...[
-                  const SizedBox(height: AppTokens.spacing24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppTokens.spacing16,
-                      vertical: AppTokens.spacing8,
-                    ),
-                    child: Text(
-                      'المعلومات والقانون',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppColors.mutedColor(context),
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ),
-                  DashboardSidebarSecondaryNavItem(
-                    icon: Icons.info_outline,
-                    label: 'عن عربيلوجيا',
-                    onTap: onAboutTap,
-                  ),
-                  DashboardSidebarSecondaryNavItem(
-                    icon: Icons.description_outlined,
-                    label: 'الشروط والأحكام',
-                    onTap: onTermsTap,
-                  ),
-                  DashboardSidebarSecondaryNavItem(
-                    icon: Icons.privacy_tip_outlined,
-                    label: 'سياسة الخصوصية',
-                    onTap: onPrivacyTap,
-                  ),
-                ],
               ],
             ),
           ),
+
+          // Bottom Accordion Section for "المنصة والقانون"
           Padding(
-            padding: const EdgeInsets.all(AppTokens.spacing12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTokens.spacing12,
+              vertical: AppTokens.spacing4,
+            ),
+            child: SidebarLegalAccordion(
+              showLabels: showLabels,
+              onAboutTap: onAboutTap,
+              onTermsTap: onTermsTap,
+              onPrivacyTap: onPrivacyTap,
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.only(
+              left: AppTokens.spacing12,
+              right: AppTokens.spacing12,
+              bottom: AppTokens.spacing8,
+            ),
             child: Text(
               showLabels ? version : '',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.mutedColor(context),
-                  ),
+                color: AppColors.mutedColor(context),
+              ),
             ),
           ),
         ],

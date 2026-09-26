@@ -14,32 +14,36 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
     required String subjectId,
     required int grade,
     required String data,
-  }) =>
-      into(cachedExams).insertOnConflictUpdate(
-        CachedExamsCompanion(
-          id: Value(id),
-          title: Value(title),
-          subjectId: Value(subjectId),
-          grade: Value(grade),
-          data: Value(data),
-          downloadedAt: Value(DateTime.now()),
-        ),
-      );
+  }) => into(cachedExams).insertOnConflictUpdate(
+    CachedExamsCompanion(
+      id: Value(id),
+      title: Value(title),
+      subjectId: Value(subjectId),
+      grade: Value(grade),
+      data: Value(data),
+      downloadedAt: Value(DateTime.now()),
+    ),
+  );
 
   Future<CachedExam?> getCachedExam(String id) =>
       (select(cachedExams)..where((t) => t.id.equals(id))).getSingleOrNull();
 
-  Future<List<CachedExam>> getCachedExamsBySubject(String subjectId, int grade) =>
+  Future<List<CachedExam>> getCachedExamsBySubject(
+    String subjectId,
+    int grade,
+  ) =>
       (select(cachedExams)
-        ..where((t) => t.subjectId.equals(subjectId))
-        ..where((t) => t.grade.equals(grade))
-      ).get();
+            ..where((t) => t.subjectId.equals(subjectId))
+            ..where((t) => t.grade.equals(grade)))
+          .get();
 
   Future<void> removeCachedExam(String id) =>
       (delete(cachedExams)..where((t) => t.id.equals(id))).go();
 
   Future<void> clearExpiredCache(Duration maxAge) async {
     final cutoff = DateTime.now().subtract(maxAge);
-    await (delete(cachedExams)..where((t) => t.downloadedAt.isSmallerThan(Variable(cutoff)))).go();
+    await (delete(
+      cachedExams,
+    )..where((t) => t.downloadedAt.isSmallerThan(Variable(cutoff)))).go();
   }
 }

@@ -1,0 +1,21 @@
+build/
+.build/
+.cache/
+.dart_tool/
+.flutter-plugins*
+.git/
+node_modules/
+release/
+# Never upload dotenv files. The app only needs the RLS-protected Supabase
+# anon key, and that already ships compiled into public/assets/.env.
+.env
+.env.*
+!.env.example
+android/
+ios/
+linux/
+macos/
+windows/
+appimagetool-x86_64.AppImage
+Orchis-theme/
+flutter_writable/

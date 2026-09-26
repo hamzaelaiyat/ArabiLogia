@@ -73,10 +73,13 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   }
 
   Rect get _imageRect {
-    final left = (_viewportSize.width - _displaySize.width * _scale) / 2 + _offset.dx;
-    final top = (_viewportSize.height - _displaySize.height * _scale) / 2 + _offset.dy;
+    final left =
+        (_viewportSize.width - _displaySize.width * _scale) / 2 + _offset.dx;
+    final top =
+        (_viewportSize.height - _displaySize.height * _scale) / 2 + _offset.dy;
     return Rect.fromLTWH(
-      left, top,
+      left,
+      top,
       _displaySize.width * _scale,
       _displaySize.height * _scale,
     );
@@ -145,10 +148,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'قص الصورة',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('قص الصورة', style: TextStyle(color: Colors.white)),
         actions: [
           IconButton(
             icon: const Icon(Icons.check, color: Colors.white),
@@ -165,7 +165,9 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
             _calculateLayout(constraints.biggest);
           }
           if (_uiImage == null) {
-            return const Center(child: CircularProgressIndicator(color: Colors.white));
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            );
           }
           return SizedBox.expand(
             child: GestureDetector(

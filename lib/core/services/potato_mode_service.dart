@@ -1,7 +1,8 @@
 import 'dart:io';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:battery_plus/battery_plus.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 
 enum PotatoLevel { off, sweet, tiny }
 
@@ -186,7 +187,9 @@ class DeviceSpecDetector {
       } else if (Platform.isMacOS) {
         return 8;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint("Silently caught error: $e");
+    }
     return 4;
   }
 
@@ -220,10 +223,13 @@ class DeviceSpecDetector {
 
   static Future<int> _getBattery() async {
     try {
-      final level = await _battery.batteryLevel
-          .timeout(const Duration(milliseconds: 300), onTimeout: () => 50);
+      final level = await _battery.batteryLevel.timeout(
+        const Duration(milliseconds: 300),
+        onTimeout: () => 50,
+      );
       return level;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Battery level unavailable, defaulting to 50: $e');
       return 50;
     }
   }
@@ -239,7 +245,9 @@ class DeviceSpecDetector {
             ? DeviceType.phone
             : DeviceType.desktop;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint("Silently caught error: $e");
+    }
     return DeviceType.desktop;
   }
 

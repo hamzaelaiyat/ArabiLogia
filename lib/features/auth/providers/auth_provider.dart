@@ -153,6 +153,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } on AuthException catch (e) {
+      debugPrint('🔴 AuthException on signIn: ${e.message}');
       final fieldError = getArabicAuthFieldError(e.message);
       _state = _state.copyWith(
         isLoading: false,
@@ -163,11 +164,9 @@ class AuthProvider extends ChangeNotifier {
       );
       notifyListeners();
       return false;
-    } catch (e) {
-      _state = _state.copyWith(
-        isLoading: false,
-        error: 'حدث خطأ، يرجى المحاولة مرة أخرى',
-      );
+    } catch (e, stack) {
+      debugPrint('🔴 Exception on signIn: $e\n$stack');
+      _state = _state.copyWith(isLoading: false, error: 'حدث خطأ: $e');
       notifyListeners();
       return false;
     }
@@ -184,6 +183,7 @@ class AuthProvider extends ChangeNotifier {
       _state = _state.copyWith(isLoading: true, error: null, fieldErrors: {});
       notifyListeners();
 
+      debugPrint('▶️ Attempting signUp for email: $email, username: $username');
       final result = await _authService.signUp(
         email: email,
         password: password,
@@ -193,19 +193,26 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (result.alreadyExists) {
+        debugPrint('🔴 SignUp: Email already exists');
         _state = _state.copyWith(
           isLoading: false,
-          error: 'لديك حساب بالفعل، يرجى تسجيل الدخول',
-          fieldErrors: {'email': 'لديك حساب بالفعل، يرجى تسجيل الدخول'},
+          error: 'البريد الإلكتروني مستخدم بالفعل، يرجى تسجيل الدخول',
+          fieldErrors: {
+            'email': 'البريد الإلكتروني مستخدم بالفعل، يرجى تسجيل الدخول',
+          },
         );
         notifyListeners();
         return false;
       }
 
+      debugPrint('✅ SignUp success! User ID: ${result.user?.id}');
       _state = _state.copyWith(isLoading: false, user: result.user);
       notifyListeners();
       return true;
     } on AuthException catch (e) {
+      debugPrint(
+        '🔴 AuthException on signUp: ${e.message} (code: ${e.statusCode})',
+      );
       final fieldError = getArabicAuthFieldError(e.message);
       _state = _state.copyWith(
         isLoading: false,
@@ -216,10 +223,11 @@ class AuthProvider extends ChangeNotifier {
       );
       notifyListeners();
       return false;
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('🔴 Exception on signUp: $e\n$stack');
       _state = _state.copyWith(
         isLoading: false,
-        error: 'حدث خطأ، يرجى المحاولة مرة أخرى',
+        error: 'حدث خطأ في التسجيل: $e',
       );
       notifyListeners();
       return false;

@@ -17,6 +17,8 @@ LINUX_BUILD="tar"
 VERCEL_DEPLOY="yes"
 RELEASE_TITLE=""
 RELEASE_NOTES_FILE=""
+# Vercel team that owns the arabilogia project (see .vercel/project.json).
+VERCEL_SCOPE="${VERCEL_SCOPE:-hamzas-projects-d700a79d}"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"; }
 error() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1" | tee -a "$LOG_FILE" >&2; ((ERRORS++)); }
@@ -98,6 +100,90 @@ run_flutter_pub_get() {
     echo "Dependencies ready"
 }
 
+clean_stale_web_output() {
+    # `flutter build web` copies everything in web/ into build/web/ AFTER the
+    # dart2js output is written, so a committed copy of web/main.dart.js (or
+    # web/assets, web/canvaskit) silently overwrites the fresh bundle and the
+    # deploy ships old code. These paths are git-ignored; this removes any
+    # leftover copy that is still on disk.
+    local removed=0
+    for f in web/main.dart.js web/flutter_bootstrap.js web/flutter.js web/.last_build_id web/version.json; do
+        if [ -f "$f" ]; then rm -f "$f" && removed=$((removed + 1)); fi
+    done
+    for d in web/canvaskit web/assets; do
+        if [ -d "$d" ]; then rm -rf "$d" && removed=$((removed + 1)); fi
+    done
+    [ "$removed" -gt 0 ] && echo "Removed $removed stale web output path(s) from web/" || true
+}
+
+# Reads KEY=value from .env without sourcing the file.
+read_env_value() {
+    [ -f .env ] || return 0
+    sed -n "s/^$1=//p" .env | head -n 1
+}
+
+verify_web_bundle() {
+    # The bundled app version must appear in the compiled JS. If it does not,
+    # build/web/main.dart.js is a stale leftover and must not be deployed.
+    local bundle="build/web/main.dart.js"
+    if [ ! -f "$bundle" ]; then
+        error "Web bundle missing at $bundle"
+        return 1
+    fi
+    if ! grep -q "$VERSION" "$bundle"; then
+        error "Web bundle is stale: $bundle does not contain version $VERSION"
+        return 1
+    fi
+    echo "Web bundle verified (contains v$VERSION)"
+}
+
+verify_web_config() {
+    # The web host strips dotfiles, so assets/.env is never served. The app
+    # therefore has to receive its Supabase values as --dart-define values at
+    # compile time; if they are missing from the bundle, production boots
+    # against the placeholder host and no data loads.
+    local bundle="build/web/main.dart.js"
+    local url
+    url=$(read_env_value SUPABASE_URL)
+    if [ -z "$url" ]; then
+        warn "No SUPABASE_URL in .env - skipping web config check"
+        return 0
+    fi
+    if ! grep -qF "$url" "$bundle"; then
+        error "Web bundle is missing SUPABASE_URL - the deployed app would boot unconfigured"
+        return 1
+    fi
+    echo "Web config verified (Supabase config compiled into bundle)"
+}
+
+verify_no_bundled_secrets() {
+    # pubspec.yaml bundles .env as an asset, so it ends up in the APKs and in
+    # public/assets/.env. Only the Supabase URL and anon key may be in there.
+    if [ -f .env ]; then
+        local leaked
+        leaked=$(grep -oE "^(GITHUB_TOKEN|GH_TOKEN|ONESIGNAL_API_KEY|GOOGLE_AI|SE_API_USER[0-9]*|SE_API_SECRET[0-9]*|SUPABASE_SERVICE_ROLE_KEY)=" .env | sort -u)
+        if [ -n "$leaked" ]; then
+            error "Secrets in bundled .env (would be published): $(echo "$leaked" | tr '\n' ' ')"
+            return 1
+        fi
+        echo "Bundled .env carries no server-side secrets"
+    else
+        warn ".env not found - the build will ship placeholder Supabase config"
+    fi
+}
+
+sync_public() {
+    # vercel.json publishes public/ as the output directory, so it has to be a
+    # copy of the fresh build. Keeping it out of sync is how an old bundle
+    # reached production.
+    echo "Syncing build/web -> public/..."
+    rsync -a --delete --exclude='.vercel/' build/web/ public/ || {
+        error "Failed to sync build/web to public/"
+        return 1
+    }
+    echo "public/ synced"
+}
+
 build_linux() {
     echo "Building Linux..."
     if "$FLUTTER" build linux --release; then
@@ -140,9 +226,24 @@ build_android() {
 
 build_web() {
     echo "Building Web..."
-    if "$FLUTTER" build web; then
+    clean_stale_web_output
+    local url anon
+    url=$(read_env_value SUPABASE_URL)
+    anon=$(read_env_value SUPABASE_ANON_KEY)
+    local defines=()
+    if [ -n "$url" ] && [ -n "$anon" ]; then
+        defines=(--dart-define="SUPABASE_URL=$url" --dart-define="SUPABASE_ANON_KEY=$anon")
+    else
+        warn "SUPABASE_URL/SUPABASE_ANON_KEY missing from .env - the web app will boot unconfigured"
+    fi
+    # --no-web-resources-cdn ships canvaskit inside the deployment. The default
+    # points the renderer at gstatic.com, which is unreliable on some networks.
+    if "$FLUTTER" build web --release --no-web-resources-cdn "${defines[@]}"; then
         mkdir -p "$OUTPUT_DIR"
-        echo "Web build ready at build/web/"
+        verify_web_bundle || return 1
+        verify_web_config || return 1
+        sync_public || return 1
+        echo "Web build ready at build/web/ (published from public/)"
     else
         error "Web build failed"
         exit 1
@@ -179,7 +280,11 @@ deploy_vercel() {
     fi
     if [ -n "$VERCEL_CMD" ]; then
         cd "$SCRIPT_DIR"
-        $VERCEL_CMD --yes --prod 2>&1 | tee -a "$LOG_FILE" || warn "Vercel deploy had issues"
+        # The project lives in a team scope: without --scope the CLI answers
+        # "Error: Not authorized". Override with VERCEL_SCOPE=... if needed.
+        local scope_arg=""
+        [ -n "$VERCEL_SCOPE" ] && scope_arg="--scope $VERCEL_SCOPE"
+        $VERCEL_CMD --yes --prod $scope_arg 2>&1 | tee -a "$LOG_FILE" || warn "Vercel deploy had issues"
         echo "Vercel deployed"
     else
         warn "vercel CLI not found"
@@ -243,6 +348,8 @@ main() {
 
     prepare_output_directory
     update_version_files "$VERSION"
+
+    verify_no_bundled_secrets || { echo "Aborting: .env would leak secrets into the release artifacts"; exit 1; }
 
     clean_gradle
     run_flutter_clean

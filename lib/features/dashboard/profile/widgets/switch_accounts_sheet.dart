@@ -88,7 +88,8 @@ class _SwitchAccountsSheetState extends State<SwitchAccountsSheet> {
     final confirmed = await ConfirmationDialog.show(
       context: context,
       title: 'إضافة حساب جديد',
-      content: 'سيتم تسجيل الخروج من الحساب الحالي للسماح لك بتسجيل الدخول بحساب آخر.',
+      content:
+          'سيتم تسجيل الخروج من الحساب الحالي للسماح لك بتسجيل الدخول بحساب آخر.',
       confirmLabel: 'تسجيل الخروج',
       confirmColor: AppColors.primary,
     );

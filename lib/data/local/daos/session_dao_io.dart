@@ -17,18 +17,26 @@ class SessionDao extends DatabaseAccessor<AppDatabase> with _$SessionDaoMixin {
           examTitle: Value(session.examTitle),
           durationMinutes: Value(session.durationMinutes),
           startTimestamp: Value(session.startTimestamp),
-          selectedAnswers: Value(jsonEncode(
-            session.selectedAnswers.map((k, v) => MapEntry(k.toString(), v)),
-          )),
+          selectedAnswers: Value(
+            jsonEncode(
+              session.selectedAnswers.map((k, v) => MapEntry(k.toString(), v)),
+            ),
+          ),
           expiresAt: Value(session.expiresAt),
         ),
       );
 
   Future<ExamSessionData?> getSession() async {
-    final row = await (select(examSessions)
-      ..orderBy([(t) => OrderingTerm(expression: t.startTimestamp, mode: OrderingMode.desc)])
-      ..limit(1)
-    ).getSingleOrNull();
+    final row =
+        await (select(examSessions)
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.startTimestamp,
+                  mode: OrderingMode.desc,
+                ),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
 
     if (row == null) return null;
 
@@ -50,8 +58,10 @@ class SessionDao extends DatabaseAccessor<AppDatabase> with _$SessionDaoMixin {
   Future<void> updateAnswers(Map<int, String?> answers) async {
     final session = await getSession();
     if (session == null) return;
-    final encoded = jsonEncode(answers.map((k, v) => MapEntry(k.toString(), v)));
+    final encoded = jsonEncode(
+      answers.map((k, v) => MapEntry(k.toString(), v)),
+    );
     await (update(examSessions)..where((t) => t.examId.equals(session.examId)))
-      .write(ExamSessionsCompanion(selectedAnswers: Value(encoded)));
+        .write(ExamSessionsCompanion(selectedAnswers: Value(encoded)));
   }
 }

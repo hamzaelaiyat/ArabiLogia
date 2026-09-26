@@ -15,18 +15,10 @@ class UpdateHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            color: const Color(0xFFEB8A00).withAlpha(25),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: const Icon(
-            Icons.system_update,
-            size: 50,
-            color: Color(0xFFEB8A00),
-          ),
+        Image.asset(
+          'assets/images/logo-removedbg.png',
+          height: 80,
+          fit: BoxFit.contain,
         ),
         const SizedBox(height: AppTokens.spacing24),
         Text(

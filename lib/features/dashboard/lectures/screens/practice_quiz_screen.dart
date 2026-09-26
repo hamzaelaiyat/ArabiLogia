@@ -48,7 +48,9 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
       if (mounted) {
         try {
           context.read<ExamProvider>().startExam();
-        } catch (_) {}
+        } catch (e) {
+          debugPrint("Silently caught error: $e");
+        }
       }
     });
     _loadExam();
@@ -59,7 +61,9 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
     try {
       context.read<ExamProvider>().endExam();
       context.read<ContextualSidebarProvider>().clearSidebar();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint("Silently caught error: $e");
+    }
     super.dispose();
   }
 
@@ -67,11 +71,13 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
     if (_exam == null || !mounted) return;
     try {
       context.read<ContextualSidebarProvider>().updateExamSidebarState(
-            currentIndex: _currentQuestionIndex,
-            selectedAnswers: _selectedAnswers,
-            flaggedQuestions: _flagged,
-          );
-    } catch (_) {}
+        currentIndex: _currentQuestionIndex,
+        selectedAnswers: _selectedAnswers,
+        flaggedQuestions: _flagged,
+      );
+    } catch (e) {
+      debugPrint("Silently caught error: $e");
+    }
   }
 
   void _registerSidebar() {
@@ -79,47 +85,51 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
     try {
       final category = CategoryMetadata.getById(widget.subjectId);
       context.read<ContextualSidebarProvider>().setExamSidebar(
-            ExamSidebarData(
-              examId: widget.examId,
-              title: _exam!.title,
-              categoryName: widget.subjectName.isNotEmpty
-                  ? widget.subjectName
-                  : (category?.name ?? 'تمرين'),
-              categoryColor: category?.color ?? AppColors.primary,
-              questionCount: _exam!.questions.length,
-              currentIndex: _currentQuestionIndex,
-              selectedAnswers: _selectedAnswers,
-              flaggedQuestions: _flagged,
-              onSelectQuestion: (index) {
-                if (mounted) {
-                  setState(() => _currentQuestionIndex = index);
-                  _updateSidebar();
-                }
-              },
-              onToggleFlag: (index) {
-                if (mounted) {
-                  setState(() {
-                    _flagged[index] = !(_flagged[index] ?? false);
-                  });
-                  _updateSidebar();
-                }
-              },
-              onExitExam: () async {
-                final shouldPop = await showExitConfirmationDialog(context);
-                if (shouldPop && mounted) {
-                  try {
-                    context.read<ExamProvider>().endExam();
-                  } catch (_) {}
-                  if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop();
-                  } else {
-                    context.go(AppRoutes.lectures);
-                  }
-                }
-              },
-            ),
-          );
-    } catch (_) {}
+        ExamSidebarData(
+          examId: widget.examId,
+          title: _exam!.title,
+          categoryName: widget.subjectName.isNotEmpty
+              ? widget.subjectName
+              : (category?.name ?? 'تمرين'),
+          categoryColor: category?.color ?? AppColors.primary,
+          questionCount: _exam!.questions.length,
+          currentIndex: _currentQuestionIndex,
+          selectedAnswers: _selectedAnswers,
+          flaggedQuestions: _flagged,
+          onSelectQuestion: (index) {
+            if (mounted) {
+              setState(() => _currentQuestionIndex = index);
+              _updateSidebar();
+            }
+          },
+          onToggleFlag: (index) {
+            if (mounted) {
+              setState(() {
+                _flagged[index] = !(_flagged[index] ?? false);
+              });
+              _updateSidebar();
+            }
+          },
+          onExitExam: () async {
+            final shouldPop = await showExitConfirmationDialog(context);
+            if (shouldPop && mounted) {
+              try {
+                context.read<ExamProvider>().endExam();
+              } catch (e) {
+                debugPrint("Silently caught error: $e");
+              }
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                context.go(AppRoutes.lectures);
+              }
+            }
+          },
+        ),
+      );
+    } catch (e) {
+      debugPrint("Silently caught error: $e");
+    }
   }
 
   Future<void> _loadExam() async {
@@ -131,10 +141,9 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
     if (!mounted) return;
 
     if (exam != null) {
-      final shuffledQuestions = (List<Question>.from(exam.questions)
-            ..shuffle())
-          .map((q) => q.shuffled())
-          .toList();
+      final shuffledQuestions = (List<Question>.from(
+        exam.questions,
+      )..shuffle()).map((q) => q.shuffled()).toList();
 
       setState(() {
         _exam = exam.copyWith(questions: shuffledQuestions);
@@ -146,9 +155,9 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
       if (Navigator.of(context).canPop()) {
         context.pop();
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('خطأ في تحميل الامتحان')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('خطأ في تحميل الامتحان')));
     }
   }
 
@@ -175,7 +184,11 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
     final score = total > 0 ? (correctCount / total * 100).toDouble() : 0.0;
 
     // Persist score locally
-    await ScoreRepository().saveScoreLocally(widget.examId, score, correctCount * 10);
+    await ScoreRepository().saveScoreLocally(
+      widget.examId,
+      score,
+      correctCount * 10,
+    );
 
     // Persist completion in lecture progress if lectureId exists
     if (widget.lectureId.isNotEmpty) {
@@ -193,7 +206,9 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
     try {
       context.read<ExamProvider>().endExam();
       context.read<ContextualSidebarProvider>().clearSidebar();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint("Silently caught error: $e");
+    }
 
     context.pushReplacementNamed(
       'practice-result',
@@ -214,14 +229,11 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
     if (_exam == null || _exam!.questions.isEmpty) {
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(
-          child: Text('لا توجد أسئلة في هذا الاختبار'),
-        ),
+        body: const Center(child: Text('لا توجد أسئلة في هذا الاختبار')),
       );
     }
 
-    final progress =
-        (_currentQuestionIndex + 1) / _exam!.questions.length;
+    final progress = (_currentQuestionIndex + 1) / _exam!.questions.length;
     final category = CategoryMetadata.getByName(_exam!.subject);
     final categoryColor = category?.color ?? AppColors.primary;
 
@@ -254,14 +266,18 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
                     context: context,
                     builder: (ctx) => AlertDialog(
                       title: const Text('إنهاء الاختبار'),
-                      content: const Text('هل تريد تسليم وإنهاء الاختبار القصير الآن؟'),
+                      content: const Text(
+                        'هل تريد تسليم وإنهاء الاختبار القصير الآن؟',
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(false),
                           child: const Text('متابعة الحل'),
                         ),
                         ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                          ),
                           onPressed: () => Navigator.of(ctx).pop(true),
                           child: const Text('تسليم وإنهاء'),
                         ),
@@ -272,8 +288,17 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
                     _submitQuiz();
                   }
                 },
-                icon: const Icon(Icons.check_circle_outline, color: Colors.green),
-                label: const Text('إنهاء الاختبار', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                icon: const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.green,
+                ),
+                label: const Text(
+                  'إنهاء الاختبار',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -317,8 +342,7 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
                   }
                 : null,
             onNext: () {
-              if (_currentQuestionIndex <
-                  _exam!.questions.length - 1) {
+              if (_currentQuestionIndex < _exam!.questions.length - 1) {
                 setState(() {
                   _currentQuestionIndex++;
                 });

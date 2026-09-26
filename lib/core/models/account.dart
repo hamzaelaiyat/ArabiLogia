@@ -1,3 +1,5 @@
+import 'package:arabilogia/core/models/grade_metadata.dart';
+
 class SavedAccount {
   final String id;
   final String email;
@@ -57,7 +59,7 @@ class SavedAccount {
     email: json['email'] as String? ?? '',
     fullName: json['fullName'] as String? ?? '',
     username: json['username'] as String? ?? '',
-    grade: json['grade'] as int? ?? 0,
+    grade: json['grade'] as int? ?? GradeMetadata.allGrades,
     avatarUrl: json['avatarUrl'] as String?,
     sessionJson: json['sessionJson'] as String? ?? '',
     savedAt: json['savedAt'] != null

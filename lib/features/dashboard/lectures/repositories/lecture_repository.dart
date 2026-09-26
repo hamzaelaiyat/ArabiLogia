@@ -9,7 +9,7 @@ class LectureRepository {
   final SupabaseServiceInterface _supabaseService;
 
   LectureRepository({SupabaseServiceInterface? supabaseService})
-      : _supabaseService = supabaseService ?? SupabaseServiceWrapper();
+    : _supabaseService = supabaseService ?? SupabaseServiceWrapper();
 
   Future<List<Map<String, dynamic>>> getLecturesByCategory(
     String categoryId,
@@ -97,10 +97,9 @@ class LectureRepository {
   }
 
   Future<void> upsertLecture(Lecture lecture) async {
-    await _supabaseService.from('lectures').upsert(
-      lecture.toJson(),
-      onConflict: 'id',
-    );
+    await _supabaseService
+        .from('lectures')
+        .upsert(lecture.toJson(), onConflict: 'id');
   }
 
   Future<void> deleteLecture(String id) async {
@@ -119,7 +118,10 @@ class LectureRepository {
       for (final block in lecture.contentBlocks) {
         if (block.type == BlockType.quiz || block.type == BlockType.exam) {
           if (block.content.isNotEmpty) {
-            final exam = await examRepo.loadExamById(lecture.courseId, block.content);
+            final exam = await examRepo.loadExamById(
+              lecture.courseId,
+              block.content,
+            );
             if (exam != null) {
               await examRepo.upsertExam(exam.copyWith(isPublished: newStatus));
             }

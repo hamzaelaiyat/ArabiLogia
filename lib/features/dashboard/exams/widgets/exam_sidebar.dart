@@ -31,8 +31,12 @@ class _ExamSidebarState extends State<ExamSidebar> {
   Widget build(BuildContext context) {
     final data = widget.data;
     final totalQuestions = data.questionCount;
-    final answeredCount = data.selectedAnswers.values.where((v) => v != null).length;
-    final flaggedCount = data.flaggedQuestions.values.where((v) => v == true).length;
+    final answeredCount = data.selectedAnswers.values
+        .where((v) => v != null)
+        .length;
+    final flaggedCount = data.flaggedQuestions.values
+        .where((v) => v == true)
+        .length;
 
     List<int> visibleIndices = List.generate(totalQuestions, (i) => i);
     if (_filterOnlyFlagged) {
@@ -74,13 +78,18 @@ class _ExamSidebarState extends State<ExamSidebar> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: data.categoryColor,
                         borderRadius: AppTokens.radiusFullAll,
                       ),
                       child: Text(
-                        data.categoryName.isNotEmpty ? data.categoryName : 'الاختبار',
+                        data.categoryName.isNotEmpty
+                            ? data.categoryName
+                            : 'الاختبار',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
@@ -110,7 +119,9 @@ class _ExamSidebarState extends State<ExamSidebar> {
                                 Icon(
                                   Icons.timer_outlined,
                                   size: 14,
-                                  color: isUrgent ? Colors.red : Colors.blue.shade700,
+                                  color: isUrgent
+                                      ? Colors.red
+                                      : Colors.blue.shade700,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -118,7 +129,9 @@ class _ExamSidebarState extends State<ExamSidebar> {
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: isUrgent ? Colors.red : Colors.blue.shade700,
+                                    color: isUrgent
+                                        ? Colors.red
+                                        : Colors.blue.shade700,
                                   ),
                                 ),
                               ],
@@ -131,9 +144,9 @@ class _ExamSidebarState extends State<ExamSidebar> {
                 const SizedBox(height: AppTokens.spacing8),
                 Text(
                   data.title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -151,7 +164,11 @@ class _ExamSidebarState extends State<ExamSidebar> {
                     if (flaggedCount > 0)
                       Row(
                         children: [
-                          const Icon(Icons.flag_rounded, size: 14, color: Colors.red),
+                          const Icon(
+                            Icons.flag_rounded,
+                            size: 14,
+                            color: Colors.red,
+                          ),
                           const SizedBox(width: 2),
                           Text(
                             '$flaggedCount معلمة',
@@ -230,18 +247,19 @@ class _ExamSidebarState extends State<ExamSidebar> {
                           color: isCurrent
                               ? AppColors.primary.withValues(alpha: 0.12)
                               : isAnswered
-                                  ? Colors.green.withValues(alpha: 0.08)
-                                  : Colors.transparent,
+                              ? Colors.green.withValues(alpha: 0.08)
+                              : Colors.transparent,
                           borderRadius: AppTokens.radiusMdAll,
                           border: Border.all(
                             color: isCurrent
                                 ? AppColors.primary
                                 : isFlagged
-                                    ? Colors.red.withValues(alpha: 0.7)
-                                    : isAnswered
-                                        ? Colors.green.withValues(alpha: 0.3)
-                                        : AppColors.mutedColor(context)
-                                            .withValues(alpha: 0.2),
+                                ? Colors.red.withValues(alpha: 0.7)
+                                : isAnswered
+                                ? Colors.green.withValues(alpha: 0.3)
+                                : AppColors.mutedColor(
+                                    context,
+                                  ).withValues(alpha: 0.2),
                             width: isCurrent ? 2 : 1,
                           ),
                         ),
@@ -255,9 +273,10 @@ class _ExamSidebarState extends State<ExamSidebar> {
                             backgroundColor: isAnswered
                                 ? Colors.green
                                 : isCurrent
-                                    ? AppColors.primary
-                                    : AppColors.mutedColor(context)
-                                        .withValues(alpha: 0.2),
+                                ? AppColors.primary
+                                : AppColors.mutedColor(
+                                    context,
+                                  ).withValues(alpha: 0.2),
                             child: isAnswered
                                 ? const Icon(
                                     Icons.check,
@@ -279,15 +298,18 @@ class _ExamSidebarState extends State<ExamSidebar> {
                             'السؤال ${qIndex + 1}',
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight:
-                                  isCurrent ? FontWeight.bold : FontWeight.w500,
+                              fontWeight: isCurrent
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
                               color: isCurrent
                                   ? AppColors.primary
                                   : AppColors.foreground(context),
                             ),
                           ),
                           trailing: IconButton(
-                            tooltip: isFlagged ? 'إزالة العلم الأحمر' : 'تعليم بعلم أحمر',
+                            tooltip: isFlagged
+                                ? 'إزالة العلم الأحمر'
+                                : 'تعليم بعلم أحمر',
                             icon: Icon(
                               isFlagged
                                   ? Icons.flag_rounded
@@ -295,7 +317,9 @@ class _ExamSidebarState extends State<ExamSidebar> {
                               size: 18,
                               color: isFlagged
                                   ? Colors.red
-                                  : AppColors.mutedColor(context).withValues(alpha: 0.4),
+                                  : AppColors.mutedColor(
+                                      context,
+                                    ).withValues(alpha: 0.4),
                             ),
                             onPressed: () => data.onToggleFlag(qIndex),
                           ),

@@ -1,11 +1,12 @@
 import 'package:arabilogia/core/services/supabase_service_interface.dart';
 import 'package:arabilogia/core/services/supabase_service_wrapper.dart';
+import 'package:arabilogia/core/models/grade_metadata.dart';
 
 class LeaderboardRepository {
-  static final LeaderboardRepository _instance = LeaderboardRepository._internal();
-  factory LeaderboardRepository({
-    SupabaseServiceInterface? supabaseService,
-  }) => supabaseService != null
+  static final LeaderboardRepository _instance =
+      LeaderboardRepository._internal();
+  factory LeaderboardRepository({SupabaseServiceInterface? supabaseService}) =>
+      supabaseService != null
       ? LeaderboardRepository._create(supabaseService: supabaseService)
       : _instance;
   LeaderboardRepository._internal()
@@ -26,7 +27,7 @@ class LeaderboardRepository {
         params: {'period_filter': period},
       );
 
-      if (grade != null && grade != 0) {
+      if (grade != null && grade != GradeMetadata.allGrades) {
         query = query.eq('grade', grade);
       }
 

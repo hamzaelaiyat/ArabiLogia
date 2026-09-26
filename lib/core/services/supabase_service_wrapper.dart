@@ -19,8 +19,10 @@ class SupabaseServiceWrapper implements SupabaseServiceInterface {
   SupabaseStorageClient get storage => client.storage;
 
   @override
-  PostgrestFilterBuilder<dynamic> rpc(String fn, {Map<String, dynamic>? params}) =>
-      client.rpc(fn, params: params);
+  PostgrestFilterBuilder<dynamic> rpc(
+    String fn, {
+    Map<String, dynamic>? params,
+  }) => client.rpc(fn, params: params);
 
   @override
   User? get currentUser => auth.currentUser;

@@ -26,9 +26,9 @@ class AvatarProvider extends ChangeNotifier {
     required AvatarService avatarService,
     required ProfileService profileService,
     GoTrueClient? auth,
-  })  : _avatarService = avatarService,
-        _profileService = profileService,
-        _auth = auth;
+  }) : _avatarService = avatarService,
+       _profileService = profileService,
+       _auth = auth;
 
   set auth(GoTrueClient? value) => _auth = value;
 
@@ -54,9 +54,7 @@ class AvatarProvider extends ChangeNotifier {
 
   Future<bool> removeAvatar() async {
     try {
-      final result = await _avatarService.removeAvatar(
-        _auth!.currentUser!.id,
-      );
+      final result = await _avatarService.removeAvatar(_auth!.currentUser!.id);
       return result.success;
     } catch (e) {
       return false;

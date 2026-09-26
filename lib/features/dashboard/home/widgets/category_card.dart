@@ -1,12 +1,12 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 
 class CategoryCard extends StatelessWidget {
   final CategoryMetadata category;
   final String? latestThumbnailUrl;
-  final int lectureCount;
+  final int totalLectures;
+  final int completedLectures;
   final double scoreSum;
   final double scoreAvg;
   final int examCount;
@@ -16,7 +16,8 @@ class CategoryCard extends StatelessWidget {
     super.key,
     required this.category,
     this.latestThumbnailUrl,
-    required this.lectureCount,
+    required this.totalLectures,
+    required this.completedLectures,
     required this.scoreSum,
     required this.scoreAvg,
     required this.examCount,
@@ -25,199 +26,223 @@ class CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBgColor = _getRefinedCategoryColor(
+      category.name,
+      category.color,
+      isDark,
+    );
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: category.color,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: category.color.withValues(alpha: 0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Upper Section: Latest Lecture Thumbnail (x in mockup)
-              Expanded(
-                flex: 52,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (latestThumbnailUrl != null &&
-                        latestThumbnailUrl!.isNotEmpty)
-                      latestThumbnailUrl!.startsWith('data:image')
-                          ? Image.memory(
-                              base64Decode(latestThumbnailUrl!.split(',').last),
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildFallbackThumbnail(context),
-                            )
-                          : Image.network(
-                              latestThumbnailUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildFallbackThumbnail(context),
-                            )
-                    else
-                      _buildFallbackThumbnail(context),
+    final backlogCount = (totalLectures - completedLectures).clamp(
+      0,
+      totalLectures,
+    );
+    final String backlogText;
+    if (totalLectures == 0) {
+      backlogText = 'لا توجد محاضرات بعد';
+    } else if (backlogCount > 0) {
+      backlogText =
+          'مراكم $backlogCount ${backlogCount == 1
+              ? 'محاضرة'
+              : backlogCount == 2
+              ? 'محاضرتين'
+              : 'محاضرات'}';
+    } else {
+      backlogText = 'مش مراكم';
+    }
 
-                    // Soft Gradient Overlay at bottom of thumbnail
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              category.color.withValues(alpha: 0.8),
-                              category.color,
-                            ],
-                            stops: const [0.5, 0.85, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
+    final hasThumbnailImage =
+        latestThumbnailUrl != null && latestThumbnailUrl!.isNotEmpty;
 
-                    // Play / Video Indicator Badge
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.4),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.play_arrow_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
+    return Semantics(
+      label: '${category.name}، $totalLectures محاضرة، $backlogText',
+      button: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: cardBgColor,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.1),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
+              ],
+              border: Border.all(
+                color: isDark
+                    ? Colors.white12
+                    : Colors.black.withValues(alpha: 0.05),
+                width: 1,
               ),
-
-              // Lower Section: Category Title & Stats Info
-              Expanded(
-                flex: 48,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10.0,
-                    vertical: 6.0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Upper Section: Thumbnail
+                Expanded(
+                  flex: 52,
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      // Category Title (e.g. "نحو")
-                      Text(
-                        category.name,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      if (hasThumbnailImage)
+                        latestThumbnailUrl!.startsWith('data:image')
+                            ? Image.memory(
+                                base64Decode(
+                                  latestThumbnailUrl!.split(',').last,
+                                ),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    _buildFallbackThumbnail(
+                                      context,
+                                      cardBgColor,
+                                    ),
+                              )
+                            : Image.network(
+                                latestThumbnailUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    _buildFallbackThumbnail(
+                                      context,
+                                      cardBgColor,
+                                    ),
+                              )
+                      else
+                        _buildFallbackThumbnail(context, cardBgColor),
 
-                      // Info Details: Lecture Count & Score Metrics
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.video_library_outlined,
-                                size: 13,
-                                color: Colors.white70,
+                      // Gradient Overlay at bottom of thumbnail (only if an image is loaded)
+                      if (hasThumbnailImage)
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  cardBgColor.withValues(alpha: 0.7),
+                                  cardBgColor,
+                                ],
+                                stops: const [0.4, 0.85, 1.0],
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '$lectureCount محاضرات',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.stars_outlined,
-                                size: 13,
-                                color: Colors.white70,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  examCount > 0
-                                      ? 'المجموع: ${scoreSum.toStringAsFixed(0)} | المتوسط: ${scoreAvg.toStringAsFixed(0)}%'
-                                      : 'لا تتوفر درجات بعد',
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                        ),
                     ],
                   ),
                 ),
-              ),
-            ],
+
+                // Lower Section: Subject Title & Real Backlog / Lecture counts
+                Expanded(
+                  flex: 48,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12.0,
+                      vertical: 8.0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          category.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 20,
+                            letterSpacing: -0.3,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          backlogText,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$totalLectures محاضرة',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.75),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFallbackThumbnail(BuildContext context) {
+  Widget _buildFallbackThumbnail(BuildContext context, Color cardBgColor) {
     return Container(
-      color: Colors.black12,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [cardBgColor.withValues(alpha: 0.9), cardBgColor],
+        ),
+      ),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              category.icon,
-              size: 34,
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'أحدث محاضرة',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
-                fontSize: 10,
-              ),
-            ),
-          ],
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(category.icon, size: 32, color: Colors.white),
         ),
       ),
     );
+  }
+
+  static Color _getRefinedCategoryColor(
+    String name,
+    Color fallbackColor,
+    bool isDark,
+  ) {
+    switch (name) {
+      case 'النحو':
+        return isDark ? const Color(0xFF991B1B) : const Color(0xFFDC2626);
+      case 'البلاغة':
+        return isDark ? const Color(0xFF1D4ED8) : const Color(0xFF2563EB);
+      case 'النصوص':
+        return isDark ? const Color(0xFF047857) : const Color(0xFF059669);
+      case 'القراءة':
+        return isDark ? const Color(0xFF6D28D9) : const Color(0xFF7C3AED);
+      case 'القصة':
+        return isDark ? const Color(0xFFD97706) : const Color(0xFFEA580C);
+      case 'الأدب':
+        return isDark ? const Color(0xFF4D7C0F) : const Color(0xFF65A30D);
+      case 'شامل':
+        return isDark ? const Color(0xFFB45309) : const Color(0xFFD97706);
+      case 'نصف شامل':
+        return isDark ? const Color(0xFF0284C7) : const Color(0xFF03A9F4);
+      default:
+        return fallbackColor;
+    }
   }
 }

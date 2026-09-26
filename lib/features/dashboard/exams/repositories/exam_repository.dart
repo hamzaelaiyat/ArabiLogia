@@ -18,9 +18,9 @@ class ExamRepository {
     SupabaseServiceInterface? supabaseService,
     AppDatabase? database,
   }) : _student = StudentExamRepository(
-          supabaseService: supabaseService,
-          database: database,
-        ),
+         supabaseService: supabaseService,
+         database: database,
+       ),
        _management = ExamManagementRepository(supabaseService: supabaseService),
        _participants = ExamParticipantsRepository(
          supabaseService: supabaseService,
@@ -39,8 +39,7 @@ class ExamRepository {
   Future<void> unpublishExam(String examId) =>
       _management.unpublishExam(examId);
 
-  Future<void> publishDraft(String examId) =>
-      _management.publishDraft(examId);
+  Future<void> publishDraft(String examId) => _management.publishDraft(examId);
 
   Stream<List<Map<String, dynamic>>> streamExamsManagedRealtime() =>
       _management.streamExamsManagedRealtime();
@@ -51,6 +50,13 @@ class ExamRepository {
 
   Future<List<Map<String, dynamic>>> getExamsManaged() =>
       _management.getExamsManaged();
+
+  Future<List<Map<String, dynamic>>> getExamSummaries(List<String> examIds) =>
+      _management.getExamSummaries(examIds);
+
+  Future<Map<String, ExamResultAggregate>> getAggregatesForExams(
+    List<String> examIds,
+  ) => _participants.getAggregatesForExams(examIds);
 
   Stream<List<Map<String, dynamic>>> streamExamParticipantsRealtime(
     String examId,

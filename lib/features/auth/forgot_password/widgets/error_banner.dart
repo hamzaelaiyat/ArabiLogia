@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 
 class ErrorBanner extends StatelessWidget {
@@ -14,14 +15,14 @@ class ErrorBanner extends StatelessWidget {
       padding: const EdgeInsets.all(AppTokens.spacing12),
       margin: const EdgeInsets.only(bottom: AppTokens.spacing12),
       decoration: BoxDecoration(
-        color: const Color(0xFFD32F2F).withValues(alpha: 0.1),
+        color: AppColors.errorDark.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppTokens.radiusMd),
-        border: Border.all(color: const Color(0xFFD32F2F)),
+        border: Border.all(color: AppColors.errorDark),
       ),
       child: Text(
         message!,
         style: const TextStyle(
-          color: Color(0xFFD32F2F),
+          color: AppColors.errorDark,
           fontWeight: FontWeight.w500,
         ),
         textAlign: TextAlign.center,

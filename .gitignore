@@ -17,6 +17,8 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.env.secrets
+.env.*.secrets
 
 # Vercel
 .vercel/
@@ -62,8 +64,26 @@ opencode.json
 .pub-cache/
 .pub/
 /build/
-!/build/web/
 /coverage/
+
+# Generated Flutter web output.
+# These files are produced by `flutter build web` into build/web and are
+# copied to public/ for Vercel. Committing a copy of them under web/ makes
+# `flutter build web` copy the stale copy OVER the fresh output - that is how a
+# 26.9.07 bundle stayed live for weeks. Only real templates belong in web/:
+# index.html, manifest.json, favicon.png, icons/, robots.txt, ads.txt and the
+# hand-written flutter_service_worker.js.
+/web/assets/
+/web/canvaskit/
+/web/main.dart.js
+/web/flutter_bootstrap.js
+/web/flutter.js
+/web/flutter_service_worker.js.map
+/web/.last_build_id
+/web/version.json
+/build/web/assets/.env
+/public/assets/.env
+/public/.env
 
 # Build outputs (APK, EXE, Linux binaries, installers)
 *.apk
@@ -99,4 +119,8 @@ assets/images/album/
 lib/features/admin/
 lib/features/gate/
 supabase/
-build/web/assets/.env
+
+# Scratch: local fixtures and the throwaway Next.js experiment
+/Picture1.png
+/*.docx
+/experimental/

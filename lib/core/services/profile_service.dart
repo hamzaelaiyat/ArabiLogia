@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:arabilogia/core/services/supabase_service_interface.dart';
 import 'package:arabilogia/core/utils/auth_error_mapper.dart';
@@ -6,11 +7,7 @@ class ProfileUpdateResult {
   final bool success;
   final User? user;
   final String? error;
-  const ProfileUpdateResult({
-    required this.success,
-    this.user,
-    this.error,
-  });
+  const ProfileUpdateResult({required this.success, this.user, this.error});
 }
 
 class ViolationState {
@@ -26,7 +23,10 @@ class ViolationState {
 
 abstract class IProfileDatabase {
   Future<Map<String, dynamic>?> fetchSingle(
-      String table, String columns, String id);
+    String table,
+    String columns,
+    String id,
+  );
   Future<void> update(String table, Map<String, dynamic> values, String id);
   Future<UserResponse> updateAuthUser(UserAttributes attributes);
   User? get currentUser;
@@ -40,21 +40,28 @@ class SupabaseProfileDatabase implements IProfileDatabase {
 
   @override
   Future<Map<String, dynamic>?> fetchSingle(
-      String table, String columns, String id) async {
+    String table,
+    String columns,
+    String id,
+  ) async {
     try {
       return await _supabase.client
           .from(table)
           .select(columns)
           .eq('id', id)
           .single();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Failed to fetch $table row $id: $e');
       return null;
     }
   }
 
   @override
   Future<void> update(
-      String table, Map<String, dynamic> values, String id) async {
+    String table,
+    Map<String, dynamic> values,
+    String id,
+  ) async {
     await _supabase.client.from(table).update(values).eq('id', id);
   }
 
@@ -83,8 +90,8 @@ class ProfileService {
     this._supabase, {
     IProfileDatabase? db,
     DateTime Function()? now,
-  })  : _db = db ?? SupabaseProfileDatabase(_supabase),
-        _now = now ?? (() => DateTime.now());
+  }) : _db = db ?? SupabaseProfileDatabase(_supabase),
+       _now = now ?? (() => DateTime.now());
 
   Future<String?> loadRole() async {
     return await loadRoleFromServer() ??
@@ -120,8 +127,7 @@ class ProfileService {
       );
       if (profile == null) return const ViolationState();
       return ViolationState(
-        imageViolationCount:
-            profile['image_violation_count'] as int? ?? 0,
+        imageViolationCount: profile['image_violation_count'] as int? ?? 0,
         imageBlockedUntil: profile['image_blocked_until'] != null
             ? DateTime.parse(profile['image_blocked_until'] as String)
             : null,
@@ -166,8 +172,11 @@ class ProfileService {
         profileUpdate['description'] = description;
       }
       if (grade != null) {
-        final profile =
-            await _db.fetchSingle('profiles', 'grade_updated_at, grade', userId);
+        final profile = await _db.fetchSingle(
+          'profiles',
+          'grade_updated_at, grade',
+          userId,
+        );
         if (profile == null) {
           return const ProfileUpdateResult(
             success: false,

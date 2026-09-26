@@ -16,37 +16,41 @@ class DashboardSidebarSecondaryNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTokens.spacing8,
-        vertical: AppTokens.spacing2,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: AppTokens.radiusMdAll,
-        child: InkWell(
-          onTap: onTap,
+    return Semantics(
+      label: label,
+      button: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTokens.spacing8,
+          vertical: AppTokens.spacing2,
+        ),
+        child: Material(
+          color: Colors.transparent,
           borderRadius: AppTokens.radiusMdAll,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTokens.spacing8,
-              vertical: AppTokens.spacing6,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  color: AppColors.mutedColor(context),
-                  size: AppTokens.iconSizeXs,
-                ),
-                const SizedBox(width: AppTokens.spacing8),
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.foreground(context),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: AppTokens.radiusMdAll,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTokens.spacing8,
+                vertical: AppTokens.spacing6,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    color: AppColors.mutedColor(context),
+                    size: AppTokens.iconSizeXs,
                   ),
-                ),
-              ],
+                  const SizedBox(width: AppTokens.spacing8),
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.foreground(context),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

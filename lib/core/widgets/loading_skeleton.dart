@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 
 class SkeletonBox extends StatelessWidget {
@@ -34,10 +35,9 @@ class SkeletonShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Shimmer.fromColors(
-      baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-      highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
+      baseColor: AppColors.skeleton(context),
+      highlightColor: AppColors.skeletonHighlight(context),
       child: child,
     );
   }

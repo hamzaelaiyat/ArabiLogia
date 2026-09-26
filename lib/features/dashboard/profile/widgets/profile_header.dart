@@ -99,7 +99,9 @@ class _AvatarSection extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: canUpload ? 0.2 : 0.08),
+                color: AppColors.primary.withValues(
+                  alpha: canUpload ? 0.2 : 0.08,
+                ),
                 width: 4,
               ),
               boxShadow: null,
@@ -120,7 +122,9 @@ class _AvatarSection extends StatelessWidget {
                               name.isNotEmpty ? name[0] : '؟',
                               style: Theme.of(context).textTheme.headlineLarge
                                   ?.copyWith(
-                                    color: canUpload ? AppColors.primary : AppColors.mutedColor(context),
+                                    color: canUpload
+                                        ? AppColors.primary
+                                        : AppColors.mutedColor(context),
                                     fontWeight: FontWeight.bold,
                                   ),
                             ),
@@ -132,7 +136,9 @@ class _AvatarSection extends StatelessWidget {
                       name.isNotEmpty ? name[0] : '؟',
                       style: Theme.of(context).textTheme.headlineLarge
                           ?.copyWith(
-                            color: canUpload ? AppColors.primary : AppColors.mutedColor(context),
+                            color: canUpload
+                                ? AppColors.primary
+                                : AppColors.mutedColor(context),
                             fontWeight: FontWeight.bold,
                           ),
                     ),

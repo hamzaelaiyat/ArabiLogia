@@ -5,10 +5,13 @@ import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
+import 'package:arabilogia/features/dashboard/lectures/repositories/lecture_activity_repository.dart';
 import 'package:arabilogia/features/dashboard/leaderboard/repositories/leaderboard_repository.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
+import 'package:arabilogia/core/widgets/error_state.dart';
 import 'package:arabilogia/core/widgets/glass_app_bar.dart';
 import 'package:arabilogia/core/widgets/responsive_app_bar_title.dart';
+import 'package:arabilogia/core/widgets/user_avatar_action.dart';
 import 'package:arabilogia/core/utils/grade_utils.dart';
 
 import '../widgets/home_welcome_card.dart';
@@ -28,7 +31,9 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final LeaderboardRepository _leaderboardRepository = LeaderboardRepository();
   Map<String, dynamic>? _userStats;
   List<Map<String, dynamic>> _recentActivities = [];
+  List<double> _scoresHistory = [];
   bool _isLoadingActivities = true;
+  bool _hasActivityError = false;
 
   @override
   void initState() {
@@ -70,15 +75,44 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
   Future<void> _fetchRecentActivity() async {
     try {
-      final activities = await _scoreRepository.getRecentActivity(limit: 3);
+      final activities = await _scoreRepository.getRecentActivity(limit: 10);
+      final lectures = await LectureActivityRepository().getRecent();
+      final merged = LectureActivityRepository.merge(lectures, activities);
+      final localScoresMap = await _scoreRepository.getLocalScores();
+      final List<double> extracted = [];
+
+      for (final act in activities) {
+        if (act['score'] != null) {
+          final s = (act['score'] as num).toDouble();
+          extracted.add(s);
+        }
+      }
+
+      if (extracted.isEmpty && localScoresMap.isNotEmpty) {
+        localScoresMap.forEach((_, data) {
+          if (data is Map && data['score'] != null) {
+            final s = (data['score'] as num).toDouble();
+            extracted.add(s);
+          }
+        });
+      }
+
       if (mounted) {
         setState(() {
-          _recentActivities = activities;
+          _recentActivities = merged.take(3).toList();
+          _scoresHistory = extracted.reversed.toList();
           _isLoadingActivities = false;
+          _hasActivityError = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoadingActivities = false);
+      debugPrint('Failed to load recent activity: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingActivities = false;
+          _hasActivityError = true;
+        });
+      }
     }
   }
 
@@ -101,10 +135,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         key: TestKeys.homeScreen,
+        backgroundColor: Colors.transparent,
         extendBodyBehindAppBar: isMobile,
         appBar: isMobile
             ? const GlassAppBar(
                 title: ResponsiveAppBarTitle('الرئيسية'),
+                actions: [UserAvatarAction()],
               )
             : null,
         body: RefreshIndicator(
@@ -117,8 +153,8 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             padding: EdgeInsets.only(
               top: isMobile
                   ? MediaQuery.paddingOf(context).top +
-                      kToolbarHeight +
-                      AppTokens.spacing16
+                        kToolbarHeight +
+                        AppTokens.spacing16
                   : AppTokens.spacing16,
               left: isMobile
                   ? AppTokens.dashboardPaddingMobile
@@ -143,12 +179,20 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                   rank: rank,
                   exams: _userStats?['exams_completed'] ?? 0,
                   avg: _userStats?['avg_score'] ?? 0,
+                  scoresHistory: _scoresHistory,
                 ),
                 const SizedBox(height: AppTokens.spacing16),
-                RecentActivitySection(
-                  activities: _recentActivities,
-                  isLoading: _isLoadingActivities,
-                ),
+                if (_hasActivityError)
+                  ErrorState(
+                    title: 'تعذر تحميل النشاط الأخير',
+                    detail: 'تحقق من اتصالك بالإنترنت ثم أعد المحاولة',
+                    onRetry: _fetchRecentActivity,
+                  )
+                else
+                  RecentActivitySection(
+                    activities: _recentActivities,
+                    isLoading: _isLoadingActivities,
+                  ),
                 const SizedBox(height: AppTokens.spacing16),
                 const ExamCategoriesGrid(),
               ],
@@ -160,5 +204,5 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   }
 
   String _getGradeText(dynamic grade) =>
-      getGradeText(grade, fallback: 'رحلتك الدراسية');
+      getGradeText(grade, fallback: 'صفك الدراسي');
 }

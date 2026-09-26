@@ -20,9 +20,7 @@ class QuestionPassage extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: AppTokens.radiusLgAll,
-        border: Border.all(
-          color: categoryColor.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: categoryColor.withValues(alpha: 0.1)),
       ),
       child: ClipRRect(
         borderRadius: AppTokens.radiusLgAll,
@@ -32,9 +30,9 @@ class QuestionPassage extends StatelessWidget {
           child: Text(
             passage,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  height: 1.8,
-                  color: AppColors.foreground(context),
-                ),
+              height: 1.8,
+              color: AppColors.foreground(context),
+            ),
           ),
         ),
       ),

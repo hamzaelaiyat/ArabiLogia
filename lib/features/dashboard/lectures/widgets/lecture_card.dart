@@ -1,9 +1,7 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
-import 'package:arabilogia/core/theme/app_text_styles.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/utils/video_utils.dart';
 
@@ -24,222 +22,537 @@ class LectureCard extends StatefulWidget {
 }
 
 class _LectureCardState extends State<LectureCard> {
-  int _completedCount = 0;
-  int _totalBlocks = 0;
+  Set<String> _completedBlockIds = {};
+  List<Map<String, dynamic>> _parsedBlocks = [];
 
   @override
   void initState() {
     super.initState();
-    _loadProgress();
+    _loadDataAndProgress();
   }
 
   @override
   void didUpdateWidget(covariant LectureCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.lecture['id'] != widget.lecture['id']) {
-      _loadProgress();
+      _loadDataAndProgress();
     }
   }
 
-  List<dynamic>? get _blocks {
-    try {
-      final raw = widget.lecture['content_blocks'];
-      if (raw == null) return null;
-      final decoded = raw is String ? jsonDecode(raw) : raw;
-      if (decoded is Map) return decoded['blocks'] as List<dynamic>?;
-      if (decoded is List) return decoded;
-    } catch (_) {}
-    return null;
-  }
-
-  Future<void> _loadProgress() async {
+  Future<void> _loadDataAndProgress() async {
+    final blocks = _parseBlocks(widget.lecture);
     final id = widget.lecture['id']?.toString() ?? '';
-    if (id.isEmpty) return;
-    final prefs = await SharedPreferences.getInstance();
-    final completed = prefs.getStringList('lecture_progress_$id') ?? [];
+    Set<String> completedIds = {};
+
+    if (id.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      final list = prefs.getStringList('lecture_progress_$id') ?? [];
+      completedIds = list.toSet();
+    }
+
     if (!mounted) return;
     setState(() {
-      _completedCount = completed.length;
-      _totalBlocks = _blocks?.length ?? 0;
+      _parsedBlocks = blocks;
+      _completedBlockIds = completedIds;
     });
+  }
+
+  static List<Map<String, dynamic>> _parseBlocks(Map<String, dynamic> lecture) {
+    final List<Map<String, dynamic>> result = [];
+    try {
+      final raw = lecture['content_blocks'];
+      if (raw != null) {
+        final decoded = raw is String ? jsonDecode(raw) : raw;
+        List<dynamic>? list;
+        if (decoded is Map) {
+          list = decoded['blocks'] as List<dynamic>?;
+        } else if (decoded is List) {
+          list = decoded;
+        }
+
+        if (list != null && list.isNotEmpty) {
+          for (int i = 0; i < list.length; i++) {
+            final b = list[i];
+            if (b is Map) {
+              result.add(Map<String, dynamic>.from(b));
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Silently caught error: $e");
+    }
+
+    // Fallback: If no structured blocks exist, construct blocks from legacy fields
+    if (result.isEmpty) {
+      final desc = lecture['description'] as String? ?? '';
+      final yt = lecture['youtube_url'] as String? ?? '';
+      final quiz = lecture['quiz_id'] as String?;
+
+      if (yt.isNotEmpty) {
+        result.add({
+          'id': 'legacy_yt',
+          'type': 'youtube',
+          'content': yt,
+          'metadata': {'duration_minutes': 20},
+        });
+      }
+      if (desc.isNotEmpty) {
+        final wordCount = desc.split(RegExp(r'\s+')).length;
+        final minutes = (wordCount / 50).ceil().clamp(2, 15);
+        result.add({
+          'id': 'legacy_desc',
+          'type': 'text',
+          'content': desc,
+          'metadata': {'duration_minutes': minutes},
+        });
+      }
+      if (quiz != null && quiz.isNotEmpty) {
+        result.add({
+          'id': 'legacy_quiz',
+          'type': 'quiz',
+          'content': quiz,
+          'metadata': {'duration_minutes': 10},
+        });
+      }
+    }
+
+    // Default block if lecture is completely empty
+    if (result.isEmpty) {
+      result.add({
+        'id': 'default_block',
+        'type': 'text',
+        'content': 'محتوى المحاضرة',
+        'metadata': {'duration_minutes': 15},
+      });
+    }
+
+    return result;
+  }
+
+  // Calculate duration in minutes for a single block
+  int _getBlockDurationMinutes(Map<String, dynamic> block) {
+    final meta = block['metadata'];
+    if (meta is Map) {
+      final dur = meta['duration_minutes'] ?? meta['duration'];
+      if (dur is num && dur > 0) return dur.toInt();
+    }
+    final type = block['type'] as String? ?? 'text';
+    if (type == 'youtube') return 20;
+    if (type == 'quiz' || type == 'exam') return 10;
+    final content = block['content'] as String? ?? '';
+    final words = content.split(RegExp(r'\s+')).length;
+    return (words / 50).ceil().clamp(3, 15);
+  }
+
+  // Calculate TOTAL TIME of the lecture in minutes
+  int get _totalMinutes {
+    final explicitDur = widget.lecture['duration_minutes'] as num?;
+    if (explicitDur != null && explicitDur > 0) {
+      return explicitDur.toInt();
+    }
+    int sum = 0;
+    for (final b in _parsedBlocks) {
+      sum += _getBlockDurationMinutes(b);
+    }
+    return sum > 0 ? sum : 25;
+  }
+
+  // Calculate REMAINING TIME to complete the lecture in minutes
+  int get _remainingMinutes {
+    int uncompletedSum = 0;
+    for (final b in _parsedBlocks) {
+      final id = b['id']?.toString() ?? '';
+      if (!_completedBlockIds.contains(id)) {
+        uncompletedSum += _getBlockDurationMinutes(b);
+      }
+    }
+    return uncompletedSum;
+  }
+
+  // Calculate COMPLETION PERCENTAGE from completed blocks
+  int get _completionPercentage {
+    if (_parsedBlocks.isEmpty) return 0;
+    int completedCount = 0;
+    for (final b in _parsedBlocks) {
+      final id = b['id']?.toString() ?? '';
+      if (_completedBlockIds.contains(id)) {
+        completedCount++;
+      }
+    }
+    return ((completedCount / _parsedBlocks.length) * 100).round().clamp(
+      0,
+      100,
+    );
+  }
+
+  String _formatTotalTime(int totalMins) {
+    if (totalMins >= 60) {
+      final hours = totalMins ~/ 60;
+      final mins = totalMins % 60;
+      if (mins == 0) return '~$hoursساعة';
+      return '~$hoursس $minsد';
+    }
+    return '~$totalMinsد';
+  }
+
+  String _formatRemainingTime(int remMins, int pct) {
+    if (pct >= 100 || remMins <= 0) {
+      return 'مكتملة';
+    }
+    if (remMins >= 60) {
+      final hours = remMins ~/ 60;
+      final mins = remMins % 60;
+      if (mins == 0) return 'متبقي ~$hoursس';
+      return 'متبقي ~$hoursس $minsد';
+    }
+    return 'متبقي ~$remMinsد';
   }
 
   String get _videoId {
     final direct = getVideoId(widget.lecture['youtube_url']?.toString() ?? '');
     if (direct.isNotEmpty) return direct;
-    final blocks = _blocks;
-    if (blocks != null) {
-      for (final b in blocks) {
-        if (b is Map && b['type'] == 'youtube') {
-          final vid = getVideoId(b['content']?.toString() ?? '');
-          if (vid.isNotEmpty) return vid;
-        }
+    for (final b in _parsedBlocks) {
+      if (b['type'] == 'youtube') {
+        final vid = getVideoId(b['content']?.toString() ?? '');
+        if (vid.isNotEmpty) return vid;
       }
     }
     return '';
   }
 
-  double get _progress =>
-      _totalBlocks == 0 ? 0 : (_completedCount / _totalBlocks).clamp(0.0, 1.0);
-
-  Widget _placeholder() {
-    return Container(
-      color: widget.categoryColor.withValues(alpha: 0.12),
-      child: Icon(
-        Icons.play_circle_outline,
-        color: widget.categoryColor,
-        size: AppTokens.iconSizeLg,
-      ),
-    );
-  }
-
-  Widget _thumbnail() {
+  Widget _thumbnailWidget(double width, double height) {
     final customThumbnail = widget.lecture['thumbnail_url']?.toString() ?? '';
     if (customThumbnail.isNotEmpty) {
       if (customThumbnail.startsWith('data:image')) {
         try {
           final bytes = base64Decode(customThumbnail.split(',').last);
           return SizedBox(
-            width: 120,
-            height: 72,
+            width: width,
+            height: height,
             child: Image.memory(
               bytes,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _youtubeOrPlaceholder(),
+              errorBuilder: (_, __, ___) =>
+                  _youtubeOrPlaceholder(width, height),
             ),
           );
-        } catch (_) {}
+        } catch (e) {
+          debugPrint("Silently caught error: $e");
+        }
       }
       return SizedBox(
-        width: 120,
-        height: 72,
+        width: width,
+        height: height,
         child: Image.network(
           customThumbnail,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _youtubeOrPlaceholder(),
+          errorBuilder: (_, __, ___) => _youtubeOrPlaceholder(width, height),
         ),
       );
     }
-    return _youtubeOrPlaceholder();
+    return _youtubeOrPlaceholder(width, height);
   }
 
-  Widget _youtubeOrPlaceholder() {
+  Widget _youtubeOrPlaceholder(double width, double height) {
     final vid = _videoId;
     return SizedBox(
-      width: 120,
-      height: 72,
+      width: width,
+      height: height,
       child: vid.isNotEmpty
           ? Image.network(
               'https://img.youtube.com/vi/$vid/hqdefault.jpg',
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _placeholder(),
+              errorBuilder: (_, __, ___) => _placeholder(width, height),
             )
-          : _placeholder(),
+          : _placeholder(width, height),
+    );
+  }
+
+  Widget _placeholder(double width, double height) {
+    return Container(
+      width: width,
+      height: height,
+      color: widget.categoryColor.withValues(alpha: 0.15),
+      child: Icon(
+        Icons.play_circle_outline,
+        color: widget.categoryColor,
+        size: 36,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final description = widget.lecture['description'] as String? ?? '';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDesktop = AppTokens.isDesktop(context);
+
+    final pct = _completionPercentage;
+    final totalTimeStr = _formatTotalTime(_totalMinutes);
+    final remTimeStr = _formatRemainingTime(_remainingMinutes, pct);
+
+    final cardBg = isDark ? AppColors.secondaryDark : const Color(0xFFE5F3FF);
+
+    final titleText = widget.lecture['title'] as String? ?? 'شرح المحاضرة';
+
+    if (isDesktop) {
+      return _buildDesktopCard(
+        context,
+        cardBg,
+        isDark,
+        titleText,
+        totalTimeStr,
+        remTimeStr,
+        pct,
+      );
+    } else {
+      return _buildMobileCard(
+        context,
+        cardBg,
+        isDark,
+        titleText,
+        totalTimeStr,
+        remTimeStr,
+        pct,
+      );
+    }
+  }
+
+  Widget _buildDesktopCard(
+    BuildContext context,
+    Color cardBg,
+    bool isDark,
+    String titleText,
+    String totalTimeStr,
+    String remTimeStr,
+    int pct,
+  ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: AppTokens.spacing8),
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: widget.onTap,
-          child: IntrinsicHeight(
-            child: Row(
-              children: [
-                Container(width: 4, color: widget.categoryColor),
-                Padding(
-                  padding: const EdgeInsets.all(AppTokens.spacing6),
-                  child: ClipRRect(
-                    borderRadius: AppTokens.radiusSmAll,
-                    child: _thumbnail(),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppTokens.spacing6,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                widget.lecture['title'] as String? ?? '',
-                                style: Theme.of(context).textTheme.titleSmall,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (widget.lecture['quiz_id'] != null) ...[
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.quiz_outlined,
-                                size: 14,
-                                color: widget.categoryColor,
-                              ),
-                            ],
-                          ],
-                        ),
-                        if (description.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            description,
-                            style: Theme.of(context).textTheme.bodySmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                        if (_totalBlocks > 0 && _completedCount > 0) ...[
-                          const SizedBox(height: AppTokens.spacing4),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: _progress,
-                                    minHeight: 5,
-                                    backgroundColor: widget.categoryColor
-                                        .withValues(alpha: 0.15),
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      widget.categoryColor,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: AppTokens.spacing4),
-                              Text(
-                                '${(_progress * 100).round()}%',
-                                style: AppTextStyles.caption.copyWith(
-                                  color: widget.categoryColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
+      margin: const EdgeInsets.only(bottom: AppTokens.spacing16),
+      height: 115,
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(28),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 170,
+                height: double.infinity,
+                child: _thumbnailWidget(170, double.infinity),
+              ),
+              Expanded(
+                child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppTokens.spacing4,
+                    horizontal: 20.0,
+                    vertical: 16.0,
                   ),
-                  child: Icon(
-                    Icons.chevron_left,
-                    color: AppColors.mutedColor(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        titleText,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : Colors.black,
+                          letterSpacing: -0.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Text(
+                            totalTimeStr,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppColors.mutedDark
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+                          Text(
+                            remTimeStr,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppColors.mutedDark
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: _buildDesktopPillGauge(pct),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopPillGauge(int pct) {
+    final fillRatio = (pct / 100.0).clamp(0.0, 1.0);
+
+    return Container(
+      width: 58,
+      height: 85,
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(29),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (pct > 0)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: (85 * fillRatio).clamp(4.0, 85.0),
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [AppColors.blue, Color(0xFF1968D2)],
+                  ),
+                ),
+              ),
             ),
+          Text(
+            '$pct%',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileCard(
+    BuildContext context,
+    Color cardBg,
+    bool isDark,
+    String titleText,
+    String totalTimeStr,
+    String remTimeStr,
+    int pct,
+  ) {
+    final mobileBg = isDark ? AppColors.cardDark : const Color(0xFF97CBFF);
+    final textColor = isDark ? Colors.white : AppColors.textPrimary;
+    final subtextColor = isDark
+        ? const Color(0xFFCBD5E1)
+        : const Color(0xFF1E293B);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppTokens.spacing12),
+      height: 82,
+      decoration: BoxDecoration(
+        color: mobileBg,
+        borderRadius: BorderRadius.circular(36),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(
+              0xFF97CBFF,
+            ).withValues(alpha: isDark ? 0.2 : 0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(36),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(36),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 110,
+                height: double.infinity,
+                child: _thumbnailWidget(110, double.infinity),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12.0,
+                    vertical: 8.0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        titleText,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          color: textColor,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '$totalTimeStr • $remTimeStr',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: subtextColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$pct%',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              color: textColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

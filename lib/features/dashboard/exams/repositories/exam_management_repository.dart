@@ -9,7 +9,7 @@ class ExamManagementRepository {
   final SupabaseServiceInterface _supabaseService;
 
   ExamManagementRepository({SupabaseServiceInterface? supabaseService})
-      : _supabaseService = supabaseService ?? SupabaseServiceWrapper();
+    : _supabaseService = supabaseService ?? SupabaseServiceWrapper();
 
   Future<void> publishExam(Exam exam) async {
     final minifiedData = exam.toMinifiedJson();
@@ -111,6 +111,29 @@ class ExamManagementRepository {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       return [];
+    }
+  }
+
+  /// Lightweight rows (no `data` blob) for a known set of exam ids, returned
+  /// in the same order as [examIds] so a lecture can list its exams in the
+  /// order the teacher arranged them.
+  Future<List<Map<String, dynamic>>> getExamSummaries(
+    List<String> examIds,
+  ) async {
+    if (examIds.isEmpty) return const [];
+    try {
+      final response = await _supabaseService
+          .from('exams')
+          .select('id, title, subject_id, grade')
+          .inFilter('id', examIds);
+      final byId = {for (final row in response) row['id'] as String: row};
+      return [
+        for (final id in examIds)
+          if (byId.containsKey(id)) Map<String, dynamic>.from(byId[id]!),
+      ];
+    } catch (e) {
+      debugPrint('ExamManagementRepository getExamSummaries error: $e');
+      return const [];
     }
   }
 }

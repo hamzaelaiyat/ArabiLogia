@@ -7,6 +7,11 @@ String gradeLabel(int gradeId) =>
 
 String getGradeText(dynamic grade, {String fallback = 'صفك الدراسي'}) {
   if (grade == null) return fallback;
-  final g = grade is int ? grade : int.tryParse(grade.toString()) ?? 0;
+
+  final g = grade is int ? grade : int.tryParse(grade.toString().trim());
+  if (g == null) return fallback;
+
+  // Labels live in the `grades` table. Matching on Arabic text is unsafe here
+  // because "الأول" is shared by both the secondary and baccalaureate tracks.
   return GradeMetadata.getById(g)?.name ?? fallback;
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 
 class GradientActionButton extends StatelessWidget {
@@ -25,7 +26,7 @@ class GradientActionButton extends StatelessWidget {
               ? AppTokens.buttonHeightLg
               : AppTokens.buttonHeightMd,
           decoration: BoxDecoration(
-            color: const Color(0xFFEB8A00),
+            color: AppColors.primary,
             borderRadius: BorderRadius.circular(AppTokens.radiusFull),
           ),
           child: ElevatedButton(
@@ -63,7 +64,7 @@ class GradientActionButton extends StatelessWidget {
             child: Text(
               errorText!,
               style: const TextStyle(
-                color: Color(0xFFD32F2F),
+                color: AppColors.errorDark,
                 fontWeight: FontWeight.bold,
                 fontSize: AppTokens.fontSizeSm,
               ),

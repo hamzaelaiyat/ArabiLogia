@@ -22,24 +22,9 @@ class LeaderboardRankCard extends StatelessWidget {
     this.onTap,
   });
 
-  Color _avatarColor(String userId) {
-    final palette = [
-      AppColors.primary,
-      const Color(0xFFE53935),
-      const Color(0xFF43A047),
-      const Color(0xFF1E88E5),
-      const Color(0xFF8E24AA),
-      const Color(0xFFFF6F00),
-      const Color(0xFF00ACC1),
-      const Color(0xFFD81B60),
-    ];
-    return palette[userId.hashCode.abs() % palette.length];
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isBadged = leader['has_bad_tag'] == true;
-    final userId = leader['user_id'] as String? ?? '';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final rawAvatarUrl = leader['avatar_url'] as String?;
     final avatarUpdatedAt = leader['avatar_updated_at'] as String?;
@@ -47,191 +32,121 @@ class LeaderboardRankCard extends StatelessWidget {
         ? '$rawAvatarUrl?v=${DateTime.parse(avatarUpdatedAt).millisecondsSinceEpoch}'
         : rawAvatarUrl;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppTokens.spacing8),
-      child: Card(
-        color: isMe ? AppColors.primary.withValues(alpha: 0.05) : null,
-        elevation: isMe ? AppTokens.elevationNone : AppTokens.elevationSm,
-        shape: isMe
-            ? RoundedRectangleBorder(
-                side: BorderSide(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  width: 1.5,
-                ),
-                borderRadius: AppTokens.radius2xlAll,
-              )
-            : null,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: AppTokens.radius2xlAll,
-          child: Padding(
-          padding: const EdgeInsets.all(AppTokens.spacing8),
-          child: Row(
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: isMe
-                          ? AppColors.primary
-                          : AppColors.rankColor(rank, context),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${leader['rank']}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: isMe || isTopThree
-                              ? Colors.white
-                              : AppColors.mutedColor(context),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (rank == 1)
-                    Positioned(
-                      top: -2,
-                      right: -2,
-                      child: Icon(
-                        Icons.emoji_events,
-                        size: 16,
-                        color: Colors.amber.shade600,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: AppTokens.spacing8),
-              CircleAvatar(
-                backgroundColor: _avatarColor(userId).withValues(alpha: 0.15),
-                child: avatarUrl != null
-                    ? ClipOval(
-                        child: Image.network(
-                          avatarUrl,
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Text(
-                                avatarLetters,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: _avatarColor(userId),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  height: 1.0,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          avatarLetters,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: _avatarColor(userId),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            height: 1.0,
-                          ),
-                        ),
-                      ),
-              ),
-              const SizedBox(width: AppTokens.spacing8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            leader['full_name'] ?? '',
-                            style: (isBadged
-                                    ? const TextStyle(
-                                        decoration: TextDecoration.lineThrough,
-                                        color: Colors.red,
-                                        decorationColor: Colors.red,
-                                      )
-                                    : isMe
-                                        ? Theme.of(context).textTheme.titleSmall?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.primary,
-                                            )
-                                        : null) ??
-                                Theme.of(context).textTheme.titleSmall,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (isMe) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 1,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'أنت',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (isBadged) ...[
-                          const SizedBox(width: 6),
-                          const Tooltip(
-                            message: 'مخالف - تم حظر رفع الصور',
-                            child: Icon(
-                              Icons.warning_amber_rounded,
-                              size: 16,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    Text(
-                      gradeName,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${(leader['total_score'] as num).toInt()}',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: isMe ? AppColors.primary : AppColors.primary,
-                      fontWeight: isMe ? FontWeight.w900 : FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    'نقطة',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.mutedColor(context),
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
+    final fullName = leader['full_name'] as String? ?? 'طالبنا';
+    final score = (leader['total_score'] as num?)?.toInt() ?? 0;
+
+    // Requested #E5F3FF soft light blue background color matching target screenshot
+    final cardBg = isDark ? AppColors.cardDark : const Color(0xFFE5F3FF);
+
+    const isMeBlue = AppColors.blue;
+
+    return Tooltip(
+      message: '$fullName\nالمركز #$rank • $gradeName • $score نقطة',
+      textStyle: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.textPrimary,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Semantics(
+        label: '$fullName، المركز #$rank، $gradeName، $score نقطة',
+        button: true,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: AppTokens.spacing12),
+          height: 76,
+          decoration: BoxDecoration(
+            color: isMe ? isMeBlue.withValues(alpha: 0.12) : cardBg,
+            borderRadius: BorderRadius.circular(24),
+            border: isMe ? Border.all(color: isMeBlue, width: 1.5) : null,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-        ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(24),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 10.0,
+              ),
+              child: Row(
+                children: [
+                  // Far Right (in RTL): Avatar Image
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                    backgroundImage:
+                        (avatarUrl != null && avatarUrl.trim().isNotEmpty)
+                        ? NetworkImage(avatarUrl.trim())
+                        : null,
+                    child: (avatarUrl == null || avatarUrl.trim().isEmpty)
+                        ? Text(
+                            avatarLetters,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 14),
+
+                  // Middle: Full Name & Rank Badge #4
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          fullName,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '#$rank',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? AppColors.mutedDark
+                                : AppColors.textLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Far Left (in RTL): Total Score Points Number
+                  Text(
+                    '$score',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -1,119 +1,155 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
+import 'package:arabilogia/core/theme/app_text_styles.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/widgets/animated_wrapper.dart';
+import '../utils/student_greeting_helper.dart';
 
 class HomeWelcomeCard extends StatelessWidget {
   final String name;
   final String gradeText;
   final int rank;
+  final int uncompletedLecturesCount;
 
   const HomeWelcomeCard({
     super.key,
     required this.name,
     required this.gradeText,
     required this.rank,
+    this.uncompletedLecturesCount = 3,
   });
 
   @override
   Widget build(BuildContext context) {
-    final subTitle = rank > 0
-        ? _getMotivationalMessages(rank)[DateTime.now().minute % _getMotivationalMessages(rank).length]
-        : 'طريقك إلى التفوق في اللغة العربية يبدأ هنا';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final greeting = StudentGreetingHelper.getGreetingParts(name);
+    final teacherSubtext = StudentGreetingHelper.getTeacherQuote(
+      uncompletedLecturesCount: uncompletedLecturesCount,
+    );
+    final isDesktop = AppTokens.isDesktop(context);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppTokens.spacing16),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: AppTokens.radius2xlAll,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    if (isDesktop) {
+      // Computer / Desktop Layout: NO BORDERS, NO CONTAINERS, ON THE RIGHT, GREETING & NAME ON SAME LINE
+      return Padding(
+        padding: const EdgeInsets.only(
+          right: AppTokens.spacing4,
+          top: AppTokens.spacing4,
+          bottom: AppTokens.spacing16,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, // Right aligned in RTL!
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Greeting & Name on the exact SAME line without any container box!
+            AnimatedWrapper(
+              addAnimation: true,
+              delay: Duration.zero,
+              child: Text.rich(
+                TextSpan(
                   children: [
-                    AnimatedWrapper(
-                      addAnimation: true,
-                      delay: Duration.zero,
-                      child: Text(
-                        'مرحباً بك، $name',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    TextSpan(
+                      text: '${greeting.prefix} ',
+                      style: AppTextStyles.displayMd.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? AppColors.fgDark : AppColors.fgLight,
                       ),
                     ),
-                    const SizedBox(height: AppTokens.spacing4),
-                    AnimatedWrapper(
-                      addAnimation: true,
-                      delay: const Duration(milliseconds: 80),
-                      child: Text(
-                        subTitle,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
+                    TextSpan(
+                      text: greeting.name,
+                      style: AppTextStyles.displayMd.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? AppColors.fgDark : AppColors.fgLight,
                       ),
                     ),
                   ],
                 ),
+                textAlign: TextAlign.right,
+              ),
+            ),
+            const SizedBox(height: 4),
+
+            // Dynamic Contextual Subtext right below the greeting on the right
+            AnimatedWrapper(
+              addAnimation: true,
+              delay: const Duration(milliseconds: 60),
+              child: Text(
+                teacherSubtext,
+                style: AppTextStyles.bodyMd.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.mutedDark : AppColors.textLight,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Mobile Layout: Stacked & Start-Aligned (Prefix smaller above, Name larger below, Subtext below)
+      return Semantics(
+        label: '${greeting.prefix} ${greeting.name}',
+        child: Padding(
+          padding: const EdgeInsets.only(
+            right: AppTokens.spacing4,
+            top: AppTokens.spacing4,
+            bottom: AppTokens.spacing16,
+            left: AppTokens.spacing4,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment:
+                CrossAxisAlignment.start, // Flush to the start/right edge!
+            children: [
+              // Greeting Prefix (smaller text above, e.g. "عامل ايه يا")
+              AnimatedWrapper(
+                addAnimation: true,
+                delay: Duration.zero,
+                child: Text(
+                  greeting.prefix,
+                  style: AppTextStyles.headingSm.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.mutedDark : AppColors.textMuted,
+                    height: 1.2,
+                  ),
+                  textAlign: TextAlign.start,
+                ),
+              ),
+              const SizedBox(height: 2),
+
+              // Student Name (larger bold text below prefix)
+              AnimatedWrapper(
+                addAnimation: true,
+                delay: const Duration(milliseconds: 40),
+                child: Text(
+                  greeting.name,
+                  style: AppTextStyles.displayMd.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? AppColors.fgDark : AppColors.fgLight,
+                    height: 1.1,
+                    letterSpacing: -0.5,
+                  ),
+                  textAlign: TextAlign.start,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Dynamic Contextual Subtext
+              AnimatedWrapper(
+                addAnimation: true,
+                delay: const Duration(milliseconds: 80),
+                child: Text(
+                  teacherSubtext,
+                  style: AppTextStyles.bodySm.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.mutedDark : AppColors.textLight,
+                  ),
+                  textAlign: TextAlign.start,
+                ),
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  List<String> _getMotivationalMessages(int rank) {
-    if (rank <= 3) {
-      return [
-        "خارق! أنت من الصفوة",
-        "بطل حقيقي! حافظ على القمة",
-        "أداؤك مذهل، أنت قدوة للجميع",
-      ];
-    } else if (rank <= 10) {
-      return [
-        "أنت في المركز العاشر، حافظ على مكانك",
-        "اقتربت من الثلاثة الأوائل! استمر",
-        "أداء مذهل، المنافسة قوية وأنت أقوى",
-        "أنت ضمن العشرة الذهبيين!",
-        "مكانك في القمة محجوز، شد حيلك",
-        "رائع! أنت من عمالقة هذا الأسبوع",
-      ];
-    } else if (rank <= 20) {
-      return [
-        "أنت ضمن أفضل 20، جود!",
-        "باقي القليل للمنافسة في المركز العاشر",
-        "رائع، استمر في الصعود",
-        "خطوات واثقة نحو العشرة الأوائل",
-        "أداؤك ثابت ومميز، لا تتوقف",
-        "أنت تقترب من قائمة النخبة",
-      ];
-    } else if (rank <= 50) {
-      return [
-        "أداء جيد، لكن يمكنك الوصول للأفضل",
-        "استعد للاختبار القادم بقوة",
-        "المنافسة تشتد، كن مستعداً",
-        "أنت في منطقة الأمان، انطلق للأمام",
-        "لا يزال هناك الكثير لتقدمه، نحن نثق بك",
-        "كل درجة ترفعك مراكز كثيرة، ركز!",
-      ];
-    } else {
-      return [
-        "بداية موفقة، استمر في التدرب",
-        "كل اختبار يقربك من المتصدرين",
-        "ثق في قدراتك! القادم أفضل",
-        "رحلة الألف ميل تبدأ باختبار",
-        "لا تستسلم، غداً ستكون من الثلاثة الأوائل",
-        "التكرار يعلم الشطار، استمر في المحاولة",
-      ];
+        ),
+      );
     }
   }
 }

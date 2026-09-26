@@ -51,7 +51,10 @@ class ScoreSummaryWidget extends StatelessWidget {
                   ),
                   Text(
                     'الدرجة النهائية',
-                    style: TextStyle(fontSize: 10, color: AppColors.mutedColor(context)),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppColors.mutedColor(context),
+                    ),
                   ),
                 ],
               ),

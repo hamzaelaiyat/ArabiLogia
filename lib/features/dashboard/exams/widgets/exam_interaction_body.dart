@@ -145,16 +145,12 @@ class _ExamInteractionBodyState extends State<ExamInteractionBody> {
                   const SizedBox(height: AppTokens.spacing8),
                   RichText(
                     text: TextSpan(
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                       children: parseQuestionText(
                         currentQuestion.text,
-                        isDark: Theme.of(context).brightness ==
-                            Brightness.dark,
+                        isDark: Theme.of(context).brightness == Brightness.dark,
                       ),
                     ),
                   ),
@@ -163,7 +159,7 @@ class _ExamInteractionBodyState extends State<ExamInteractionBody> {
                     final option = currentQuestion.options[i];
                     final isSelected =
                         widget.selectedAnswers[widget.currentQuestionIndex] ==
-                            option.id;
+                        option.id;
                     return QuestionOptionTile(
                       option: option,
                       index: i,

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AppTokens {
   AppTokens._();
 
-  static const String fontFamilyDisplay = 'Rubik';
+  static const String fontFamilyDisplay = 'Estedad';
   static const String fontFamilyBody = 'Estedad';
 
   static const double fontSizeXs = 11.0;
@@ -79,35 +79,35 @@ class AppTokens {
 
   // macOS-inspired Shadows
   static List<BoxShadow> get shadowOutside => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.08),
-          blurRadius: 20,
-          offset: const Offset(0, 4),
-        ),
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 4,
-          offset: const Offset(0, 1),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.08),
+      blurRadius: 20,
+      offset: const Offset(0, 4),
+    ),
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.04),
+      blurRadius: 4,
+      offset: const Offset(0, 1),
+    ),
+  ];
 
   static List<BoxShadow> get shadowInside => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.05),
-          blurRadius: 4,
-          spreadRadius: -1,
-          offset: const Offset(0, 2),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.05),
+      blurRadius: 4,
+      spreadRadius: -1,
+      offset: const Offset(0, 2),
+    ),
+  ];
 
   static List<BoxShadow> get shadowGlass => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.1),
-          blurRadius: 30,
-          spreadRadius: -5,
-          offset: const Offset(0, 10),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.1),
+      blurRadius: 30,
+      spreadRadius: -5,
+      offset: const Offset(0, 10),
+    ),
+  ];
 
   static const Duration durationFast = Duration(milliseconds: 150);
   static const Duration durationSm = Duration(milliseconds: 200);
@@ -148,7 +148,4 @@ class AppTokens {
       MediaQuery.of(context).size.width < breakpointTablet;
   static bool isDesktop(BuildContext context) =>
       MediaQuery.of(context).size.width >= breakpointTablet;
-
-  static const Color mobileBackground = Color(0xFFEBE7DF);
-  static const Color mobileDarkBackground = Color(0xFF191B1D);
 }

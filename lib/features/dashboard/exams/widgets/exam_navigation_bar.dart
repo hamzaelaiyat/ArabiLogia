@@ -40,7 +40,8 @@ class ExamNavigationBar extends StatelessWidget {
         color: AppColors.surface(context),
         border: Border(
           top: BorderSide(
-            color: DividerTheme.of(context).color ??
+            color:
+                DividerTheme.of(context).color ??
                 Colors.grey.withValues(alpha: 0.1),
           ),
         ),
@@ -72,20 +73,30 @@ class ExamNavigationBar extends StatelessWidget {
           Row(
             children: [
               if (onOpenPalette != null)
-                IconButton(
-                  tooltip: 'قائمة الأسئلة',
-                  onPressed: onOpenPalette,
-                  icon: const Icon(Icons.grid_view),
+                Semantics(
+                  label: 'قائمة الأسئلة',
+                  button: true,
+                  child: IconButton(
+                    tooltip: 'قائمة الأسئلة',
+                    onPressed: onOpenPalette,
+                    icon: const Icon(Icons.grid_view),
+                  ),
                 ),
               if (onToggleFlag != null)
-                IconButton(
-                  tooltip: 'وضع علامة للمراجعة',
-                  onPressed: onToggleFlag,
-                  icon: Icon(
-                    isFlagged ? Icons.flag : Icons.flag_outlined,
-                    color: isFlagged
-                        ? AppColors.examWarning
-                        : AppColors.mutedColor(context),
+                Semantics(
+                  label: isFlagged
+                      ? 'إزالة علامة المراجعة'
+                      : 'وضع علامة للمراجعة',
+                  button: true,
+                  child: IconButton(
+                    tooltip: 'وضع علامة للمراجعة',
+                    onPressed: onToggleFlag,
+                    icon: Icon(
+                      isFlagged ? Icons.flag : Icons.flag_outlined,
+                      color: isFlagged
+                          ? AppColors.examWarning
+                          : AppColors.mutedColor(context),
+                    ),
                   ),
                 ),
               if (onPrevious != null)
@@ -95,8 +106,7 @@ class ExamNavigationBar extends StatelessWidget {
                     child: const Text('السابق'),
                   ),
                 ),
-              if (onPrevious != null)
-                const SizedBox(width: AppTokens.spacing8),
+              if (onPrevious != null) const SizedBox(width: AppTokens.spacing8),
               Expanded(
                 flex: 2,
                 child: ElevatedButton(

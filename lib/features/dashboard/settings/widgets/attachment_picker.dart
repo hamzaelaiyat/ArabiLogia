@@ -140,9 +140,7 @@ class AttachmentPickerState extends State<AttachmentPicker> {
                   height: 80,
                   decoration: BoxDecoration(
                     borderRadius: AppTokens.radiusMdAll,
-                    border: Border.all(
-                      color: AppColors.mutedColor(context),
-                    ),
+                    border: Border.all(color: AppColors.mutedColor(context)),
                   ),
                   child: const Icon(
                     Icons.add_photo_alternate_outlined,

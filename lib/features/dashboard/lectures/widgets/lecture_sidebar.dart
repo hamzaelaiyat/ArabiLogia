@@ -49,13 +49,18 @@ class LectureSidebar extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: data.categoryColor,
                         borderRadius: AppTokens.radiusFullAll,
                       ),
                       child: Text(
-                        data.categoryName.isNotEmpty ? data.categoryName : 'المحاضرة',
+                        data.categoryName.isNotEmpty
+                            ? data.categoryName
+                            : 'المحاضرة',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
@@ -73,9 +78,9 @@ class LectureSidebar extends StatelessWidget {
                 const SizedBox(height: AppTokens.spacing8),
                 Text(
                   data.title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -154,7 +159,9 @@ class LectureSidebar extends StatelessWidget {
                       entry.label,
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                        fontWeight: isActive
+                            ? FontWeight.bold
+                            : FontWeight.w500,
                         color: isActive
                             ? data.categoryColor
                             : AppColors.foreground(context),

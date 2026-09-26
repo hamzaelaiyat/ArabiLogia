@@ -64,8 +64,10 @@ class DeviceInfoService {
     ];
     if (info['brand'] != null) parts.add('Brand: ${info['brand']}');
     if (info['sdkVersion'] != null) parts.add('SDK: ${info['sdkVersion']}');
-    if (info['systemVersion'] != null) parts.add('OS: ${info['systemVersion']}');
-    if (info['productName'] != null) parts.add('Product: ${info['productName']}');
+    if (info['systemVersion'] != null)
+      parts.add('OS: ${info['systemVersion']}');
+    if (info['productName'] != null)
+      parts.add('Product: ${info['productName']}');
     return parts.join(' | ');
   }
 

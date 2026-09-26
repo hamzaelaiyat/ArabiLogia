@@ -12,7 +12,7 @@ class StepHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFFEB8A00), size: 18),
+        Icon(icon, color: AppColors.primary, size: 18),
         const SizedBox(width: AppTokens.spacing4),
         Text(
           title,

@@ -6,7 +6,10 @@ abstract class SupabaseServiceInterface {
   GoTrueClient get auth;
   SupabaseQueryBuilder from(String table);
   SupabaseStorageClient get storage;
-  PostgrestFilterBuilder<dynamic> rpc(String fn, {Map<String, dynamic>? params});
+  PostgrestFilterBuilder<dynamic> rpc(
+    String fn, {
+    Map<String, dynamic>? params,
+  });
   User? get currentUser;
   Session? get currentSession;
   bool get isAuthenticated;

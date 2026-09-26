@@ -29,11 +29,7 @@ class ScoreDao {
   Future<Map<String, Map<String, dynamic>>> getAllScores() async {
     return {
       for (final s in _scores.values)
-        s.examId: {
-          'score': s.score,
-          'points': s.points,
-          'synced': s.synced,
-        },
+        s.examId: {'score': s.score, 'points': s.points, 'synced': s.synced},
     };
   }
 

@@ -26,7 +26,7 @@ class LoginFooter extends StatelessWidget {
           child: const Text(
             AppStrings.register,
             style: TextStyle(
-              color: Color(0xFFEB8A00),
+              color: AppColors.primary,
               fontWeight: FontWeight.bold,
             ),
           ),

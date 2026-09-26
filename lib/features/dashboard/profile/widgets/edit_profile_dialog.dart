@@ -23,12 +23,16 @@ class EditProfileDialog {
                 children: [
                   TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(labelText: 'الاسم الكامل'),
+                    decoration: const InputDecoration(
+                      labelText: 'الاسم الكامل',
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: usernameController,
-                    decoration: const InputDecoration(labelText: 'اسم المستخدم'),
+                    decoration: const InputDecoration(
+                      labelText: 'اسم المستخدم',
+                    ),
                   ),
                 ],
               ),
@@ -47,7 +51,9 @@ class EditProfileDialog {
                     );
                     if (success) {
                       scaffold.showSnackBar(
-                        const SnackBar(content: Text('تم تحديث البيانات بنجاح')),
+                        const SnackBar(
+                          content: Text('تم تحديث البيانات بنجاح'),
+                        ),
                       );
                       nav.pop();
                     }

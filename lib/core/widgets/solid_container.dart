@@ -31,7 +31,8 @@ class SolidContainer extends StatelessWidget {
       decoration: BoxDecoration(
         color: color ?? colorScheme.surface,
         borderRadius: effectiveRadius,
-        border: border ??
+        border:
+            border ??
             Border.all(
               color: colorScheme.outline.withValues(alpha: 0.12),
               width: 1,

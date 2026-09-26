@@ -49,7 +49,10 @@ class _UpdateConfirmPageState extends State<UpdateConfirmPage> {
             ),
             const SizedBox(height: AppTokens.spacing24),
             if (widget.update.releaseNotes.isNotEmpty) ...[
-              ReleaseNotesCard(releaseNotes: widget.update.releaseNotes),
+              ReleaseNotesCard(
+                releaseNotes: widget.update.releaseNotes,
+                version: widget.update.version,
+              ),
               const SizedBox(height: AppTokens.spacing24),
             ],
             if (widget.update.isMandatory) const MandatoryUpdateBanner(),
@@ -73,7 +76,10 @@ class _UpdateConfirmPageState extends State<UpdateConfirmPage> {
 
   void _onProgress(double progress, String status) {
     if (!mounted) return;
-    setState(() { _downloadProgress = progress; _status = status; });
+    setState(() {
+      _downloadProgress = progress;
+      _status = status;
+    });
   }
 
   void _onComplete() {
@@ -83,19 +89,31 @@ class _UpdateConfirmPageState extends State<UpdateConfirmPage> {
 
   void _onError(String error) {
     if (!mounted) return;
-    setState(() { _isDownloading = false; _status = error; });
+    setState(() {
+      _isDownloading = false;
+      _status = error;
+    });
   }
 
   void _startUpdate() {
-    setState(() { _isDownloading = true; _downloadProgress = 0; _status = ''; });
+    setState(() {
+      _isDownloading = true;
+      _downloadProgress = 0;
+      _status = '';
+    });
 
     _activeHandler?.dispose();
     final u = widget.update;
     if (Platform.isAndroid) {
       _activeHandler = AndroidUpdateHandler(
-        downloadUrl: u.downloadUrl, fileName: u.fileName, fileSize: u.fileSize,
-        version: u.version, releaseNotes: u.releaseNotes,
-        onProgressUpdate: _onProgress, onComplete: _onComplete, onError: _onError,
+        downloadUrl: u.downloadUrl,
+        fileName: u.fileName,
+        fileSize: u.fileSize,
+        version: u.version,
+        releaseNotes: u.releaseNotes,
+        onProgressUpdate: _onProgress,
+        onComplete: _onComplete,
+        onError: _onError,
         onFallbackToBrowser: (url) {
           setState(() => _isDownloading = false);
           showBrowserFallbackDialog(context, url);
@@ -104,18 +122,28 @@ class _UpdateConfirmPageState extends State<UpdateConfirmPage> {
       _activeHandler!.startUpdate(context);
     } else if (Platform.isWindows) {
       _activeHandler = WindowsUpdateHandler(
-        downloadUrl: u.downloadUrl, fileName: u.fileName, fileSize: u.fileSize,
-        version: u.version, releaseNotes: u.releaseNotes,
-        onProgressUpdate: _onProgress, onComplete: _onComplete, onError: _onError,
+        downloadUrl: u.downloadUrl,
+        fileName: u.fileName,
+        fileSize: u.fileSize,
+        version: u.version,
+        releaseNotes: u.releaseNotes,
+        onProgressUpdate: _onProgress,
+        onComplete: _onComplete,
+        onError: _onError,
         onShowDownloadError: (msg) =>
             showDownloadErrorDialog(context, msg, _startUpdate),
       );
       _activeHandler!.startUpdate(context);
     } else if (Platform.isLinux) {
       _activeHandler = LinuxUpdateHandler(
-        downloadUrl: u.downloadUrl, fileName: u.fileName, fileSize: u.fileSize,
-        version: u.version, releaseNotes: u.releaseNotes,
-        onProgressUpdate: _onProgress, onComplete: _onComplete, onError: _onError,
+        downloadUrl: u.downloadUrl,
+        fileName: u.fileName,
+        fileSize: u.fileSize,
+        version: u.version,
+        releaseNotes: u.releaseNotes,
+        onProgressUpdate: _onProgress,
+        onComplete: _onComplete,
+        onError: _onError,
         onShowDownloadError: (msg) =>
             showDownloadErrorDialog(context, msg, _startUpdate),
       );

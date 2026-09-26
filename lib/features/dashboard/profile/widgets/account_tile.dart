@@ -42,11 +42,14 @@ class AccountTile extends StatelessWidget {
                         errorBuilder: (context, error, stackTrace) {
                           return Center(
                             child: Text(
-                              account.fullName.isNotEmpty ? account.fullName[0] : '?',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              account.fullName.isNotEmpty
+                                  ? account.fullName[0]
+                                  : '?',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
                           );
                         },
@@ -70,11 +73,7 @@ class AccountTile extends StatelessWidget {
                     color: Colors.green,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 12,
-                    color: Colors.white,
-                  ),
+                  child: const Icon(Icons.check, size: 12, color: Colors.white),
                 ),
               ),
           ],
@@ -97,10 +96,7 @@ class AccountTile extends StatelessWidget {
             if (account.grade > 0) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppTokens.radiusFull),

@@ -54,7 +54,7 @@ class _AuthTextFieldState extends State<AuthTextField> {
   }
 
   bool get _shouldObscure {
-    if (!widget.isPassword) return widget.obscureText;
+    if (!widget.isPassword) return false;
     // Reveal password text when hovering or pressing down on the eye button
     if (_isHoveredOverEye || _isEyePressed) return false;
     return _toggleObscure;
@@ -69,7 +69,10 @@ class _AuthTextFieldState extends State<AuthTextField> {
 
     if (widget.isPassword) {
       final isEyeVisible =
-          _isHoveredOverField || _isHoveredOverEye || _isEyePressed || !_toggleObscure;
+          _isHoveredOverField ||
+          _isHoveredOverEye ||
+          _isEyePressed ||
+          !_toggleObscure;
 
       suffixWidget = MouseRegion(
         onEnter: (_) => setState(() => _isHoveredOverEye = true),
@@ -118,7 +121,10 @@ class _AuthTextFieldState extends State<AuthTextField> {
         style: TextStyle(color: colorScheme.onSurface),
         decoration: InputDecoration(
           labelText: widget.label,
-          prefixIcon: Icon(widget.icon, color: colorScheme.onSurface.withValues(alpha: 0.7)),
+          prefixIcon: Icon(
+            widget.icon,
+            color: colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
           suffixIcon: suffixWidget,
           filled: true,
           fillColor: isDark ? AppColors.secondaryDark : Colors.white,
@@ -126,14 +132,20 @@ class _AuthTextFieldState extends State<AuthTextField> {
             horizontal: AppTokens.spacing16,
             vertical: AppTokens.spacing12,
           ),
-          labelStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
+          labelStyle: TextStyle(
+            color: colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-            borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+            borderSide: BorderSide(
+              color: colorScheme.outline.withValues(alpha: 0.3),
+            ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-            borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+            borderSide: BorderSide(
+              color: colorScheme.outline.withValues(alpha: 0.3),
+            ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppTokens.radiusFull),

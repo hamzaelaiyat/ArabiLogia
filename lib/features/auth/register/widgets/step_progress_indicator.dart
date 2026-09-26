@@ -33,11 +33,14 @@ class StepProgressIndicator extends StatelessWidget {
           width: isCurrent ? 24 : 12,
           decoration: BoxDecoration(
             color: isActive
-                ? const Color(0xFFEB8A00)
+                ? AppColors.primary
                 : AppColors.authLabelColor(context).withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(AppTokens.radiusFull),
             border: isCurrent
-                ? Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1)
+                ? Border.all(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    width: 1,
+                  )
                 : null,
             boxShadow: null,
           ),

@@ -25,11 +25,7 @@ class RemoveAvatarResult {
   final bool success;
   final User? user;
   final String? error;
-  const RemoveAvatarResult({
-    required this.success,
-    this.user,
-    this.error,
-  });
+  const RemoveAvatarResult({required this.success, this.user, this.error});
 }
 
 class AvatarService {
@@ -95,11 +91,14 @@ class AvatarService {
           })
           .eq('id', userId);
 
-      final response =
-          await _supabase.auth.updateUser(UserAttributes(data: {
-        'avatar_url': null,
-        'avatar_updated_at': DateTime.now().toIso8601String(),
-      }));
+      final response = await _supabase.auth.updateUser(
+        UserAttributes(
+          data: {
+            'avatar_url': null,
+            'avatar_updated_at': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
 
       return RemoveAvatarResult(success: true, user: response.user);
     } on PostgrestException catch (e) {

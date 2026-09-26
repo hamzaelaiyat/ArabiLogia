@@ -28,11 +28,15 @@ class RecentActivitySection extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             if (activities.isNotEmpty)
-              TextButton(
-                onPressed: () => context.go(AppRoutes.activityHistory),
-                child: const Text(
-                  'مشاهدة الكل',
-                  style: TextStyle(fontSize: 12),
+              Semantics(
+                label: 'مشاهدة كل النشاطات',
+                button: true,
+                child: TextButton(
+                  onPressed: () => context.go(AppRoutes.activityHistory),
+                  child: const Text(
+                    'مشاهدة الكل',
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ),
               ),
           ],
@@ -68,9 +72,11 @@ class RecentActivitySection extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'ابدأ اختباراً الآن لترى إنجازاتك',
+                    'شاهد محاضرة أو اختباراً لترى نشاطك هنا',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.mutedColor(context).withValues(alpha: 0.7),
+                      color: AppColors.mutedColor(
+                        context,
+                      ).withValues(alpha: 0.7),
                     ),
                   ),
                 ],

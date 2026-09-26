@@ -57,9 +57,7 @@ class DesktopConfirmDialog extends StatelessWidget {
 
     return Dialog(
       backgroundColor: colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Directionality(
         textDirection: TextDirection.rtl,
         child: ConstrainedBox(
@@ -119,7 +117,8 @@ class DesktopConfirmDialog extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: onConfirm ?? () => Navigator.pop(context),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: confirmColor ?? colorScheme.primary,
+                            backgroundColor:
+                                confirmColor ?? colorScheme.primary,
                             foregroundColor: colorScheme.onPrimary,
                           ),
                           child: Text(confirmLabel!),

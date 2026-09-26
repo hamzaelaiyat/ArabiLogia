@@ -75,13 +75,13 @@ class _EmailVerificationCardState extends State<EmailVerificationCard> {
             const Icon(
               Icons.mark_email_read_outlined,
               size: 60,
-              color: Color(0xFFEB8A00),
+              color: AppColors.primary,
             ),
             const SizedBox(height: AppTokens.spacing8),
             const Text(
               'تأكيد الحساب',
               style: TextStyle(
-                color: Color(0xFFEB8A00),
+                color: AppColors.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: AppTokens.fontSize2xl,
               ),
@@ -99,7 +99,7 @@ class _EmailVerificationCardState extends State<EmailVerificationCard> {
             Text(
               widget.email,
               style: const TextStyle(
-                color: Color(0xFFEB8A00),
+                color: AppColors.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: AppTokens.fontSizeMd,
               ),
@@ -132,7 +132,7 @@ class _EmailVerificationCardState extends State<EmailVerificationCard> {
                 child: Text(
                   widget.error!,
                   style: const TextStyle(
-                    color: Color(0xFFD32F2F),
+                    color: AppColors.errorDark,
                     fontWeight: FontWeight.bold,
                     fontSize: AppTokens.fontSizeSm,
                   ),
@@ -148,7 +148,7 @@ class _EmailVerificationCardState extends State<EmailVerificationCard> {
               child: ElevatedButton(
                 onPressed: widget.isLoading ? null : _handleVerify,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFEB8A00),
+                  backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppTokens.radiusFull),
                   ),
@@ -187,7 +187,7 @@ class _EmailVerificationCardState extends State<EmailVerificationCard> {
                   child: const Text(
                     'إعادة الإرسال',
                     style: TextStyle(
-                      color: Color(0xFFEB8A00),
+                      color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -200,7 +200,7 @@ class _EmailVerificationCardState extends State<EmailVerificationCard> {
               child: const Text(
                 'العودة لتسجيل الدخول',
                 style: TextStyle(
-                  color: Color(0xFFEB8A00),
+                  color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),

@@ -1,10 +1,12 @@
+import 'package:arabilogia/core/models/grade_metadata.dart';
+
 class Exam {
   final String id;
   final String title;
   final String subject;
   final String subjectId;
   final int? durationMinutes;
-  final int grade; // 0 for all, 1, 2, 3 for secondary
+  final int grade; // GradeMetadata.allGrades means every grade
   final int sortOrder; // Controls exam ordering for sequential unlocking
   final int level; // 1=easy(85%), 2=medium(75%), 3=hard(60%)
   final List<Question> questions;
@@ -16,7 +18,7 @@ class Exam {
     required this.subject,
     required this.subjectId,
     this.durationMinutes,
-    this.grade = 1,
+    this.grade = GradeMetadata.defaultGradeId,
     this.sortOrder = 0,
     this.level = 1,
     required this.questions,
@@ -88,7 +90,7 @@ class Exam {
       subject: json['s'] as String,
       subjectId: json['si'] as String,
       durationMinutes: json['d'] as int?,
-      grade: json['g'] as int? ?? 0,
+      grade: json['g'] as int? ?? GradeMetadata.allGrades,
       sortOrder: json['so'] as int? ?? 0,
       level: json['lv'] as int? ?? 1,
       questions: (json['q'] as List)
@@ -113,7 +115,6 @@ class Exam {
     }
     return copyWith(questions: updatedQuestions);
   }
-
 }
 
 class Question {
@@ -128,7 +129,7 @@ class Question {
     required this.text,
     this.passage,
     required this.options,
-    this.points = 10,
+    this.points = 1,
   });
 
   Question copyWith({
@@ -157,7 +158,13 @@ class Question {
   /// a reviewable Exam from the server's answer key (no client scoring).
   Question withCorrectOptionId(String correctOptionId) {
     final updated = options
-        .map((o) => Option(id: o.id, text: o.text, isCorrect: o.id == correctOptionId))
+        .map(
+          (o) => Option(
+            id: o.id,
+            text: o.text,
+            isCorrect: o.id == correctOptionId,
+          ),
+        )
         .toList();
     return copyWith(options: updated);
   }
@@ -182,7 +189,7 @@ class Question {
       id: json['id'] as String,
       text: json['t'] as String,
       passage: json['p'] as String?,
-      points: json['pts'] as int? ?? 10,
+      points: json['pts'] as int? ?? 1,
       options: List.generate(optionsList.length, (index) {
         return Option(
           id: 'o$index',

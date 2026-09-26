@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:arabilogia/core/models/grade_metadata.dart';
 
 enum BlockType { text, youtube, exam, quiz }
 
@@ -16,11 +17,11 @@ class LectureContentBlock {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type.name,
-        'content': content,
-        'metadata': metadata,
-      };
+    'id': id,
+    'type': type.name,
+    'content': content,
+    'metadata': metadata,
+  };
 
   factory LectureContentBlock.fromJson(Map<String, dynamic> json) {
     return LectureContentBlock(
@@ -74,7 +75,7 @@ class Lecture {
     this.quizId,
     this.thumbnailUrl,
     this.sortOrder = 0,
-    this.grade = 1,
+    this.grade = GradeMetadata.defaultGradeId,
     this.isPublished = false,
     this.contentBlocks = const [],
     this.examIds = const [],
@@ -203,7 +204,11 @@ class Lecture {
           final blocksList = decoded['blocks'] as List<dynamic>?;
           if (blocksList != null) {
             blocks = blocksList
-                .map((b) => LectureContentBlock.fromJson(Map<String, dynamic>.from(b as Map)))
+                .map(
+                  (b) => LectureContentBlock.fromJson(
+                    Map<String, dynamic>.from(b as Map),
+                  ),
+                )
                 .toList();
           }
           final examsList = decoded['exam_ids'] as List<dynamic>?;
@@ -212,7 +217,11 @@ class Lecture {
           }
         } else if (decoded is List) {
           blocks = decoded
-              .map((b) => LectureContentBlock.fromJson(Map<String, dynamic>.from(b as Map)))
+              .map(
+                (b) => LectureContentBlock.fromJson(
+                  Map<String, dynamic>.from(b as Map),
+                ),
+              )
               .toList();
         }
       } catch (e) {
@@ -228,25 +237,31 @@ class Lecture {
       final legacyQuiz = json['quiz_id'] as String? ?? '';
 
       if (legacyDesc.isNotEmpty) {
-        blocks.add(LectureContentBlock(
-          id: 'legacy_desc',
-          type: BlockType.text,
-          content: legacyDesc,
-        ));
+        blocks.add(
+          LectureContentBlock(
+            id: 'legacy_desc',
+            type: BlockType.text,
+            content: legacyDesc,
+          ),
+        );
       }
       if (legacyYoutube.isNotEmpty) {
-        blocks.add(LectureContentBlock(
-          id: 'legacy_youtube',
-          type: BlockType.youtube,
-          content: legacyYoutube,
-        ));
+        blocks.add(
+          LectureContentBlock(
+            id: 'legacy_youtube',
+            type: BlockType.youtube,
+            content: legacyYoutube,
+          ),
+        );
       }
       if (legacyQuiz.isNotEmpty) {
-        blocks.add(LectureContentBlock(
-          id: 'legacy_quiz',
-          type: BlockType.quiz,
-          content: legacyQuiz,
-        ));
+        blocks.add(
+          LectureContentBlock(
+            id: 'legacy_quiz',
+            type: BlockType.quiz,
+            content: legacyQuiz,
+          ),
+        );
       }
     }
 
@@ -266,7 +281,7 @@ class Lecture {
       quizId: json['quiz_id'] as String?,
       thumbnailUrl: json['thumbnail_url'] as String?,
       sortOrder: json['sort_order'] as int? ?? 0,
-      grade: json['grade'] as int? ?? 1,
+      grade: json['grade'] as int? ?? GradeMetadata.defaultGradeId,
       isPublished: json['is_published'] as bool? ?? false,
       contentBlocks: blocks,
       examIds: examIds,

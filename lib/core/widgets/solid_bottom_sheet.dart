@@ -95,17 +95,17 @@ class SolidBottomSheet extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppTokens.spacing16),
           Text(
             message,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
             textAlign: TextAlign.center,
           ),
           if (customContent != null) ...[

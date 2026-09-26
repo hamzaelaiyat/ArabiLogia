@@ -112,6 +112,10 @@ class TestKeys {
   static const lecturePreviewSubmit = Key('lecture_preview_submit');
   static const lecturePreviewExit = Key('lecture_preview_exit');
   static const teacherPanelScreen = Key('teacher_panel_screen');
+  static const teacherLectureActions = Key('teacher_lecture_actions');
+  static const lectureResultsScreen = Key('lecture_results_screen');
+  static const lectureResultsExamPrefix = Key('lecture_results_exam_');
+  static const examStudentResultsScreen = Key('exam_student_results_screen');
 
   // ---------------------------------------------------------------------------
   // Profile

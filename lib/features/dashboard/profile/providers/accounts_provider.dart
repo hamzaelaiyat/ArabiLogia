@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arabilogia/core/models/account.dart';
 import 'package:arabilogia/core/services/accounts_service.dart';
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
+import 'package:arabilogia/core/models/grade_metadata.dart';
 
 class AccountsProvider extends ChangeNotifier {
   final AccountsService _service = AccountsService();
@@ -36,7 +37,7 @@ class AccountsProvider extends ChangeNotifier {
     final metadata = user.userMetadata ?? {};
     final fullName = metadata['full_name'] as String? ?? '';
     final username = metadata['username'] as String? ?? '';
-    final grade = metadata['grade'] as int? ?? 0;
+    final grade = metadata['grade'] as int? ?? GradeMetadata.allGrades;
     final avatarUrl = metadata['avatar_url'] as String?;
 
     final account = SavedAccount(

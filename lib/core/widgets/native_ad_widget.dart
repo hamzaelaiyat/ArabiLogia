@@ -81,10 +81,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
         child: const Center(
           child: Text(
             'إعلان',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.grey, fontSize: 14),
           ),
         ),
       );
@@ -100,11 +97,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade300),
         ),
-        child: const Center(
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-          ),
-        ),
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       );
     }
 

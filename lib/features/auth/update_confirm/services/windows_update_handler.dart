@@ -53,7 +53,9 @@ class WindowsUpdateHandler {
         throw Exception('فشل التحميل: ${response.statusCode}');
       }
 
-      final totalBytes = response.contentLength > 0 ? response.contentLength : fileSize;
+      final totalBytes = response.contentLength > 0
+          ? response.contentLength
+          : fileSize;
       var receivedBytes = 0;
 
       final sink = outputFile.openWrite();

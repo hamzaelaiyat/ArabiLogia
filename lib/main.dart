@@ -12,6 +12,9 @@ import 'package:arabilogia/core/constants/app_version.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/core/routes/app_router.dart';
 import 'package:arabilogia/core/services/update_service.dart';
+import 'package:arabilogia/core/widgets/splash_screen.dart';
+import 'package:arabilogia/core/widgets/whats_new_dialog.dart';
+import 'package:arabilogia/core/widgets/offline_banner.dart';
 import 'package:arabilogia/features/auth/update_confirm/screens/update_confirm_page.dart';
 import 'package:arabilogia/providers/theme_provider.dart';
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
@@ -21,6 +24,7 @@ import 'package:arabilogia/features/admin/providers/teacher_exam_defaults_provid
 import 'package:arabilogia/features/dashboard/profile/providers/accounts_provider.dart';
 import 'package:arabilogia/providers/contextual_sidebar_provider.dart';
 import 'package:arabilogia/core/models/grade_metadata.dart';
+import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -38,7 +42,17 @@ Future<void> initializeApp({
   }
   if (kIsWeb) usePathUrlStrategy();
 
-  await dotenv.load(fileName: ".env");
+  // The bundled `.env` is a convenience for local runs and mobile builds. On
+  // web the host strips dotfiles, so the file is never served and the values
+  // come from --dart-define instead. Only read the file when we still need it,
+  // and never let a failure here stop the app from starting.
+  if (!SupabaseConfig.isConfigured) {
+    try {
+      await dotenv.load(fileName: ".env");
+    } catch (_) {
+      // Ignored: SupabaseConfig falls back to a placeholder.
+    }
+  }
   await AppVersion.preload();
 
   if (enableAds &&
@@ -84,6 +98,17 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
   StreamSubscription<AppUpdate?>? _updateSubscription;
   bool _providersInitialized = false;
 
+  // Boot-splash readiness gates. The branded splash stays up until the app has
+  // resolved its first destination (dashboard, teacher dashboard, or the
+  // update screen) and a minimum display time has elapsed.
+  bool _providersDone = false;
+  bool _routeSettled = false;
+  bool _minDelayElapsed = false;
+  bool _appReady = false;
+  Timer? _splashTimer;
+
+  static const Duration _splashMinDuration = Duration(milliseconds: 1600);
+
   @override
   void initState() {
     super.initState();
@@ -92,6 +117,26 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
         _showUpdateDialog(update);
       }
     });
+    AppRouter.router.routerDelegate.addListener(_onRouterChanged);
+    _splashTimer = Timer(_splashMinDuration, () {
+      _minDelayElapsed = true;
+      _maybeReleaseBootSplash();
+    });
+  }
+
+  void _onRouterChanged() {
+    final path = AppRouter.router.routerDelegate.currentConfiguration.uri.path;
+    if (path.isNotEmpty && path != '/') {
+      _routeSettled = true;
+      _maybeReleaseBootSplash();
+    }
+  }
+
+  void _maybeReleaseBootSplash() {
+    if (_appReady || !mounted) return;
+    if (_providersDone && _routeSettled && _minDelayElapsed) {
+      setState(() => _appReady = true);
+    }
   }
 
   Future<void> _initializeHeavyProviders(BuildContext context) async {
@@ -107,19 +152,48 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
       potatoProvider.initialize(),
       teacherDefaultsProvider.loadDefaults(),
       GradeMetadata.loadGrades(),
+      CategoryMetadata.loadCategories(),
     ]);
 
     if (!context.mounted) return;
 
     AppRouter.router.refresh();
 
-    // Check for updates only after auth is initialized
+    // Wait for any pending update decision before releasing the splash, so the
+    // user lands directly on the update screen instead of the dashboard.
     if (authProvider.state.isAuthenticated &&
         !kIsWeb &&
         (Theme.of(context).platform == TargetPlatform.android ||
             Theme.of(context).platform == TargetPlatform.windows ||
             Theme.of(context).platform == TargetPlatform.linux)) {
-      UpdateService.checkForUpdatesInBackground();
+      await UpdateService.checkForUpdatesInBackground();
+    }
+
+    _providersDone = true;
+    _maybeReleaseBootSplash();
+    _checkWhatsNew();
+    // Safety net in case the router listener never fired for the current path.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _maybeReleaseBootSplash(),
+    );
+  }
+
+  Future<void> _checkWhatsNew() async {
+    final show = await UpdateService.shouldShowWhatsNew();
+    if (show) {
+      final notes = await UpdateService.getWhatsNewNotes();
+      final version = await UpdateService.getCurrentVersion();
+      final navContext =
+          AppRouter.router.routerDelegate.navigatorKey.currentContext;
+      if (navContext == null || !navContext.mounted) return;
+      showDialog(
+        context: navContext,
+        builder: (dialogCtx) => WhatsNewDialog(
+          version: version,
+          releaseNotes: notes,
+          onDismiss: () => UpdateService.dismissWhatsNew(),
+        ),
+      );
     }
   }
 
@@ -146,6 +220,8 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
   @override
   void dispose() {
     _updateSubscription?.cancel();
+    _splashTimer?.cancel();
+    AppRouter.router.routerDelegate.removeListener(_onRouterChanged);
     super.dispose();
   }
 
@@ -193,7 +269,13 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
                     data: mediaQuery.copyWith(
                       textScaler: TextScaler.linear(scale.clamp(0.85, 1.3)),
                     ),
-                    child: child ?? const SizedBox.shrink(),
+                    child: Stack(
+                      children: [
+                        OfflineBanner(child: child ?? const SizedBox.shrink()),
+                        if (!_appReady)
+                          const Positioned.fill(child: SplashScreen()),
+                      ],
+                    ),
                   );
                 },
                 locale: const Locale('ar'),

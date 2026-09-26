@@ -92,14 +92,14 @@ class QuestionOptionTile extends StatelessWidget {
                   child: RichText(
                     text: TextSpan(
                       style: TextStyle(
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                         color: AppColors.foreground(context),
                       ),
                       children: parseQuestionText(
                         option.text,
-                        isDark:
-                            Theme.of(context).brightness == Brightness.dark,
+                        isDark: Theme.of(context).brightness == Brightness.dark,
                       ),
                     ),
                   ),

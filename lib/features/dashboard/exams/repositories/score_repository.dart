@@ -106,10 +106,7 @@ class ScoreRepository {
     final encoded = jsonEncode(
       answers.map((k, v) => MapEntry(k.toString(), v)),
     );
-    final params = <String, dynamic>{
-      'p_exam_id': examId,
-      'p_answers': encoded,
-    };
+    final params = <String, dynamic>{'p_exam_id': examId, 'p_answers': encoded};
     if (sessionId != null) params['p_session_id'] = sessionId;
 
     try {
@@ -168,7 +165,11 @@ class ScoreRepository {
     return _scoreDao.getAllScores();
   }
 
-  Future<void> saveScoreLocally(String examId, double score, [int points = 0]) async {
+  Future<void> saveScoreLocally(
+    String examId,
+    double score, [
+    int points = 0,
+  ]) async {
     try {
       await _scoreDao.upsertScore(examId, score, points);
     } catch (e) {
@@ -196,8 +197,10 @@ class ScoreRepository {
 
     for (int attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        final remoteData = await _supabaseService
-            .rpc('get_all_user_results', params: {'p_user_id': user.id});
+        final remoteData = await _supabaseService.rpc(
+          'get_all_user_results',
+          params: {'p_user_id': user.id},
+        );
 
         final List<dynamic> results = remoteData;
         final Map<String, Map<String, dynamic>> remoteBestScores = {};
@@ -252,6 +255,23 @@ class ScoreRepository {
       final response = await _supabaseService
           .rpc('get_all_user_results', params: {'p_user_id': user.id})
           .limit(limit);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Returns the user's full exam results history ordered chronologically,
+  /// used to render the performance trend chart on the profile screen.
+  Future<List<Map<String, dynamic>>> getStudentScoresHistory() async {
+    final user = _supabaseService.auth.currentUser;
+    if (user == null) return [];
+
+    try {
+      final response = await _supabaseService
+          .rpc('get_all_user_results', params: {'p_user_id': user.id})
+          .order('created_at', ascending: true);
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {

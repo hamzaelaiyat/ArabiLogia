@@ -15,6 +15,7 @@ import 'package:arabilogia/providers/contextual_sidebar_provider.dart';
 import 'package:arabilogia/features/dashboard/exams/providers/exam_provider.dart';
 import 'package:arabilogia/features/auth/providers/auth_provider.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
+import 'package:arabilogia/core/widgets/user_avatar_action.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -147,9 +148,11 @@ class _DashboardShellState extends State<DashboardShell> {
     final routerState = GoRouterState.of(context);
     final uriPath = routerState.uri.path;
     final matchedLocation = routerState.matchedLocation;
-    
-    final isExamOrQuizRoute = (uriPath.startsWith('/exam') && uriPath != AppRoutes.exams) ||
-        (matchedLocation.startsWith('/exam') && matchedLocation != AppRoutes.exams) ||
+
+    final isExamOrQuizRoute =
+        (uriPath.startsWith('/exam') && uriPath != AppRoutes.exams) ||
+        (matchedLocation.startsWith('/exam') &&
+            matchedLocation != AppRoutes.exams) ||
         uriPath.contains('practice') ||
         uriPath.contains('quiz') ||
         matchedLocation.contains('practice') ||
@@ -157,7 +160,8 @@ class _DashboardShellState extends State<DashboardShell> {
         uriPath == AppRoutes.practiceResult ||
         uriPath == AppRoutes.examResult;
 
-    final hideNav = isExamOrQuizRoute ||
+    final hideNav =
+        isExamOrQuizRoute ||
         examProvider.isExamInProgress ||
         sidebarProvider.shouldHideBottomNav;
 
@@ -171,16 +175,14 @@ class _DashboardShellState extends State<DashboardShell> {
               filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
               child: DashboardBottomNavBar(
                 selectedIndex: selectedIndex,
-                onDestinationSelected:
-                    (index) => _onItemTapped(context, index),
+                onDestinationSelected: (index) => _onItemTapped(context, index),
                 backgroundColor: backgroundColor,
               ),
             ),
           )
         : DashboardBottomNavBar(
             selectedIndex: selectedIndex,
-            onDestinationSelected:
-                (index) => _onItemTapped(context, index),
+            onDestinationSelected: (index) => _onItemTapped(context, index),
             backgroundColor: backgroundColor,
           );
 
@@ -192,23 +194,43 @@ class _DashboardShellState extends State<DashboardShell> {
     );
   }
 
-  Widget childWidgetCard(BuildContext context, Widget child, {bool hideNav = false}) {
+  Widget childWidgetCard(
+    BuildContext context,
+    Widget child, {
+    bool hideNav = false,
+  }) {
     final cardBgColor = AppColors.dashboardContentBackground(context);
     final isMobile = AppTokens.isMobile(context);
-    final padding = hideNav && isMobile
-        ? const EdgeInsets.fromLTRB(4.0, 4.0, 4.0, 0.0)
-        : const EdgeInsets.all(12.0);
+
+    // Phones: full-bleed content, no framed card.
+    if (isMobile) {
+      return ColoredBox(
+        color: AppColors.dashboardContentBackground(context),
+        child: child,
+      );
+    }
 
     return Container(
       color: AppColors.background(context),
-      padding: padding,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: cardBgColor,
-            borderRadius: BorderRadius.circular(16.0),
-          ),
+      padding: const EdgeInsets.all(10.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardBgColor,
+          borderRadius: BorderRadius.circular(28.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.2
+                    : 0.04,
+              ),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28.0),
           child: child,
         ),
       ),
@@ -229,11 +251,15 @@ class _DashboardShellState extends State<DashboardShell> {
     final uriPath = routerState.uri.path;
     final matchedLocation = routerState.matchedLocation;
 
-    final isLectureDetailRoute = (uriPath.startsWith('/lecture/') && !uriPath.endsWith('/practice')) ||
-        (matchedLocation.startsWith('/lecture/') && !matchedLocation.endsWith('/practice'));
+    final isLectureDetailRoute =
+        (uriPath.startsWith('/lecture/') && !uriPath.endsWith('/practice')) ||
+        (matchedLocation.startsWith('/lecture/') &&
+            !matchedLocation.endsWith('/practice'));
 
-    final isExamOrQuizRoute = (uriPath.startsWith('/exam') && uriPath != AppRoutes.exams) ||
-        (matchedLocation.startsWith('/exam') && matchedLocation != AppRoutes.exams) ||
+    final isExamOrQuizRoute =
+        (uriPath.startsWith('/exam') && uriPath != AppRoutes.exams) ||
+        (matchedLocation.startsWith('/exam') &&
+            matchedLocation != AppRoutes.exams) ||
         uriPath.contains('practice') ||
         uriPath.contains('quiz') ||
         matchedLocation.contains('practice') ||
@@ -272,7 +298,7 @@ class _DashboardShellState extends State<DashboardShell> {
         isPinned: _isPinned,
         onTogglePin: () {
           setState(() {
-            _isPinned = false;
+            _isPinned = !_isPinned;
           });
         },
         width: _sidebarWidth,
@@ -282,10 +308,7 @@ class _DashboardShellState extends State<DashboardShell> {
     return Scaffold(
       key: TestKeys.dashboardShell,
       drawer: !_isPinned
-          ? Drawer(
-              width: 280,
-              child: buildSidebarWidget(),
-            )
+          ? Drawer(width: 280, child: buildSidebarWidget())
           : null,
       body: Container(
         color: outerBgColor,
@@ -303,8 +326,11 @@ class _DashboardShellState extends State<DashboardShell> {
                 child: GestureDetector(
                   onHorizontalDragUpdate: (details) {
                     setState(() {
-                      final isRtl = Directionality.of(context) == TextDirection.rtl;
-                      final delta = isRtl ? -details.delta.dx : details.delta.dx;
+                      final isRtl =
+                          Directionality.of(context) == TextDirection.rtl;
+                      final delta = isRtl
+                          ? -details.delta.dx
+                          : details.delta.dx;
                       double newWidth = _sidebarWidth + delta;
                       if (newWidth < 120.0) {
                         _isPinned = false;
@@ -333,13 +359,9 @@ class _DashboardShellState extends State<DashboardShell> {
                                 end: Alignment.bottomCenter,
                                 colors: [
                                   Colors.transparent,
-                                  Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
+                                  Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.4),
-                                  Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
+                                  Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.4),
                                   Colors.transparent,
                                 ],
@@ -358,43 +380,58 @@ class _DashboardShellState extends State<DashboardShell> {
             // Main Content Column
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 16.0),
                 child: Column(
                   children: [
-                    // Solid Outer Header Bar containing centered page title & hamburger button when unpinned
+                    // Solid Outer Header Bar containing centered page title & user profile icon
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12.0,
-                        vertical: 6.0,
+                        vertical: 4.0,
                       ),
                       color: outerBgColor,
                       child: SizedBox(
-                        height: 40,
+                        height: 44,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
                             Center(
                               child: Text(
                                 _getPageTitle(selectedIndex),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
+                                style: Theme.of(context).textTheme.titleLarge
                                     ?.copyWith(
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w900,
                                       fontSize: 22,
                                     ),
                               ),
                             ),
 
+                            // Profile avatar icon popover menu on desktop top header
+                            Positioned(
+                              left:
+                                  Directionality.of(context) ==
+                                      TextDirection.rtl
+                                  ? 0
+                                  : null,
+                              right:
+                                  Directionality.of(context) ==
+                                      TextDirection.ltr
+                                  ? 0
+                                  : null,
+                              child: const UserAvatarAction(),
+                            ),
+
                             // Hamburger Menu button integrated cleanly in top header row
                             if (!_isPinned)
                               Positioned(
-                                right: Directionality.of(context) ==
+                                right:
+                                    Directionality.of(context) ==
                                         TextDirection.rtl
                                     ? 0
                                     : null,
-                                left: Directionality.of(context) ==
+                                left:
+                                    Directionality.of(context) ==
                                         TextDirection.ltr
                                     ? 0
                                     : null,
@@ -416,15 +453,28 @@ class _DashboardShellState extends State<DashboardShell> {
                     ),
                     const SizedBox(height: 8.0),
 
-                    // Main Content Card (16px Border Radius with lighter background)
+                    // Main Content Container Panel (32px Border Radius with White background floating over #E5F3FF)
                     Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: cardBgColor,
-                            borderRadius: BorderRadius.circular(16.0),
-                          ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: cardBgColor,
+                          borderRadius: BorderRadius.circular(32.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(
+                                alpha:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? 0.25
+                                    : 0.05,
+                              ),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(32.0),
                           child: widget.child,
                         ),
                       ),

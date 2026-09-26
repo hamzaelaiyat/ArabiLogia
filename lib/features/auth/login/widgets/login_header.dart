@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/strings.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 
 class LoginHeader extends StatelessWidget {
   final bool isMobile;
@@ -21,7 +22,7 @@ class LoginHeader extends StatelessWidget {
           AppStrings.login,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
-            color: const Color(0xFFEB8A00),
+            color: AppColors.primary,
           ),
           textAlign: TextAlign.center,
         ),

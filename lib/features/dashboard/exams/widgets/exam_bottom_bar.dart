@@ -20,18 +20,24 @@ class ExamBottomBar extends StatelessWidget {
     final potato = context.watch<PotatoModeProvider>();
     final hasBlur = potato.blurEffectsEnabled;
 
-    final button = ElevatedButton(
-      key: TestKeys.examDetailsStart,
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 56),
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      child: const Text(
-        'ابدأ الاختبار الآن',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    final button = Semantics(
+      label: 'ابدأ الاختبار الآن',
+      button: true,
+      child: ElevatedButton(
+        key: TestKeys.examDetailsStart,
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 56),
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: const Text(
+          'ابدأ الاختبار الآن',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
       ),
     );
 

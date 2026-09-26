@@ -42,8 +42,13 @@ class ExamDao {
     return _cache[id];
   }
 
-  Future<List<WebCachedExam>> getCachedExamsBySubject(String subjectId, int grade) async {
-    return _cache.values.where((e) => e.subjectId == subjectId && e.grade == grade).toList();
+  Future<List<WebCachedExam>> getCachedExamsBySubject(
+    String subjectId,
+    int grade,
+  ) async {
+    return _cache.values
+        .where((e) => e.subjectId == subjectId && e.grade == grade)
+        .toList();
   }
 
   Future<void> removeCachedExam(String id) async {

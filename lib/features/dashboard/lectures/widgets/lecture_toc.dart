@@ -86,8 +86,9 @@ class LectureToc extends StatelessWidget {
                             color: isActive
                                 ? categoryColor
                                 : AppColors.foreground(context),
-                            fontWeight:
-                                isActive ? FontWeight.w700 : FontWeight.w400,
+                            fontWeight: isActive
+                                ? FontWeight.w700
+                                : FontWeight.w400,
                           ),
                         ),
                       ),

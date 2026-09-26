@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:arabilogia/core/constants/strings.dart';
 import 'package:arabilogia/core/constants/test_keys.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/features/auth/widgets/auth_text_field.dart';
 import 'package:arabilogia/features/auth/register/widgets/step_header.dart';
 
@@ -37,12 +38,50 @@ class AccountStepForm extends StatelessWidget {
           icon: Icons.lock_person_outlined,
         ),
         const SizedBox(height: AppTokens.spacing12),
-        AuthTextField(
-          fieldKey: TestKeys.registerEmailField,
+        TextFormField(
+          key: TestKeys.registerEmailField,
           controller: emailController,
-          label: AppStrings.email,
-          icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
+          obscureText: false,
+          style: TextStyle(color: colorScheme.onSurface),
+          decoration: InputDecoration(
+            labelText: AppStrings.email,
+            prefixIcon: Icon(
+              Icons.email_outlined,
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            filled: true,
+            fillColor: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.secondaryDark
+                : Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppTokens.spacing16,
+              vertical: AppTokens.spacing12,
+            ),
+            labelStyle: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTokens.radiusFull),
+              borderSide: BorderSide(
+                color: colorScheme.outline.withValues(alpha: 0.3),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTokens.radiusFull),
+              borderSide: BorderSide(
+                color: colorScheme.outline.withValues(alpha: 0.3),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTokens.radiusFull),
+              borderSide: BorderSide(color: colorScheme.primary, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTokens.radiusFull),
+              borderSide: BorderSide(color: colorScheme.error, width: 2),
+            ),
+          ),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'يرجى إدخال البريد الإلكتروني';

@@ -54,9 +54,7 @@ class TextBlockWidget extends StatelessWidget {
                     color: AppColors.mutedColor(context),
                   ),
                   onPressed: () async {
-                    await Clipboard.setData(
-                      ClipboardData(text: block.content),
-                    );
+                    await Clipboard.setData(ClipboardData(text: block.content));
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('تم نسخ النص')),

@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -78,16 +79,15 @@ class UpdateService {
     }
 
     try {
-      // Build headers with optional GitHub token
-      final githubToken = dotenv.env['GITHUB_TOKEN'];
-      final headers = {
+      // The repository is public, so the releases API works unauthenticated.
+      // Never ship a GitHub token in the client bundle: .env is bundled as an
+      // asset, so any key inside it is publicly readable from the APK and the
+      // web build.
+      const headers = {
         'Accept': 'application/vnd.github+json',
         'User-Agent': 'ArabiLogia-Update-Checker',
         'X-GitHub-Api-Version': '2022-11-28',
       };
-      if (githubToken != null && githubToken.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $githubToken';
-      }
 
       final response = await http
           .get(
@@ -165,13 +165,14 @@ class UpdateService {
         return assets.firstWhere(
           (a) => a['name']?.toString().contains('arm64-v8a') ?? false,
         );
-      } catch (_) {
-        // Fall back to any APK with arm64
+      } catch (e) {
+        debugPrint('No arm64-v8a APK found, falling back: $e');
         try {
           return assets.firstWhere(
             (a) => a['name']?.toString().contains('arm64') ?? false,
           );
-        } catch (_) {
+        } catch (e) {
+          debugPrint('No arm64 APK found, using first asset: $e');
           return assets.isNotEmpty ? assets.first : null;
         }
       }
@@ -180,7 +181,8 @@ class UpdateService {
         return assets.firstWhere(
           (a) => a['name']?.toString().endsWith('.exe') ?? false,
         );
-      } catch (_) {
+      } catch (e) {
+        debugPrint('No Windows .exe asset found, using first: $e');
         return assets.isNotEmpty ? assets.first : null;
       }
     } else if (os == 'linux') {
@@ -189,7 +191,8 @@ class UpdateService {
           final name = a['name']?.toString() ?? '';
           return name.endsWith('.AppImage') || name.endsWith('.deb');
         });
-      } catch (_) {
+      } catch (e) {
+        debugPrint('No Linux AppImage/deb asset found, using first: $e');
         return assets.isNotEmpty ? assets.first : null;
       }
     }
@@ -242,5 +245,13 @@ class UpdateService {
   static Future<void> markAsInstalled(String version) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_installedVersionKey, version);
+  }
+
+  /// Dismiss What's New dialog after user views it
+  static Future<void> dismissWhatsNew() async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentVersion = await getCurrentVersion();
+    await prefs.setString(_installedVersionKey, currentVersion);
+    await prefs.remove('whats_new_notes');
   }
 }

@@ -9,6 +9,7 @@ import 'package:arabilogia/features/dashboard/exams/repositories/exam_repository
 import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/features/dashboard/lectures/models/lecture.dart';
 import 'package:arabilogia/features/dashboard/lectures/repositories/lecture_repository.dart';
+import 'package:arabilogia/features/dashboard/lectures/repositories/lecture_activity_repository.dart';
 import 'package:arabilogia/features/dashboard/lectures/widgets/lecture_hero_card.dart';
 import 'package:arabilogia/features/dashboard/lectures/widgets/lecture_toc.dart';
 import 'package:arabilogia/features/dashboard/lectures/widgets/progress_bar_card.dart';
@@ -55,7 +56,9 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     _scrollController.dispose();
     try {
       context.read<ContextualSidebarProvider>().clearSidebar();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint("Silently caught error: $e");
+    }
     super.dispose();
   }
 
@@ -64,38 +67,45 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     try {
       final category = _category;
       context.read<ContextualSidebarProvider>().setLectureSidebar(
-            LectureSidebarData(
-              lectureId: _lecture!.id,
-              title: _lecture!.title,
-              categoryName: category?.name ?? 'المحاضرة',
-              categoryColor: category?.color ?? AppColors.primary,
-              tocEntries: _tocEntries,
-              activeIndex: _activeTocIndex,
-              onEntryTap: _jumpToEntry,
-              onBack: () {
-                try {
-                  context.read<ContextualSidebarProvider>().clearSidebar();
-                } catch (_) {}
-                if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop();
-                } else {
-                  context.go(AppRoutes.lectures);
-                }
-              },
-              onShowMainSidebar: () {
-                try {
-                  context.read<ContextualSidebarProvider>().showMainSidebar();
-                } catch (_) {}
-              },
-            ),
-          );
-    } catch (_) {}
+        LectureSidebarData(
+          lectureId: _lecture!.id,
+          title: _lecture!.title,
+          categoryName: category?.name ?? 'المحاضرة',
+          categoryColor: category?.color ?? AppColors.primary,
+          tocEntries: _tocEntries,
+          activeIndex: _activeTocIndex,
+          onEntryTap: _jumpToEntry,
+          onBack: () {
+            try {
+              context.read<ContextualSidebarProvider>().clearSidebar();
+            } catch (e) {
+              debugPrint("Silently caught error: $e");
+            }
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go(AppRoutes.lectures);
+            }
+          },
+          onShowMainSidebar: () {
+            try {
+              context.read<ContextualSidebarProvider>().showMainSidebar();
+            } catch (e) {
+              debugPrint("Silently caught error: $e");
+            }
+          },
+        ),
+      );
+    } catch (e) {
+      debugPrint("Silently caught error: $e");
+    }
   }
 
   Future<void> _loadLectureDetails() async {
     final lecture = await _repository.getLectureById(widget.lectureId);
     final prefs = await SharedPreferences.getInstance();
-    final completedList = prefs.getStringList('lecture_progress_${widget.lectureId}') ?? [];
+    final completedList =
+        prefs.getStringList('lecture_progress_${widget.lectureId}') ?? [];
 
     final scores = await ScoreRepository().getLocalScores();
 
@@ -104,9 +114,14 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
         lecture.examIds.map(
           (id) => ExamRepository().loadExamById(lecture.courseId, id),
         ),
-      ))
-          .whereType<Exam>()
-          .toList();
+      )).whereType<Exam>().toList();
+
+      await LectureActivityRepository().recordActivity(
+        lectureId: lecture.id,
+        title: lecture.title,
+        categoryId: lecture.courseId,
+        categoryName: CategoryMetadata.getById(lecture.courseId)?.name,
+      );
 
       for (final block in lecture.contentBlocks) {
         _blockKeys.putIfAbsent(block.id, () => GlobalKey());
@@ -117,7 +132,9 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
           _lecture = lecture;
           _exams = loadedExams;
           _completedBlockIds = Set.from(completedList);
-          _examScores = scores.map((key, val) => MapEntry(key, Map<String, dynamic>.from(val)));
+          _examScores = scores.map(
+            (key, val) => MapEntry(key, Map<String, dynamic>.from(val)),
+          );
           _isLoading = false;
         });
         _registerSidebar();
@@ -133,14 +150,19 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     final scores = await ScoreRepository().getLocalScores();
     if (mounted) {
       setState(() {
-        _examScores = scores.map((key, val) => MapEntry(key, Map<String, dynamic>.from(val)));
+        _examScores = scores.map(
+          (key, val) => MapEntry(key, Map<String, dynamic>.from(val)),
+        );
       });
     }
   }
 
   Future<void> _persistCompleted() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('lecture_progress_${widget.lectureId}', _completedBlockIds.toList());
+    await prefs.setStringList(
+      'lecture_progress_${widget.lectureId}',
+      _completedBlockIds.toList(),
+    );
   }
 
   Future<void> _toggleBlockCompletion(String blockId) async {
@@ -194,8 +216,12 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     if (active != _activeTocIndex) {
       setState(() => _activeTocIndex = active);
       try {
-        context.read<ContextualSidebarProvider>().updateLectureActiveIndex(active);
-      } catch (_) {}
+        context.read<ContextualSidebarProvider>().updateLectureActiveIndex(
+          active,
+        );
+      } catch (e) {
+        debugPrint("Silently caught error: $e");
+      }
     }
   }
 
@@ -232,30 +258,42 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
       switch (block.type) {
         case BlockType.text:
           textIndex++;
-          entries.add(LectureTocEntry(
-            label: _textBlockLabel(block, textIndex),
-            icon: Icons.notes,
-          ));
+          entries.add(
+            LectureTocEntry(
+              label: _textBlockLabel(block, textIndex),
+              icon: Icons.notes,
+            ),
+          );
         case BlockType.youtube:
           videoIndex++;
-          entries.add(LectureTocEntry(
-            label: block.metadata?['title']?.toString() ?? 'فيديو الشرح $videoIndex',
-            icon: Icons.play_circle_outline,
-          ));
+          entries.add(
+            LectureTocEntry(
+              label:
+                  block.metadata?['title']?.toString() ??
+                  'فيديو الشرح $videoIndex',
+              icon: Icons.play_circle_outline,
+            ),
+          );
         case BlockType.exam:
         case BlockType.quiz:
           quizIndex++;
-          entries.add(LectureTocEntry(
-            label: block.metadata?['title']?.toString() ?? 'اختبار قصير $quizIndex',
-            icon: Icons.help_outline,
-          ));
+          entries.add(
+            LectureTocEntry(
+              label:
+                  block.metadata?['title']?.toString() ??
+                  'اختبار قصير $quizIndex',
+              icon: Icons.help_outline,
+            ),
+          );
       }
     }
     if (_exams.isNotEmpty) {
-      entries.add(const LectureTocEntry(
-        label: 'الامتحانات الختامية',
-        icon: Icons.emoji_events_outlined,
-      ));
+      entries.add(
+        const LectureTocEntry(
+          label: 'الامتحانات الختامية',
+          icon: Icons.emoji_events_outlined,
+        ),
+      );
     }
     return entries;
   }
@@ -275,7 +313,9 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     int seconds = 0;
     for (final block in _lecture!.contentBlocks) {
       if (block.type == BlockType.youtube) {
-        seconds += _parseDurationSeconds(block.metadata?['duration']?.toString() ?? '');
+        seconds += _parseDurationSeconds(
+          block.metadata?['duration']?.toString() ?? '',
+        );
       } else if (block.type == BlockType.text) {
         seconds += block.content.length ~/ 3;
       }
@@ -285,7 +325,8 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     return '$minutes دقيقة تقريباً';
   }
 
-  int get _questionCount => _exams.fold(0, (sum, e) => sum + e.questions.length);
+  int get _questionCount =>
+      _exams.fold(0, (sum, e) => sum + e.questions.length);
 
   List<ProgressSegmentData> _progressSegments(Color categoryColor) {
     int textTotal = 0, textDone = 0;
@@ -401,7 +442,9 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
             sidebarProvider.lectureData?.lectureId != _lecture!.id) {
           _registerSidebar();
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint("Silently caught error: $e");
+      }
     });
 
     return Directionality(
@@ -411,17 +454,21 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
         appBar: GlassAppBar(
           title: Text(
             _lecture!.title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
         body: SingleChildScrollView(
           controller: _scrollController,
           padding: EdgeInsets.fromLTRB(
-            AppTokens.isMobile(context) ? AppTokens.spacing12 : AppTokens.spacing16,
+            AppTokens.isMobile(context)
+                ? AppTokens.spacing12
+                : AppTokens.spacing16,
             AppTokens.spacing16,
-            AppTokens.isMobile(context) ? AppTokens.spacing12 : AppTokens.spacing16,
+            AppTokens.isMobile(context)
+                ? AppTokens.spacing12
+                : AppTokens.spacing16,
             AppTokens.isMobile(context) ? 96.0 : AppTokens.spacing32,
           ),
           child: Center(
@@ -429,68 +476,71 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
               constraints: const BoxConstraints(maxWidth: 900),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              LectureHeroCard(
-                title: _lecture!.title,
-                description: _lecture!.description,
-                categoryColor: categoryColor,
-                questionCount: _questionCount,
-                durationLabel: _durationLabel,
-                onMarkAllRead: _markAllRead,
-                onResetProgress: _resetProgress,
-              ),
-              const SizedBox(height: AppTokens.spacing16),
-              ProgressBarCard(
-                segments: _progressSegments(categoryColor),
-                categoryColor: categoryColor,
-              ),
-              const SizedBox(height: AppTokens.spacing16),
-              LectureToc(
-                entries: _tocEntries,
-                activeIndex: _activeTocIndex,
-                categoryColor: categoryColor,
-                onEntryTap: _jumpToEntry,
-              ),
-              ..._lecture!.contentBlocks.map(
-                (block) => KeyedSubtree(
-                  key: _blockKeys.putIfAbsent(block.id, () => GlobalKey()),
-                  child: _buildContentBlock(block, categoryColor),
-                ),
-              ),
-              if (_exams.isNotEmpty)
-                KeyedSubtree(
-                  key: _examsSectionKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: AppTokens.spacing24),
-                      const Divider(),
-                      const SizedBox(height: AppTokens.spacing16),
-                      Text(
-                        'الامتحانات الختامية للمحاضرة',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
-                            ),
-                      ),
-                      const SizedBox(height: AppTokens.spacing12),
-                      ..._exams.map((exam) => StandardExamWidget(
-                            exam: exam,
-                            examScores: _examScores,
-                            lectureCourseId: _lecture!.courseId,
-                            categoryName: _category?.name ?? '',
-                            onScoreRefresh: _loadScores,
-                          )),
-                    ],
+                children: [
+                  LectureHeroCard(
+                    title: _lecture!.title,
+                    description: _lecture!.description,
+                    categoryColor: categoryColor,
+                    questionCount: _questionCount,
+                    durationLabel: _durationLabel,
+                    onMarkAllRead: _markAllRead,
+                    onResetProgress: _resetProgress,
                   ),
-                ),
-              const SizedBox(height: AppTokens.spacing32),
-            ],
+                  const SizedBox(height: AppTokens.spacing16),
+                  ProgressBarCard(
+                    segments: _progressSegments(categoryColor),
+                    categoryColor: categoryColor,
+                  ),
+                  const SizedBox(height: AppTokens.spacing16),
+                  LectureToc(
+                    entries: _tocEntries,
+                    activeIndex: _activeTocIndex,
+                    categoryColor: categoryColor,
+                    onEntryTap: _jumpToEntry,
+                  ),
+                  ..._lecture!.contentBlocks.map(
+                    (block) => KeyedSubtree(
+                      key: _blockKeys.putIfAbsent(block.id, () => GlobalKey()),
+                      child: _buildContentBlock(block, categoryColor),
+                    ),
+                  ),
+                  if (_exams.isNotEmpty)
+                    KeyedSubtree(
+                      key: _examsSectionKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: AppTokens.spacing24),
+                          const Divider(),
+                          const SizedBox(height: AppTokens.spacing16),
+                          Text(
+                            'الامتحانات الختامية للمحاضرة',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                ),
+                          ),
+                          const SizedBox(height: AppTokens.spacing12),
+                          ..._exams.map(
+                            (exam) => StandardExamWidget(
+                              exam: exam,
+                              examScores: _examScores,
+                              lectureCourseId: _lecture!.courseId,
+                              categoryName: _category?.name ?? '',
+                              onScoreRefresh: _loadScores,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: AppTokens.spacing32),
+                ],
+              ),
+            ),
           ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 }

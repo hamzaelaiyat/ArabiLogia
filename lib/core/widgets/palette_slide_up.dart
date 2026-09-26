@@ -29,8 +29,9 @@ Future<T?> showPaletteSlideUp<T>(
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color:
-                      AppColors.mutedColor(sheetContext).withValues(alpha: 0.4),
+                  color: AppColors.mutedColor(
+                    sheetContext,
+                  ).withValues(alpha: 0.4),
                   borderRadius: AppTokens.radiusFullAll,
                 ),
               ),

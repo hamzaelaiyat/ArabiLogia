@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 
@@ -30,12 +29,13 @@ class LightTheme {
     scaffoldBackgroundColor: AppColors.bgLight,
     textTheme: _buildTextTheme(Brightness.light),
 
-    appBarTheme: AppBarTheme(
+    appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.bgLight,
       foregroundColor: AppColors.fgLight,
       elevation: 0,
       centerTitle: true,
-      titleTextStyle: GoogleFonts.rubik(
+      titleTextStyle: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeXl,
         fontWeight: FontWeight.w600,
         color: AppColors.fgLight,
@@ -59,7 +59,8 @@ class LightTheme {
         ),
         shape: RoundedRectangleBorder(borderRadius: AppTokens.radiusLgAll),
         elevation: AppTokens.elevationMd,
-        textStyle: GoogleFonts.rubik(
+        textStyle: const TextStyle(
+          fontFamily: AppTokens.fontFamilyDisplay,
           fontSize: AppTokens.fontSizeMd,
           fontWeight: FontWeight.w500,
         ),
@@ -76,7 +77,8 @@ class LightTheme {
         ),
         shape: RoundedRectangleBorder(borderRadius: AppTokens.radiusLgAll),
         side: const BorderSide(color: AppColors.primary),
-        textStyle: GoogleFonts.rubik(
+        textStyle: const TextStyle(
+          fontFamily: AppTokens.fontFamilyDisplay,
           fontSize: AppTokens.fontSizeMd,
           fontWeight: FontWeight.w500,
         ),
@@ -90,7 +92,8 @@ class LightTheme {
           horizontal: AppTokens.spacing8,
           vertical: AppTokens.spacing4,
         ),
-        textStyle: GoogleFonts.rubik(
+        textStyle: const TextStyle(
+          fontFamily: AppTokens.fontFamilyDisplay,
           fontSize: AppTokens.fontSizeMd,
           fontWeight: FontWeight.w500,
         ),
@@ -124,11 +127,13 @@ class LightTheme {
         borderRadius: AppTokens.radiusXlAll,
         borderSide: const BorderSide(color: AppColors.error, width: 2),
       ),
-      labelStyle: GoogleFonts.rubik(
+      labelStyle: const TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeMd,
         color: AppColors.mutedLight,
       ),
-      hintStyle: GoogleFonts.rubik(
+      hintStyle: const TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeMd,
         color: AppColors.mutedLight,
       ),
@@ -141,29 +146,35 @@ class LightTheme {
       shape: RoundedRectangleBorder(borderRadius: AppTokens.radius3xlAll),
     ),
 
-    bottomNavigationBarTheme: BottomNavigationBarThemeData(
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Colors.white,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.mutedLight,
       type: BottomNavigationBarType.fixed,
       elevation: AppTokens.elevationMd,
-      selectedLabelStyle: GoogleFonts.rubik(
+      selectedLabelStyle: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeXs,
         fontWeight: FontWeight.w500,
       ),
-      unselectedLabelStyle: GoogleFonts.rubik(fontSize: AppTokens.fontSizeXs),
+      unselectedLabelStyle: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
+        fontSize: AppTokens.fontSizeXs,
+      ),
     ),
 
-    navigationRailTheme: NavigationRailThemeData(
+    navigationRailTheme: const NavigationRailThemeData(
       backgroundColor: Colors.white,
-      selectedIconTheme: const IconThemeData(color: AppColors.primary),
-      unselectedIconTheme: const IconThemeData(color: AppColors.mutedLight),
-      selectedLabelTextStyle: GoogleFonts.rubik(
+      selectedIconTheme: IconThemeData(color: AppColors.primary),
+      unselectedIconTheme: IconThemeData(color: AppColors.mutedLight),
+      selectedLabelTextStyle: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeXs,
         fontWeight: FontWeight.w500,
         color: AppColors.primary,
       ),
-      unselectedLabelTextStyle: GoogleFonts.rubik(
+      unselectedLabelTextStyle: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeXs,
         color: AppColors.mutedLight,
       ),
@@ -171,7 +182,8 @@ class LightTheme {
 
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColors.fgLight,
-      contentTextStyle: GoogleFonts.rubik(
+      contentTextStyle: const TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeMd,
         color: Colors.white,
       ),
@@ -188,7 +200,8 @@ class LightTheme {
     chipTheme: ChipThemeData(
       backgroundColor: AppColors.secondaryLight,
       selectedColor: AppColors.primaryContainerLight,
-      labelStyle: GoogleFonts.rubik(
+      labelStyle: const TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeSm,
         color: AppColors.fgLight,
       ),
@@ -199,12 +212,14 @@ class LightTheme {
       backgroundColor: Colors.white,
       elevation: AppTokens.elevationLg,
       shape: RoundedRectangleBorder(borderRadius: AppTokens.radius2xlAll),
-      titleTextStyle: GoogleFonts.rubik(
+      titleTextStyle: const TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeXl,
         fontWeight: FontWeight.w600,
         color: AppColors.fgLight,
       ),
-      contentTextStyle: GoogleFonts.rubik(
+      contentTextStyle: const TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeMd,
         color: AppColors.mutedLight,
       ),
@@ -234,7 +249,8 @@ class LightTheme {
         color: AppColors.fgLight,
         borderRadius: BorderRadius.circular(AppTokens.radiusSm),
       ),
-      textStyle: GoogleFonts.rubik(
+      textStyle: const TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeSm,
         color: Colors.white,
       ),
@@ -243,10 +259,9 @@ class LightTheme {
     popupMenuTheme: PopupMenuThemeData(
       color: Colors.white,
       elevation: AppTokens.elevationLg,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppTokens.radiusLgAll,
-      ),
-      textStyle: GoogleFonts.rubik(
+      shape: RoundedRectangleBorder(borderRadius: AppTokens.radiusLgAll),
+      textStyle: const TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeMd,
         color: AppColors.fgLight,
       ),
@@ -263,7 +278,8 @@ class LightTheme {
       thumbColor: AppColors.primary,
       overlayColor: AppColors.primary.withValues(alpha: 0.12),
       valueIndicatorColor: AppColors.primary,
-      valueIndicatorTextStyle: GoogleFonts.rubik(
+      valueIndicatorTextStyle: const TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeSm,
         color: Colors.white,
       ),
@@ -309,15 +325,14 @@ class LightTheme {
       dialBackgroundColor: AppColors.secondaryLight,
       dialHandColor: AppColors.primary,
       entryModeIconColor: AppColors.primary,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppTokens.radius2xlAll,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: AppTokens.radius2xlAll),
     ),
 
-    badgeTheme: BadgeThemeData(
+    badgeTheme: const BadgeThemeData(
       backgroundColor: AppColors.primary,
       textColor: Colors.white,
-      textStyle: GoogleFonts.rubik(
+      textStyle: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeXs,
         fontWeight: FontWeight.bold,
       ),
@@ -330,47 +345,56 @@ class LightTheme {
     final muted = isLight ? AppColors.mutedLight : AppColors.mutedDark;
 
     return TextTheme(
-      displayLarge: GoogleFonts.rubik(
+      displayLarge: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSize5xl,
         fontWeight: FontWeight.bold,
         color: fg,
       ),
-      displayMedium: GoogleFonts.rubik(
+      displayMedium: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSize6xl,
         fontWeight: FontWeight.bold,
         color: fg,
       ),
-      displaySmall: GoogleFonts.rubik(
+      displaySmall: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSize4xl,
         fontWeight: FontWeight.w600,
         color: fg,
       ),
-      headlineLarge: GoogleFonts.rubik(
+      headlineLarge: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSize5xl,
         fontWeight: FontWeight.w700,
         color: fg,
       ),
-      headlineMedium: GoogleFonts.rubik(
+      headlineMedium: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSize4xl,
         fontWeight: FontWeight.bold,
         color: fg,
       ),
-      headlineSmall: GoogleFonts.rubik(
+      headlineSmall: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSize3xl,
         fontWeight: FontWeight.w600,
         color: fg,
       ),
-      titleLarge: GoogleFonts.rubik(
+      titleLarge: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSize2xl,
         fontWeight: FontWeight.w600,
         color: fg,
       ),
-      titleMedium: GoogleFonts.rubik(
+      titleMedium: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeXl,
         fontWeight: FontWeight.w600,
         color: fg,
       ),
-      titleSmall: GoogleFonts.rubik(
+      titleSmall: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeSm,
         fontWeight: FontWeight.w600,
         color: fg,
@@ -393,17 +417,20 @@ class LightTheme {
         fontWeight: FontWeight.normal,
         color: muted,
       ),
-      labelLarge: GoogleFonts.rubik(
+      labelLarge: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeMd,
         fontWeight: FontWeight.w500,
         color: fg,
       ),
-      labelMedium: GoogleFonts.rubik(
+      labelMedium: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeSm,
         fontWeight: FontWeight.w500,
         color: muted,
       ),
-      labelSmall: GoogleFonts.rubik(
+      labelSmall: TextStyle(
+        fontFamily: AppTokens.fontFamilyDisplay,
         fontSize: AppTokens.fontSizeXs,
         fontWeight: FontWeight.w500,
         color: muted,

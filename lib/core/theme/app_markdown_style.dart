@@ -29,7 +29,10 @@ class AppMarkdownStyle {
         fontWeight: FontWeight.w500,
         height: 1.6,
       ),
-      blockquotePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      blockquotePadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
       blockquoteDecoration: BoxDecoration(
         color: blockquoteBg,
         borderRadius: BorderRadius.circular(8),
@@ -41,7 +44,9 @@ class AppMarkdownStyle {
       code: AppTextStyles.bodyMd.copyWith(
         fontFamily: 'monospace',
         color: isDark ? const Color(0xFFFFD599) : const Color(0xFFB35900),
-        backgroundColor: isDark ? const Color(0xFF2C323B) : const Color(0xFFEFEFEF),
+        backgroundColor: isDark
+            ? const Color(0xFF2C323B)
+            : const Color(0xFFEFEFEF),
       ),
       codeblockDecoration: BoxDecoration(
         color: isDark ? const Color(0xFF23272E) : const Color(0xFFF3F4F6),

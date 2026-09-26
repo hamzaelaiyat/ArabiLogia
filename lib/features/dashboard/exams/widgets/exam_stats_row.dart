@@ -19,12 +19,7 @@ class ExamStatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _buildStatItem(
-          context,
-          '$questionCount',
-          'سؤال',
-          Icons.help_outline,
-        ),
+        _buildStatItem(context, '$questionCount', 'سؤال', Icons.help_outline),
         const SizedBox(width: AppTokens.spacing16),
         _buildStatItem(
           context,

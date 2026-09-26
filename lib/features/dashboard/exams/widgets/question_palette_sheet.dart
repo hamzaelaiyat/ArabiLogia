@@ -21,7 +21,13 @@ class QuestionPaletteSheet extends StatelessWidget {
     required this.onQuestionTap,
   });
 
-  Widget _legendItem(BuildContext context, Color color, bool filled, String label, {IconData? icon}) {
+  Widget _legendItem(
+    BuildContext context,
+    Color color,
+    bool filled,
+    String label, {
+    IconData? icon,
+  }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -67,8 +73,19 @@ class QuestionPaletteSheet extends StatelessWidget {
             spacing: AppTokens.spacing8,
             children: [
               _legendItem(context, categoryColor, true, 'تم الإجابة'),
-              _legendItem(context, AppColors.mutedColor(context), false, 'لم يتم'),
-              _legendItem(context, AppColors.examWarning, false, 'مُعلَّم للمراجعة', icon: Icons.flag),
+              _legendItem(
+                context,
+                AppColors.mutedColor(context),
+                false,
+                'لم يتم',
+              ),
+              _legendItem(
+                context,
+                AppColors.examWarning,
+                false,
+                'مُعلَّم للمراجعة',
+                icon: Icons.flag,
+              ),
             ],
           ),
           const SizedBox(height: AppTokens.spacing8),
@@ -88,8 +105,8 @@ class QuestionPaletteSheet extends StatelessWidget {
                 final status = isFlagged
                     ? 'مُعلَّم'
                     : isAnswered
-                        ? 'تم الإجابة'
-                        : 'لم يتم';
+                    ? 'تم الإجابة'
+                    : 'لم يتم';
                 return Semantics(
                   label: 'سؤال ${index + 1}، $status',
                   button: true,
@@ -110,8 +127,8 @@ class QuestionPaletteSheet extends StatelessWidget {
                               color: isCurrent
                                   ? AppColors.foreground(context)
                                   : isAnswered
-                                      ? categoryColor
-                                      : AppColors.mutedColor(context),
+                                  ? categoryColor
+                                  : AppColors.mutedColor(context),
                               width: isCurrent ? 2 : 1,
                             ),
                           ),

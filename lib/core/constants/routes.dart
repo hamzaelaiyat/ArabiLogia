@@ -34,6 +34,8 @@ abstract class AppRoutes {
 
   // Admin Lecture Routes
   static const String lectureEditor = '/admin/lecture-editor';
+  static const String lectureResults = '/admin/lecture-results';
+  static const String examStudentResults = '/admin/exam-student-results';
 
   // Update Routes
   static const String updateConfirm = '/update-confirm';

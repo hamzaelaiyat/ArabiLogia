@@ -34,7 +34,9 @@ class PotatoSwitch extends StatelessWidget {
         : Duration.zero;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeTrack = activeTrackColor ?? AppColors.primary;
-    final inactiveTrack = inactiveTrackColor ?? (isDark ? Colors.grey.shade700 : Colors.grey.shade300);
+    final inactiveTrack =
+        inactiveTrackColor ??
+        (isDark ? Colors.grey.shade700 : Colors.grey.shade300);
     final thumbColor = activeColor ?? Colors.white;
 
     final w = width ?? 56.0;
@@ -54,13 +56,15 @@ class PotatoSwitch extends StatelessWidget {
             decoration: BoxDecoration(
               color: value ? activeTrack : inactiveTrack,
               borderRadius: BorderRadius.circular(h / 2),
-              boxShadow: value ? [
-                BoxShadow(
-                  color: activeTrack.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ] : null,
+              boxShadow: value
+                  ? [
+                      BoxShadow(
+                        color: activeTrack.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
             child: Stack(
               children: [
@@ -133,7 +137,9 @@ class PotatoSwitchListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeTrack = activeTrackColor ?? AppColors.primary;
-    final inactiveTrack = inactiveTrackColor ?? (isDark ? Colors.grey.shade700 : Colors.grey.shade300);
+    final inactiveTrack =
+        inactiveTrackColor ??
+        (isDark ? Colors.grey.shade700 : Colors.grey.shade300);
 
     final leadingWidget = leading ?? secondary;
 
@@ -141,7 +147,9 @@ class PotatoSwitchListTile extends StatelessWidget {
       onTap: onChanged != null ? () => onChanged!(!value) : null,
       borderRadius: AppTokens.radiusMdAll,
       child: Padding(
-        padding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding:
+            contentPadding ??
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
             if (leadingWidget != null) ...[
@@ -156,6 +164,7 @@ class PotatoSwitchListTile extends StatelessWidget {
                   if (title != null)
                     DefaultTextStyle(
                       style: TextStyle(
+                        fontFamily: AppTokens.fontFamilyBody,
                         fontSize: AppTokens.fontSizeMd,
                         fontWeight: FontWeight.w500,
                         color: AppColors.foreground(context),
@@ -166,6 +175,7 @@ class PotatoSwitchListTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     DefaultTextStyle(
                       style: TextStyle(
+                        fontFamily: AppTokens.fontFamilyBody,
                         fontSize: AppTokens.fontSizeSm,
                         color: AppColors.mutedColor(context),
                       ),

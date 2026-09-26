@@ -37,11 +37,13 @@ class GradeSelector extends StatelessWidget {
     final List<Map<String, dynamic>> grades = GradeMetadata.grades
         .asMap()
         .entries
-        .map((entry) => {
-              'id': entry.value.id,
-              'name': entry.value.name,
-              'icon': _gradeIcon(entry.key),
-            })
+        .map(
+          (entry) => {
+            'id': entry.value.id,
+            'name': entry.value.name,
+            'icon': _gradeIcon(entry.key),
+          },
+        )
         .toList();
 
     return Column(
@@ -77,13 +79,15 @@ class GradeSelector extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFFEB8A00).withValues(alpha: 0.1)
+                      ? AppColors.primary.withValues(alpha: 0.1)
                       : Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppTokens.radiusFull),
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFFEB8A00)
-                        : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                        ? AppColors.primary
+                        : Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.3),
                     width: 2,
                   ),
                 ),
@@ -91,28 +95,28 @@ class GradeSelector extends StatelessWidget {
                   children: [
                     Icon(
                       grade['icon'] as IconData,
-                    color: isSelected
-                        ? const Color(0xFFEB8A00)
-                        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: isSelected
+                          ? AppColors.primary
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                     const SizedBox(width: AppTokens.spacing6),
                     Text(
                       grade['name'] as String,
                       style: TextStyle(
                         color: isSelected
-                            ? const Color(0xFFEB8A00)
+                            ? AppColors.primary
                             : Theme.of(context).colorScheme.onSurface,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w500,
                         fontSize: AppTokens.fontSizeMd,
                       ),
                     ),
                     const Spacer(),
                     if (isSelected)
-                      const Icon(
-                        Icons.check_circle,
-                        color: Color(0xFFEB8A00),
-                      ),
+                      const Icon(Icons.check_circle, color: AppColors.primary),
                   ],
                 ),
               ),

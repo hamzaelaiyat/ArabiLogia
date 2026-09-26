@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:arabilogia/providers/theme_provider.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 
 class ThemeToggleButton extends StatefulWidget {
   const ThemeToggleButton({super.key});
@@ -21,9 +22,10 @@ class _ThemeToggleButtonState extends State<ThemeToggleButton>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-    _rotationAnimation = Tween<double>(begin: 0, end: 0.5).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
+    _rotationAnimation = Tween<double>(
+      begin: 0,
+      end: 0.5,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
   }
 
   @override
@@ -90,15 +92,15 @@ class _ThemeToggleButtonState extends State<ThemeToggleButton>
               turns: _rotationAnimation,
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, anim) => ScaleTransition(
-                  scale: anim,
-                  child: child,
-                ),
+                transitionBuilder: (child, anim) =>
+                    ScaleTransition(scale: anim, child: child),
                 child: Icon(
                   isDark ? Icons.dark_mode_rounded : Icons.wb_sunny_rounded,
                   key: ValueKey<bool>(isDark),
                   size: 20,
-                  color: isDark ? const Color(0xFFFFD166) : const Color(0xFFFF9F1C),
+                  color: isDark
+                      ? const Color(0xFFFFD166)
+                      : const Color(0xFFFF9F1C),
                 ),
               ),
             ),
@@ -109,7 +111,9 @@ class _ThemeToggleButtonState extends State<ThemeToggleButton>
                 fontFamily: 'Estedad',
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isDark ? const Color(0xFFEAEFF5) : const Color(0xFF1D2023),
+                color: isDark
+                    ? const Color(0xFFEAEFF5)
+                    : const Color(0xFF1D2023),
               ),
               child: Text(isDark ? 'داكن' : 'فاتح'),
             ),
@@ -152,9 +156,7 @@ class MobileTheme3DotsMenu extends StatelessWidget {
           Icons.more_vert_rounded,
           color: isDark ? const Color(0xFFEAEFF5) : const Color(0xFF1D2023),
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         color: isDark ? const Color(0xFF2B2F36) : Colors.white,
         elevation: 8,
         onSelected: (option) {
@@ -178,12 +180,18 @@ class MobileTheme3DotsMenu extends StatelessWidget {
                     fontFamily: 'Estedad',
                     fontSize: 14,
                     fontWeight: !isDark ? FontWeight.bold : FontWeight.normal,
-                    color: isDark ? const Color(0xFFEAEFF5) : const Color(0xFF1D2023),
+                    color: isDark
+                        ? const Color(0xFFEAEFF5)
+                        : const Color(0xFF1D2023),
                   ),
                 ),
                 if (!isDark) ...[
                   const SizedBox(width: 12),
-                  const Icon(Icons.check_rounded, size: 18, color: Color(0xFFEB8A00)),
+                  const Icon(
+                    Icons.check_rounded,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
                 ],
               ],
             ),
@@ -205,12 +213,18 @@ class MobileTheme3DotsMenu extends StatelessWidget {
                     fontFamily: 'Estedad',
                     fontSize: 14,
                     fontWeight: isDark ? FontWeight.bold : FontWeight.normal,
-                    color: isDark ? const Color(0xFFEAEFF5) : const Color(0xFF1D2023),
+                    color: isDark
+                        ? const Color(0xFFEAEFF5)
+                        : const Color(0xFF1D2023),
                   ),
                 ),
                 if (isDark) ...[
                   const SizedBox(width: 12),
-                  const Icon(Icons.check_rounded, size: 18, color: Color(0xFFEB8A00)),
+                  const Icon(
+                    Icons.check_rounded,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
                 ],
               ],
             ),

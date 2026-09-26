@@ -6,70 +6,121 @@ import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dar
 class ActivityTile extends StatelessWidget {
   final Map<String, dynamic> activity;
 
-  const ActivityTile({
-    super.key,
-    required this.activity,
-  });
+  const ActivityTile({super.key, required this.activity});
 
   @override
   Widget build(BuildContext context) {
-    final category = CategoryMetadata.getByName(activity['subject']);
+    final isLecture = activity['type'] == 'lecture';
+    final subject = activity['subject']?.toString() ?? '';
+    final categoryId = activity['category_id']?.toString();
+    final category = categoryId != null && categoryId.isNotEmpty
+        ? CategoryMetadata.getById(categoryId)
+        : CategoryMetadata.getByName(subject);
+    final accent = isLecture
+        ? AppColors.blue
+        : (category?.color ?? AppColors.primary);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppTokens.spacing8),
-      padding: const EdgeInsets.all(AppTokens.spacing12),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: AppTokens.radiusLgAll,
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: (category?.color ?? AppColors.primary).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              category?.icon ?? Icons.quiz_outlined,
-              color: category?.color ?? AppColors.primary,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: AppTokens.spacing12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  activity['subject'] ?? 'اختبار',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  _getTimeAgo(activity['created_at']),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.mutedColor(context),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: AppTokens.radiusFullAll,
-            ),
-            child: Text(
-              '${(activity['score'] as num).toInt()}%',
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
+    final title = isLecture
+        ? activity['title']?.toString() ??
+              (activity['category_name']?.toString() ?? subject)
+        : (subject.isNotEmpty ? subject : 'اختبار');
+    final subtitle = isLecture ? activity['category_name']?.toString() : null;
+
+    return Semantics(
+      label:
+          '$title${subtitle != null ? '، $subtitle' : ''}${isLecture ? '' : '، درجة ${activity['score']}'}',
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppTokens.spacing8),
+        padding: const EdgeInsets.all(AppTokens.spacing12),
+        decoration: BoxDecoration(
+          color: AppColors.surface(context),
+          borderRadius: AppTokens.radiusLgAll,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isLecture
+                    ? (category?.icon ?? Icons.play_circle_outline)
+                    : (category?.icon ?? Icons.quiz_outlined),
+                color: accent,
+                size: 20,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: AppTokens.spacing12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.mutedColor(context),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  Text(
+                    _getTimeAgo(activity['created_at']?.toString()),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.mutedColor(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isLecture)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.1),
+                  borderRadius: AppTokens.radiusFullAll,
+                ),
+                child: const Text(
+                  'محاضرة',
+                  style: TextStyle(
+                    color: AppColors.blue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.1),
+                  borderRadius: AppTokens.radiusFullAll,
+                ),
+                child: Text(
+                  '${(activity['score'] as num).toInt()}%',
+                  style: TextStyle(
+                    color: accent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

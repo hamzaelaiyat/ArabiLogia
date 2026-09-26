@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
-import 'package:arabilogia/core/theme/app_tokens.dart';
 
 class LeaderboardFilters extends StatelessWidget {
   final int userGrade;
@@ -20,65 +19,70 @@ class LeaderboardFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppTokens.spacing8),
-      child: Column(
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildGradeChip(context, 'صفي الدراسي', true),
-                const SizedBox(width: 8),
-                _buildGradeChip(context, 'كل الصفوف', false),
-              ],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildPillButton(
+              context: context,
+              label: 'صفي الدراسي',
+              isSelected: showOnlyMyGrade,
+              onTap: () => onGradeChanged(true),
+              isDark: isDark,
             ),
-          ),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildPeriodChip(context, 'كل الوقت', 'all'),
-                const SizedBox(width: 8),
-                _buildPeriodChip(context, 'هذا الأسبوع', 'week'),
-                const SizedBox(width: 8),
-                _buildPeriodChip(context, 'هذا الشهر', 'month'),
-              ],
+            const SizedBox(width: 8),
+            _buildPillButton(
+              context: context,
+              label: 'كل الصفوف',
+              isSelected: !showOnlyMyGrade,
+              onTap: () => onGradeChanged(false),
+              isDark: isDark,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildGradeChip(BuildContext context, String label, bool onlyMyGrade) {
-    final isSelected = showOnlyMyGrade == onlyMyGrade;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        if (selected) {
-          onGradeChanged(onlyMyGrade);
-        }
-      },
-      selectedColor: AppColors.chipSelectedColor(context),
-      side: isSelected ? BorderSide.none : null,
-    );
-  }
+  Widget _buildPillButton({
+    required BuildContext context,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    const activeBg = AppColors.blue;
+    final inactiveBg = isDark ? AppColors.cardDark : const Color(0xFFE2E8F0);
+    const activeTextColor = Colors.white;
+    final inactiveTextColor = isDark
+        ? const Color(0xFFCBD5E1)
+        : AppColors.textMuted;
 
-  Widget _buildPeriodChip(BuildContext context, String label, String value) {
-    final isSelected = selectedPeriod == value;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        if (selected && selectedPeriod != value) {
-          onPeriodChanged(value);
-        }
-      },
-      selectedColor: AppColors.chipSelectedColor(context),
-      side: isSelected ? BorderSide.none : null,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? activeBg : inactiveBg,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+            color: isSelected ? activeTextColor : inactiveTextColor,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -20,9 +20,12 @@ class AppStrings {
   static const String grade = 'الصف الدراسي';
   static const String selectGrade = 'اختر الصف الدراسي';
 
+  static const String grade1 = 'الصف الأول الثانوي';
+  static const String grade2 = 'الصف الثاني الثانوي';
+  static const String grade3 = 'الصف الثالث الثانوي';
   static const String grade10 = 'الصف الأول البكالوري';
-  static const String grade11 = 'الصف الثاني الثانوي';
-  static const String grade12 = 'الصف الثالث الثانوي';
+  static const String grade11 = 'الصف الثاني البكالوري';
+  static const String grade12 = 'الصف الثالث البكالوري';
 
   static const String home = 'الرئيسية';
   static const String tasks = 'المهام';

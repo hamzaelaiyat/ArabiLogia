@@ -56,11 +56,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _nextStep() {
     if (_currentStep == 0) {
       if (_formKey.currentState!.validate()) {
-        setState(() { _lastStep = _currentStep; _currentStep = 1; });
+        setState(() {
+          _lastStep = _currentStep;
+          _currentStep = 1;
+        });
       }
     } else if (_currentStep == 1) {
       if (_formKey.currentState!.validate()) {
-        setState(() { _lastStep = _currentStep; _currentStep = 2; });
+        setState(() {
+          _lastStep = _currentStep;
+          _currentStep = 2;
+        });
       }
     } else if (_currentStep == 2) {
       if (_formKey.currentState!.validate()) {
@@ -77,7 +83,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _previousStep() {
     if (_currentStep > 0) {
-      setState(() { _lastStep = _currentStep; _currentStep--; });
+      setState(() {
+        _lastStep = _currentStep;
+        _currentStep--;
+      });
     } else {
       context.go(AppRoutes.login);
     }
@@ -172,7 +181,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Text(
             AppStrings.register,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: const Color(0xFFEB8A00),
+              color: AppColors.primary,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
@@ -193,7 +202,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   return AnimatedBuilder(
                     animation: animation,
                     builder: (context, _) {
-                      final value = Curves.easeOutCubic.transform(animation.value);
+                      final value = Curves.easeOutCubic.transform(
+                        animation.value,
+                      );
                       final angle = beginAngle * (1.0 - value);
                       return Transform(
                         alignment: Alignment.center,
@@ -221,13 +232,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
             isLoading: authProvider.state.isLoading,
             showSuccess: _showSuccess,
           ),
-          if (authProvider.state.error != null && authProvider.state.fieldErrors.isEmpty)
+          if (authProvider.state.error != null &&
+              authProvider.state.fieldErrors.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: AppTokens.spacing4),
               child: Text(
                 authProvider.state.error!,
                 style: const TextStyle(
-                  color: Color(0xFFD32F2F),
+                  color: AppColors.errorDark,
                   fontWeight: FontWeight.bold,
                   fontSize: AppTokens.fontSizeSm,
                 ),
@@ -251,7 +263,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: const Text(
                   AppStrings.login,
                   style: TextStyle(
-                    color: Color(0xFFEB8A00),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -284,8 +296,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           obscureConfirmPassword: _obscureConfirmPassword,
           onTogglePasswordVisibility: () =>
               setState(() => _obscurePassword = !_obscurePassword),
-          onToggleConfirmPasswordVisibility: () =>
-              setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+          onToggleConfirmPasswordVisibility: () => setState(
+            () => _obscureConfirmPassword = !_obscureConfirmPassword,
+          ),
           fieldErrors: fieldErrors,
         );
       case 1:

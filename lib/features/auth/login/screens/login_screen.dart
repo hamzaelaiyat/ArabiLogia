@@ -97,11 +97,15 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+        borderSide: BorderSide(
+          color: colorScheme.outline.withValues(alpha: 0.3),
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
-        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+        borderSide: BorderSide(
+          color: colorScheme.outline.withValues(alpha: 0.3),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
@@ -111,7 +115,9 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(AppTokens.radiusFull),
         borderSide: BorderSide(color: colorScheme.error, width: 2),
       ),
-      labelStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
+      labelStyle: TextStyle(
+        color: colorScheme.onSurface.withValues(alpha: 0.7),
+      ),
       prefixIconColor: colorScheme.onSurface.withValues(alpha: 0.7),
       suffixIconColor: colorScheme.onSurface.withValues(alpha: 0.7),
     );
@@ -148,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
               fieldErrors['email']!,
               style: TextStyle(color: colorScheme.error, fontSize: 12),
             ),
-              if (fieldErrors['email'] == 'يرجى تأكيد البريد الإلكتروني')
+            if (fieldErrors['email'] == 'يرجى تأكيد البريد الإلكتروني')
               TextButton(
                 key: TestKeys.loginResendVerification,
                 onPressed: () => _handleResendVerification(auth),
@@ -160,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: const Text(
                   'إعادة إرسال رمز التفعيل',
                   style: TextStyle(
-                    color: Color(0xFFEB8A00),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -225,7 +231,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Text(
                 auth.state.error!,
                 style: const TextStyle(
-                  color: Color(0xFFD32F2F),
+                  color: AppColors.errorDark,
                   fontWeight: FontWeight.bold,
                   fontSize: AppTokens.fontSizeSm,
                 ),

@@ -1,9 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/constants/routes.dart';
 import 'package:arabilogia/features/dashboard/exams/models/category_metadata.dart';
 import 'package:arabilogia/features/dashboard/lectures/repositories/lecture_repository.dart';
-import 'package:arabilogia/features/dashboard/exams/repositories/score_repository.dart';
 import 'package:arabilogia/features/dashboard/home/widgets/category_card.dart';
 import 'package:arabilogia/providers/potato_mode_provider.dart';
 import 'package:arabilogia/core/widgets/animated_wrapper.dart';
@@ -20,10 +21,9 @@ class ExamCategoriesGrid extends StatefulWidget {
 
 class _ExamCategoriesGridState extends State<ExamCategoriesGrid> {
   final LectureRepository _lectureRepository = LectureRepository();
-  final ScoreRepository _scoreRepository = ScoreRepository();
 
   Map<String, List<Map<String, dynamic>>> _categoryLectures = {};
-  Map<String, Map<String, dynamic>> _categoryScores = {};
+  Map<String, int> _categoryCompleted = {};
   bool _isLoadingData = true;
 
   @override
@@ -34,52 +34,68 @@ class _ExamCategoriesGridState extends State<ExamCategoriesGrid> {
 
   Future<void> _loadCategoryData() async {
     final categories = CategoryMetadata.categories;
-    final Map<String, List<Map<String, dynamic>>> lecturesMap = {};
-    final Map<String, Map<String, dynamic>> scoresMap = {};
 
     try {
-      final localScores = await _scoreRepository.getLocalScores();
+      // Fire all category fetches in parallel instead of sequentially
+      final lectureResults = await Future.wait(
+        categories.map(
+          (cat) => _lectureRepository.getLecturesByCategory(cat.id),
+        ),
+      );
 
-      for (final cat in categories) {
-        final lectures =
-            await _lectureRepository.getLecturesByCategory(cat.id);
+      // Single SharedPreferences read for all lectures
+      final prefs = await SharedPreferences.getInstance();
+
+      final Map<String, List<Map<String, dynamic>>> lecturesMap = {};
+      final Map<String, int> completedMap = {};
+
+      for (var i = 0; i < categories.length; i++) {
+        final cat = categories[i];
+        final lectures = lectureResults[i];
         lecturesMap[cat.id] = lectures;
 
-        // Compute scores for exams in this category
-        double totalSum = 0.0;
-        int examCount = 0;
-        localScores.forEach((examId, data) {
-          if (data is Map && data['score'] != null) {
-            final score = (data['score'] as num).toDouble();
-            totalSum += score;
-            examCount++;
+        int completedCount = 0;
+        for (final l in lectures) {
+          final id = l['id']?.toString() ?? '';
+          if (id.isEmpty) continue;
+          final list = prefs.getStringList('lecture_progress_$id');
+          if (list == null) continue;
+          final blocksRaw = l['content_blocks'];
+          int totalBlocks = 1;
+          if (blocksRaw != null) {
+            final decoded = blocksRaw is String
+                ? jsonDecode(blocksRaw)
+                : blocksRaw;
+            if (decoded is Map && decoded['blocks'] is List) {
+              totalBlocks = (decoded['blocks'] as List).length;
+            } else if (decoded is List) {
+              totalBlocks = decoded.length;
+            }
           }
-        });
-
-        // Default metrics if no score data recorded yet
-        scoresMap[cat.id] = {
-          'sum': examCount > 0 ? totalSum : 240.0,
-          'avg': examCount > 0 ? totalSum / examCount : 80.0,
-          'count': examCount > 0 ? examCount : 1,
-        };
+          if (list.length >= totalBlocks && totalBlocks > 0) {
+            completedCount++;
+          }
+        }
+        completedMap[cat.id] = completedCount;
       }
-    } catch (_) {
-      // Graceful fallback if network/db fails
-    }
 
-    if (mounted) {
-      setState(() {
-        _categoryLectures = lecturesMap;
-        _categoryScores = scoresMap;
-        _isLoadingData = false;
-      });
+      if (mounted) {
+        setState(() {
+          _categoryLectures = lecturesMap;
+          _categoryCompleted = completedMap;
+          _isLoadingData = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load category lecture data: $e');
+      if (mounted) setState(() => _isLoadingData = false);
     }
   }
 
   String? _getLatestThumbnail(List<Map<String, dynamic>>? lectures) {
     if (lectures == null || lectures.isEmpty) return null;
     final latest = lectures.first;
-    
+
     // 1) Use explicit thumbnail_url if available
     final customThumbnail = latest['thumbnail_url'] as String?;
     if (customThumbnail != null && customThumbnail.trim().isNotEmpty) {
@@ -90,7 +106,8 @@ class _ExamCategoriesGridState extends State<ExamCategoriesGrid> {
     final youtubeUrl = latest['youtube_url'] as String? ?? '';
     var videoId = getVideoId(youtubeUrl);
     if (videoId.isEmpty) {
-      final blocks = latest['content_blocks'] as List? ?? latest['blocks'] as List?;
+      final blocks =
+          latest['content_blocks'] as List? ?? latest['blocks'] as List?;
       if (blocks != null) {
         for (final b in blocks) {
           if (b is Map && b['type'] == 'youtube') {
@@ -108,7 +125,6 @@ class _ExamCategoriesGridState extends State<ExamCategoriesGrid> {
       return 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
     }
 
-    // 3) Fallback
     return null;
   }
 
@@ -134,9 +150,9 @@ class _ExamCategoriesGridState extends State<ExamCategoriesGrid> {
             children: [
               Text(
                 'المحاضرات والتصنيفات',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               if (_isLoadingData)
                 const SizedBox(
@@ -161,20 +177,17 @@ class _ExamCategoriesGridState extends State<ExamCategoriesGrid> {
           itemBuilder: (context, index) {
             final category = displayCategories[index];
             final lectures = _categoryLectures[category.id] ?? [];
+            final completedCount = _categoryCompleted[category.id] ?? 0;
             final latestThumbnail = _getLatestThumbnail(lectures);
-            final scoreData = _categoryScores[category.id] ?? {
-              'sum': 240.0,
-              'avg': 80.0,
-              'count': 1,
-            };
 
             return CategoryCard(
               category: category,
               latestThumbnailUrl: latestThumbnail,
-              lectureCount: lectures.length,
-              scoreSum: (scoreData['sum'] as num).toDouble(),
-              scoreAvg: (scoreData['avg'] as num).toDouble(),
-              examCount: scoreData['count'] as int,
+              totalLectures: lectures.length,
+              completedLectures: completedCount,
+              scoreSum: 0,
+              scoreAvg: 0,
+              examCount: 0,
               onTap: () => context.go(
                 AppRoutes.lectures,
                 extra: {'initialTabIndex': index},

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:arabilogia/core/theme/app_colors.dart';
 
 /// Text styling options for question text
 class QuestionTextStyle {
@@ -18,7 +19,7 @@ class QuestionTextStyle {
 
   /// Predefined colors for question text (10 colors) - works on both light and dark
   static const List<Color> textColors = [
-    Color(0xFFD32F2F), // 0: Red
+    AppColors.errorDark, // 0: Red
     Color(0xFF1A237E), // 1: Indigo
     Color(0xFF1565C0), // 2: Blue (lighter for dark mode visibility)
     Color(0xFF00897B), // 3: Teal
@@ -65,7 +66,8 @@ class QuestionTextStyle {
     'رمادي مزرق',
   ];
 
-  Color getTextColor({bool isDark = false}) => getColor(colorIndex, isDark: isDark);
+  Color getTextColor({bool isDark = false}) =>
+      getColor(colorIndex, isDark: isDark);
 
   QuestionTextStyle copyWith({
     double? fontSize,
@@ -108,7 +110,7 @@ class QuestionTextStyle {
 class QuestionPoints {
   final int points; // 1 to 100
 
-  const QuestionPoints({this.points = 10});
+  const QuestionPoints({this.points = 1});
 
   QuestionPoints copyWith({int? points}) {
     return QuestionPoints(points: points ?? this.points);
@@ -119,7 +121,7 @@ class QuestionPoints {
   }
 
   factory QuestionPoints.fromJson(Map<String, dynamic> json) {
-    return QuestionPoints(points: json['points'] as int? ?? 10);
+    return QuestionPoints(points: json['points'] as int? ?? 1);
   }
 }
 
@@ -173,10 +175,12 @@ List<TextSpan> parseQuestionText(String text, {bool isDark = false}) {
       final end = text.indexOf('**', i + 2);
       if (end != -1) {
         final boldText = text.substring(i + 2, end);
-        spans.add(TextSpan(
-          text: boldText,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ));
+        spans.add(
+          TextSpan(
+            text: boldText,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        );
         i = end + 2;
       } else {
         spans.add(const TextSpan(text: '**'));
@@ -186,10 +190,12 @@ List<TextSpan> parseQuestionText(String text, {bool isDark = false}) {
       final end = text.indexOf('__', i + 2);
       if (end != -1) {
         final underlineText = text.substring(i + 2, end);
-        spans.add(TextSpan(
-          text: underlineText,
-          style: const TextStyle(decoration: TextDecoration.underline),
-        ));
+        spans.add(
+          TextSpan(
+            text: underlineText,
+            style: const TextStyle(decoration: TextDecoration.underline),
+          ),
+        );
         i = end + 2;
       } else {
         spans.add(const TextSpan(text: '__'));
@@ -210,10 +216,12 @@ List<TextSpan> parseQuestionText(String text, {bool isDark = false}) {
           final textStart = j + 1;
           final lastQuote = text.lastIndexOf('"');
           if (lastQuote > textStart) {
-            spans.add(TextSpan(
-              text: text.substring(textStart, lastQuote),
-              style: TextStyle(color: color),
-            ));
+            spans.add(
+              TextSpan(
+                text: text.substring(textStart, lastQuote),
+                style: TextStyle(color: color),
+              ),
+            );
             i = lastQuote + 1;
           } else {
             i = j + 1;

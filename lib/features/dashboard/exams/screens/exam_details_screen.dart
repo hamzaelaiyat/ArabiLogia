@@ -125,10 +125,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
     context.pushNamed(
       'exam-interaction',
       pathParameters: {'id': widget.examId},
-      extra: {
-        'subjectId': widget.subjectId,
-        'subjectName': widget.subjectName,
-      },
+      extra: {'subjectId': widget.subjectId, 'subjectName': widget.subjectName},
     );
   }
 
@@ -201,10 +198,9 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                             child: Icon(
                               category.icon,
                               size: 80,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimary
-                                  .withValues(alpha: 0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimary.withValues(alpha: 0.5),
                             ),
                           ),
                         ],
@@ -231,9 +227,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                               vertical: AppTokens.spacing2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.examPass.withValues(
-                                alpha: 0.12,
-                              ),
+                              color: AppColors.examPass.withValues(alpha: 0.12),
                               borderRadius: AppTokens.radiusFullAll,
                             ),
                             child: Row(
@@ -266,8 +260,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
                       ),
                       const SizedBox(height: AppTokens.spacing12),
                       OutlinedButton.icon(
-                        onPressed: () =>
-                            setState(() => _showPreview = true),
+                        onPressed: () => setState(() => _showPreview = true),
                         icon: const Icon(Icons.visibility_outlined, size: 18),
                         label: const Text('معاينة سريعة'),
                         style: OutlinedButton.styleFrom(

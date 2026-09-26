@@ -7,10 +7,7 @@ class VersionUtils {
 
   static bool isVersionNewer(String newVersion, String currentVersion) {
     String cleanNew = newVersion.replaceAll(RegExp(r'[^0-9.].*$'), '');
-    String cleanCurrent = currentVersion.replaceAll(
-      RegExp(r'[^0-9.].*$'),
-      '',
-    );
+    String cleanCurrent = currentVersion.replaceAll(RegExp(r'[^0-9.].*$'), '');
 
     final newParts = cleanNew
         .split('.')
@@ -31,10 +28,25 @@ class VersionUtils {
   }
 
   static String cleanReleaseNotes(String body) {
-    return body
+    String notes = body
         .replaceAll(RegExp(r'\[MANDATORY\]', caseSensitive: false), '')
         .replaceAll(RegExp(r'\[إلزامي\]', caseSensitive: false), '')
         .replaceAll(RegExp(r'mandatory:\s*true', caseSensitive: false), '')
         .trim();
+
+    // 1. Check for hidden marker comments (e.g., <!-- start --> or <!-- notes -->)
+    final markerRegex = RegExp(
+      r'<!--\s*(start|notes|release-notes|summary-start|content-start)\s*-->',
+      caseSensitive: false,
+    );
+    final match = markerRegex.firstMatch(notes);
+    if (match != null) {
+      return notes.substring(match.end).trim();
+    }
+
+    // 2. Fallback: Strip top H1 heading (# ...) for older release notes
+    notes = notes.replaceFirst(RegExp(r'^#\s+[^\n]*\n?'), '').trim();
+
+    return notes;
   }
 }
