@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://arabilogia.vercel.app/sitemap.xml
