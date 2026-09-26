@@ -129,6 +129,7 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
     if (path.isNotEmpty && path != '/') {
       _routeSettled = true;
       _maybeReleaseBootSplash();
+      _flushPendingUpdate();
     }
   }
 
@@ -136,6 +137,9 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
     if (_appReady || !mounted) return;
     if (_providersDone && _routeSettled && _minDelayElapsed) {
       setState(() => _appReady = true);
+      // Now that the splash is off, anything detected during boot can actually
+      // be seen.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _flushPendingUpdate());
     }
   }
 
@@ -199,7 +203,13 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
 
   void _showUpdateDialog(AppUpdate update) {
     final context = AppRouter.router.routerDelegate.navigatorKey.currentContext;
-    if (context == null) return;
+    if (context == null) {
+      // The check can finish while the navigator is still being built. Keep the
+      // update instead of dropping it: it is retried on the next route change
+      // and after the boot splash is released.
+      // Kept in UpdateService until a screen can host it.
+      return;
+    }
 
     // Don't interrupt auth screens
     final routerState = AppRouter.router.routerDelegate.currentConfiguration;
@@ -207,8 +217,10 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
     if (currentPath == AppRoutes.login ||
         currentPath == AppRoutes.register ||
         currentPath == AppRoutes.forgotPassword) {
+      // Kept in UpdateService until a screen can host it.
       return;
     }
+
 
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -216,6 +228,24 @@ class _ArabiLogiaAppState extends State<ArabiLogiaApp> {
       ),
     );
   }
+
+  /// Push a still-pending update once we are on a screen that can host it.
+  void _flushPendingUpdate() {
+    if (!mounted || !_appReady) return;
+    if (!_isUpdateRouteSafe()) return;
+    final pending = UpdateService.takePendingUpdate();
+    if (pending == null) return;
+    _showUpdateDialog(pending);
+  }
+
+  bool _isUpdateRouteSafe() {
+    final currentPath =
+        AppRouter.router.routerDelegate.currentConfiguration.uri.toString();
+    return currentPath != AppRoutes.login &&
+        currentPath != AppRoutes.register &&
+        currentPath != AppRoutes.forgotPassword;
+  }
+
 
   @override
   void dispose() {

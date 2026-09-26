@@ -30,6 +30,42 @@ class AppUpdate {
 /// Update check result
 enum UpdateCheckResult { noUpdate, updateAvailable, error }
 
+/// Why a check failed, so the UI can explain itself instead of failing silently.
+enum UpdateCheckFailure {
+  none,
+  network,
+  rateLimited,
+  serverError,
+  malformedResponse,
+  noAsset,
+}
+
+/// Detailed outcome of a check, surfaced in the settings screen so a failed
+/// check is explainable on-device instead of vanishing without a trace.
+class UpdateCheckReport {
+  final UpdateCheckResult result;
+  final UpdateCheckFailure failure;
+  final String? latestTag;
+  final String? latestVersion;
+  final String? currentVersion;
+  final String? assetName;
+  final int? httpStatus;
+  final String? detail;
+
+  const UpdateCheckReport({
+    required this.result,
+    this.failure = UpdateCheckFailure.none,
+    this.latestTag,
+    this.latestVersion,
+    this.currentVersion,
+    this.assetName,
+    this.httpStatus,
+    this.detail,
+  });
+
+  bool get hasUpdate => result == UpdateCheckResult.updateAvailable;
+}
+
 /// Service for handling app updates from GitHub Releases
 /// Supports background checking and cross-platform updates
 class UpdateService {
@@ -54,30 +90,67 @@ class UpdateService {
 
   static AppUpdate? _currentUpdate;
 
+  /// Last outcome of a check, retained so the settings screen can explain a
+  /// failure the user actually experienced.
+  static UpdateCheckReport? _lastReport;
+
+  static UpdateCheckReport? get lastReport => _lastReport;
+
+  /// True when an update was detected but no screen was listening yet. The
+  /// boot sequence can emit before the navigator exists, so the pending update
+  /// is kept instead of dropped.
+  static bool get hasPendingUpdate => _currentUpdate != null;
+
+  static void _log(String message) {
+    debugPrint('[UpdateService] $message');
+  }
+
+  /// Test seams. The updater used to fail silently with no way to exercise it,
+  /// so both the network call and the installed version are injectable.
+  @visibleForTesting
+  static Future<http.Response> Function(Uri uri)? httpFetchOverride;
+
+  @visibleForTesting
+  static Future<String> Function()? currentVersionOverride;
+
   /// Get current app version from package_info_plus
   static Future<String> getCurrentVersion() async {
+    final override = currentVersionOverride;
+    if (override != null) return override();
     final info = await PackageInfo.fromPlatform();
     return info.version;
   }
 
   /// Check for updates in background - doesn't block UI
   /// Emits update to stream if available
-  static Future<void> checkForUpdatesInBackground() async {
+  ///
+  /// [force] bypasses the cooldown and is used by the manual
+  /// "check for updates" action, so a user who suspects a missed update is
+  /// never stuck waiting for a timer they cannot see or reset.
+  static Future<UpdateCheckReport> checkForUpdatesInBackground({
+    bool force = false,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final lastCheck = prefs.getInt(_lastCheckKey) ?? 0;
     final now = DateTime.now().millisecondsSinceEpoch;
 
-    if (now - lastCheck < _minCheckInterval.inMilliseconds) {
-      return;
+    if (!force && now - lastCheck < _minCheckInterval.inMilliseconds) {
+      _log('skipped: cooldown active, retrying in '
+          '${_minCheckInterval.inMilliseconds - (now - lastCheck)}ms');
+      return _lastReport ??
+          const UpdateCheckReport(result: UpdateCheckResult.noUpdate);
     }
 
     String currentVersion;
     try {
       currentVersion = await getCurrentVersion();
     } catch (e) {
+      _log('could not read installed version: $e');
       currentVersion = '0.0.0';
     }
+    _log('installed version: $currentVersion');
 
+    http.Response response;
     try {
       // The repository is public, so the releases API works unauthenticated.
       // Never ship a GitHub token in the client bundle: .env is bundled as an
@@ -89,73 +162,189 @@ class UpdateService {
         'X-GitHub-Api-Version': '2022-11-28',
       };
 
-      final response = await http
-          .get(
-            Uri.parse(
-              'https://api.github.com/repos/$_owner/$_repo/releases/latest',
-            ),
-            headers: headers,
-          )
-          .timeout(const Duration(seconds: 30));
+      final fetch = httpFetchOverride;
+      response = await (fetch != null
+              ? fetch(Uri.parse(
+                  'https://api.github.com/repos/$_owner/$_repo/releases/latest',
+                ))
+              : http
+                  .get(
+                    Uri.parse(
+                      'https://api.github.com/repos/$_owner/$_repo/releases/latest',
+                    ),
+                    headers: headers,
+                  )
+                  .timeout(const Duration(seconds: 30)));
 
-      if (response.statusCode != 200) {
-        return;
-      }
-
-      final data = json.decode(response.body);
-      final latestVersion = VersionUtils.extractVersion(
-        data['tag_name'] ?? 'v$currentVersion',
+    } catch (e, st) {
+      // A failed attempt must not consume the cooldown, otherwise one flaky
+      // network moment silences update checks for the next hour.
+      _log('network failure: $e\n$st');
+      return _fail(
+        UpdateCheckFailure.network,
+        currentVersion: currentVersion,
+        detail: e.toString(),
       );
-      final assets = data['assets'] as List? ?? [];
-
-      // Parse release notes and check for mandatory
-      final body = data['body']?.toString() ?? '';
-      final isMandatory =
-          body.contains('[MANDATORY]') ||
-          body.contains('[إلزامي]') ||
-          body.toLowerCase().contains('mandatory: true');
-
-      // Find appropriate APK for current platform
-      final targetAsset = _findBestApk(assets, Platform.operatingSystem);
-
-      if (targetAsset == null) {
-        return;
-      }
-
-      // Check if update is needed
-      if (!VersionUtils.isVersionNewer(latestVersion, currentVersion)) {
-        _updateStreamController.add(null);
-        return;
-      }
-
-      // Check if user skipped this version
-      final skippedVersion = prefs.getString(_skippedVersionKey);
-      if (skippedVersion == latestVersion && !isMandatory) {
-        _updateStreamController.add(null);
-        return;
-      }
-
-      // Create update object
-      final update = AppUpdate(
-        version: latestVersion,
-        downloadUrl: targetAsset['browser_download_url'],
-        releaseNotes: VersionUtils.cleanReleaseNotes(body),
-        isMandatory: isMandatory,
-        fileSize: targetAsset['size'] ?? 0,
-        fileName: targetAsset['name'] ?? 'app.apk',
-      );
-
-      _currentUpdate = update;
-
-      // Emit update to stream
-      _updateStreamController.add(update);
-    } catch (e) {
-      _updateStreamController.add(null);
-    } finally {
-      // Update last check time
-      await prefs.setInt(_lastCheckKey, now);
     }
+
+    if (response.statusCode != 200) {
+      final remaining = response.headers['x-ratelimit-remaining'];
+      final isRateLimited = response.statusCode == 403 ||
+          response.statusCode == 429 ||
+          (remaining != null && remaining == '0');
+      _log('HTTP ${response.statusCode}'
+          '${isRateLimited ? ' (rate limited, remaining=$remaining)' : ''}');
+      return _fail(
+        isRateLimited
+            ? UpdateCheckFailure.rateLimited
+            : (response.statusCode >= 500
+                ? UpdateCheckFailure.serverError
+                : UpdateCheckFailure.malformedResponse),
+        currentVersion: currentVersion,
+        httpStatus: response.statusCode,
+        detail: isRateLimited ? 'rate limit reached' : null,
+      );
+    }
+
+    Map<String, dynamic> data;
+    try {
+      final decoded = json.decode(utf8.decode(response.bodyBytes));
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('release payload is not a JSON object');
+      }
+      data = decoded;
+    } catch (e, st) {
+      _log('could not read release payload: $e\n$st');
+      return _fail(
+        UpdateCheckFailure.malformedResponse,
+        currentVersion: currentVersion,
+        httpStatus: response.statusCode,
+        detail: e.toString(),
+      );
+    }
+
+    final tag = data['tag_name']?.toString() ?? '';
+    final latestVersion = VersionUtils.extractVersion(
+      tag.isEmpty ? 'v$currentVersion' : tag,
+    );
+    _log('release tag: "${data['name']}" ($tag) -> parsed version: $latestVersion');
+
+    final assets = data['assets'] as List? ?? const [];
+    final body = data['body']?.toString() ?? '';
+    final isMandatory = body.contains('[MANDATORY]') ||
+        body.contains('[إلزامي]') ||
+        body.toLowerCase().contains('mandatory: true');
+
+    final targetAsset = _findBestApk(assets, Platform.operatingSystem);
+    if (targetAsset == null) {
+      _log('no matching asset for ${Platform.operatingSystem} '
+          'among ${assets.length} asset(s)');
+      return _fail(
+        UpdateCheckFailure.noAsset,
+        currentVersion: currentVersion,
+        latestTag: tag,
+        latestVersion: latestVersion,
+        httpStatus: response.statusCode,
+        detail: 'no ${Platform.operatingSystem} asset in release',
+      );
+    }
+    final assetName = targetAsset['name']?.toString() ?? '';
+    _log('selected asset: $assetName');
+
+    // Check if update is needed
+    if (!VersionUtils.isVersionNewer(latestVersion, currentVersion)) {
+      _log('up to date: $latestVersion is not newer than $currentVersion');
+      _updateStreamController.add(null);
+      final report = UpdateCheckReport(
+        result: UpdateCheckResult.noUpdate,
+        latestTag: tag,
+        latestVersion: latestVersion,
+        currentVersion: currentVersion,
+        assetName: assetName,
+        httpStatus: response.statusCode,
+      );
+      _lastReport = report;
+      await prefs.setInt(_lastCheckKey, now);
+      return report;
+    }
+
+    // Check if user skipped this version
+    final skippedVersion = prefs.getString(_skippedVersionKey);
+    if (skippedVersion == latestVersion && !isMandatory) {
+      _log('version $latestVersion was skipped by the user');
+      _updateStreamController.add(null);
+      final report = UpdateCheckReport(
+        result: UpdateCheckResult.noUpdate,
+        latestTag: tag,
+        latestVersion: latestVersion,
+        currentVersion: currentVersion,
+        assetName: assetName,
+        httpStatus: response.statusCode,
+      );
+      _lastReport = report;
+      await prefs.setInt(_lastCheckKey, now);
+      return report;
+    }
+
+    final update = AppUpdate(
+      version: latestVersion,
+      downloadUrl: targetAsset['browser_download_url'],
+      releaseNotes: VersionUtils.cleanReleaseNotes(body),
+      isMandatory: isMandatory,
+      fileSize: targetAsset['size'] ?? 0,
+      fileName: assetName.isEmpty ? 'app.apk' : assetName,
+    );
+
+    _currentUpdate = update;
+    _log('update available: ${update.version} -> ${update.fileName} '
+        '(${update.fileSize} bytes)');
+
+    final report = UpdateCheckReport(
+      result: UpdateCheckResult.updateAvailable,
+      latestTag: tag,
+      latestVersion: latestVersion,
+      currentVersion: currentVersion,
+      assetName: assetName,
+      httpStatus: response.statusCode,
+    );
+    _lastReport = report;
+    await prefs.setInt(_lastCheckKey, now);
+
+    // Emit update to stream
+    _updateStreamController.add(update);
+    return report;
   }
+
+  static UpdateCheckReport _fail(
+    UpdateCheckFailure failure, {
+    String? currentVersion,
+    int? httpStatus,
+    String? latestTag,
+    String? latestVersion,
+    String? detail,
+  }) {
+    _updateStreamController.add(null);
+    final report = UpdateCheckReport(
+      result: UpdateCheckResult.error,
+      failure: failure,
+      currentVersion: currentVersion,
+      httpStatus: httpStatus,
+      latestTag: latestTag,
+      latestVersion: latestVersion,
+      detail: detail,
+    );
+    _lastReport = report;
+    return report;
+  }
+
+  /// The detected update, if one is waiting to be shown. Lets the UI pick up an
+  /// update that was detected before its listener was mounted.
+  static AppUpdate? takePendingUpdate() {
+    final update = _currentUpdate;
+    _currentUpdate = null;
+    return update;
+  }
+
 
   /// Platform-specific APK selection
   static Map<String, dynamic>? _findBestApk(List assets, String os) {
@@ -186,18 +375,25 @@ class UpdateService {
         return assets.isNotEmpty ? assets.first : null;
       }
     } else if (os == 'linux') {
-      try {
-        return assets.firstWhere((a) {
-          final name = a['name']?.toString() ?? '';
-          return name.endsWith('.AppImage') || name.endsWith('.deb');
-        });
-      } catch (e) {
-        debugPrint('No Linux AppImage/deb asset found, using first: $e');
-        return assets.isNotEmpty ? assets.first : null;
+      // Releases ship a .tar.xz bundle, not AppImage/deb.
+      for (final a in assets) {
+        final name = a['name']?.toString() ?? '';
+        if (name.endsWith('.tar.xz') ||
+            name.endsWith('.AppImage') ||
+            name.endsWith('.deb')) {
+          return a;
+        }
       }
+      debugPrint('No Linux bundle found among ${assets.length} asset(s)');
+      return null;
+    }
+    if (os == 'android' || os == 'ios') {
+      debugPrint('No in-app update asset for $os');
+      return null;
     }
     return assets.isNotEmpty ? assets.first : null;
   }
+
 
   /// Skip this version
   static Future<void> skipVersion(String version) async {
