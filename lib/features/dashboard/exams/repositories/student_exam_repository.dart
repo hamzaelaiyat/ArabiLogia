@@ -54,6 +54,7 @@ class StudentExamRepository {
             title: exam.title,
             subjectId: subjectId,
             grade: examGrade,
+            gradeIds: exam.effectiveGradeIds,
             data: json.encode(examData),
           );
         }

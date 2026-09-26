@@ -20,6 +20,7 @@ class ExamManagementRepository {
       'subject_id': exam.subjectId,
       'duration_minutes': exam.durationMinutes,
       'grade': exam.grade,
+      'grade_ids': exam.effectiveGradeIds,
       'data': minifiedData,
     });
   }
@@ -33,6 +34,7 @@ class ExamManagementRepository {
       'subject_id': exam.subjectId,
       'duration_minutes': exam.durationMinutes,
       'grade': exam.grade,
+      'grade_ids': exam.effectiveGradeIds,
       'data': minifiedData,
     }, onConflict: 'id');
   }

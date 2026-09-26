@@ -33,6 +33,66 @@ class GradeMetadata {
 
   static bool isKnownGradeId(int id) => gradeIds.contains(id);
 
+  /// Canonicalises a multi-grade selection: drops unknown ids, de-duplicates,
+  /// sorts into canonical order, and collapses to [allGrades] when the
+  /// "all grades" sentinel is present. Shared by the models and the pickers so
+  /// a selection can never reach the database in an ambiguous shape.
+  static List<int> normalizeGradeIds(Iterable<int> ids) {
+    final known = ids
+        .where((id) => id == allGrades || isKnownGradeId(id))
+        .toSet();
+    if (known.contains(allGrades)) return const [allGrades];
+    return known.toList()..sort();
+  }
+
+  /// The legacy single-grade value for a multi-grade selection: `0` when the
+  /// content is shared with every grade, otherwise the lowest selected id.
+  /// [normalizeGradeIds] sorts ascending, so the first entry is that minimum.
+  static int primaryGradeId(Iterable<int> ids) {
+    final normalized = normalizeGradeIds(ids);
+    if (normalized.isEmpty) return defaultGradeId;
+    return normalized.first;
+  }
+
+  /// Whether content shared across [gradeIds] is visible to a student in
+  /// [grade]. An empty list matches nothing, which is why the pickers refuse
+  /// to let a selection become empty.
+  static bool isVisibleToGrade(Iterable<int> gradeIds, int grade) {
+    final ids = gradeIds.toList();
+    if (ids.isEmpty) return false;
+    if (ids.contains(allGrades)) return true;
+    return ids.contains(grade);
+  }
+
+  /// Encodes grade ids for the local cache, which has no array support.
+  static String encodeGradeIdsCsv(Iterable<int> ids) =>
+      normalizeGradeIds(ids).join(',');
+
+  /// Decodes a cached `grade_ids` value, falling back to the legacy scalar
+  /// column for rows cached before shared grades existed.
+  static List<int> decodeGradeIdsCsv(String csv, {required int legacyGrade}) {
+    final parsed = csv
+        .split(',')
+        .map((e) => int.tryParse(e.trim()))
+        .whereType<int>();
+    if (parsed.isEmpty) return normalizeGradeIds([legacyGrade]);
+    return normalizeGradeIds(parsed);
+  }
+
+  /// Reads a Postgres `integer[]` value defensively, returning an empty list
+  /// when absent. Legacy rows with no `grade_ids` fall back to the scalar
+  /// [legacyGrade] so pre-backfill content stays visible.
+  static List<int> parseGradeIds(dynamic raw, {int? legacyGrade}) {
+    if (raw is List) {
+      final parsed = raw
+          .map((e) => e is int ? e : int.tryParse(e.toString()))
+          .whereType<int>();
+      if (parsed.isNotEmpty) return normalizeGradeIds(parsed);
+    }
+    if (legacyGrade != null) return normalizeGradeIds([legacyGrade]);
+    return const [];
+  }
+
   static const _defaultGrades = [
     GradeMetadata(id: 1, name: 'الصف الأول الثانوي', sortOrder: 1),
     GradeMetadata(id: 2, name: 'الصف الثاني الثانوي', sortOrder: 2),

@@ -4,7 +4,7 @@ import '../tables.dart';
 import '../database_io.dart';
 import '../models/exam_session_data.dart';
 
-part 'session_dao.g.dart';
+part 'session_dao_io.g.dart';
 
 @DriftAccessor(tables: [ExamSessions])
 class SessionDao extends DatabaseAccessor<AppDatabase> with _$SessionDaoMixin {

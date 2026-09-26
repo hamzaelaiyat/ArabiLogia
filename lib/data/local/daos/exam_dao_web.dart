@@ -1,8 +1,11 @@
+import 'package:arabilogia/core/models/grade_metadata.dart';
+
 class WebCachedExam {
   final String id;
   final String title;
   final String subjectId;
   final int grade;
+  final List<int> gradeIds;
   final String data;
   final DateTime downloadedAt;
 
@@ -11,6 +14,7 @@ class WebCachedExam {
     required this.title,
     required this.subjectId,
     required this.grade,
+    required this.gradeIds,
     required this.data,
     required this.downloadedAt,
   });
@@ -26,6 +30,7 @@ class ExamDao {
     required String title,
     required String subjectId,
     required int grade,
+    required List<int> gradeIds,
     required String data,
   }) async {
     _cache[id] = WebCachedExam(
@@ -33,6 +38,7 @@ class ExamDao {
       title: title,
       subjectId: subjectId,
       grade: grade,
+      gradeIds: GradeMetadata.normalizeGradeIds(gradeIds),
       data: data,
       downloadedAt: DateTime.now(),
     );
@@ -47,7 +53,11 @@ class ExamDao {
     int grade,
   ) async {
     return _cache.values
-        .where((e) => e.subjectId == subjectId && e.grade == grade)
+        .where(
+          (e) =>
+              e.subjectId == subjectId &&
+              GradeMetadata.isVisibleToGrade(e.gradeIds, grade),
+        )
         .toList();
   }
 

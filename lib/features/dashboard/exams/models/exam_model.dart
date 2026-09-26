@@ -7,6 +7,10 @@ class Exam {
   final String subjectId;
   final int? durationMinutes;
   final int grade; // GradeMetadata.allGrades means every grade
+
+  /// Every grade this exam is shared with. A single entry is an ordinary
+  /// grade-specific exam; several entries mean one shared exam.
+  final List<int> gradeIds;
   final int sortOrder; // Controls exam ordering for sequential unlocking
   final int level; // 1=easy(85%), 2=medium(75%), 3=hard(60%)
   final List<Question> questions;
@@ -19,11 +23,26 @@ class Exam {
     required this.subjectId,
     this.durationMinutes,
     this.grade = GradeMetadata.defaultGradeId,
+    this.gradeIds = const [],
     this.sortOrder = 0,
     this.level = 1,
     required this.questions,
     this.isPublished = false,
   });
+
+  /// Grades this exam is actually shared with. Falls back to the legacy
+  /// scalar [grade] for rows written before the `grade_ids` backfill.
+  List<int> get effectiveGradeIds => gradeIds.isEmpty ? [grade] : gradeIds;
+
+  /// Shared with every grade via the [GradeMetadata.allGrades] sentinel.
+  bool get isSharedWithAllGrades =>
+      effectiveGradeIds.contains(GradeMetadata.allGrades);
+
+  /// One exam row serving more than one grade.
+  bool get isSharedAcrossGrades => effectiveGradeIds.length > 1;
+
+  bool isVisibleToGrade(int id) =>
+      isSharedWithAllGrades || effectiveGradeIds.contains(id);
 
   int get passPercentage {
     switch (level) {
@@ -44,6 +63,7 @@ class Exam {
     int? durationMinutes,
     bool clearDuration = false,
     int? grade,
+    List<int>? gradeIds,
     int? sortOrder,
     int? level,
     List<Question>? questions,
@@ -58,6 +78,7 @@ class Exam {
           ? null
           : (durationMinutes ?? this.durationMinutes),
       grade: grade ?? this.grade,
+      gradeIds: gradeIds ?? this.gradeIds,
       sortOrder: sortOrder ?? this.sortOrder,
       level: level ?? this.level,
       questions: questions ?? this.questions,
@@ -72,6 +93,7 @@ class Exam {
       's': subject,
       'si': subjectId,
       'g': grade,
+      'grade_ids': effectiveGradeIds,
       'so': sortOrder,
       'lv': level,
       'q': questions.map((q) => q.toMinifiedJson()).toList(),
@@ -91,6 +113,10 @@ class Exam {
       subjectId: json['si'] as String,
       durationMinutes: json['d'] as int?,
       grade: json['g'] as int? ?? GradeMetadata.allGrades,
+      gradeIds: GradeMetadata.parseGradeIds(
+        json['grade_ids'],
+        legacyGrade: json['g'] as int?,
+      ),
       sortOrder: json['so'] as int? ?? 0,
       level: json['lv'] as int? ?? 1,
       questions: (json['q'] as List)

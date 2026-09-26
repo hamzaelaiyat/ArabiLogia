@@ -61,7 +61,14 @@ class Lecture {
   final String? quizId;
   final String? thumbnailUrl;
   final int sortOrder;
+
+  /// Legacy single-grade column, mirrored from [gradeIds] by a database
+  /// trigger. Kept so older readers keep working; prefer [gradeIds].
   final int grade;
+
+  /// Every grade this lecture is shared with. A single entry is an ordinary
+  /// grade-specific lecture; several entries mean one shared lecture.
+  final List<int> gradeIds;
   final bool isPublished;
   final List<LectureContentBlock> contentBlocks;
   final List<String> examIds;
@@ -76,10 +83,25 @@ class Lecture {
     this.thumbnailUrl,
     this.sortOrder = 0,
     this.grade = GradeMetadata.defaultGradeId,
+    this.gradeIds = const [],
     this.isPublished = false,
     this.contentBlocks = const [],
     this.examIds = const [],
   });
+
+  /// Grades this lecture is actually shared with. Falls back to the legacy
+  /// scalar [grade] for rows written before the `grade_ids` backfill.
+  List<int> get effectiveGradeIds => gradeIds.isEmpty ? [grade] : gradeIds;
+
+  /// Shared with every grade via the [GradeMetadata.allGrades] sentinel.
+  bool get isSharedWithAllGrades =>
+      effectiveGradeIds.contains(GradeMetadata.allGrades);
+
+  /// One lecture row serving more than one grade.
+  bool get isSharedAcrossGrades => effectiveGradeIds.length > 1;
+
+  bool isVisibleToGrade(int id) =>
+      isSharedWithAllGrades || effectiveGradeIds.contains(id);
 
   /// Extract YouTube video ID from various URL formats
   static String? extractVideoId(String url) {
@@ -151,6 +173,7 @@ class Lecture {
     bool clearQuizId = false,
     int? sortOrder,
     int? grade,
+    List<int>? gradeIds,
     bool? isPublished,
     List<LectureContentBlock>? contentBlocks,
     List<String>? examIds,
@@ -165,6 +188,7 @@ class Lecture {
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       sortOrder: sortOrder ?? this.sortOrder,
       grade: grade ?? this.grade,
+      gradeIds: gradeIds ?? this.gradeIds,
       isPublished: isPublished ?? this.isPublished,
       contentBlocks: contentBlocks ?? this.contentBlocks,
       examIds: examIds ?? this.examIds,
@@ -182,6 +206,7 @@ class Lecture {
       'thumbnail_url': thumbnailUrl,
       'sort_order': sortOrder,
       'grade': grade,
+      'grade_ids': effectiveGradeIds,
       'is_published': isPublished,
       'content_blocks': {
         'blocks': contentBlocks.map((b) => b.toJson()).toList(),
@@ -282,6 +307,10 @@ class Lecture {
       thumbnailUrl: json['thumbnail_url'] as String?,
       sortOrder: json['sort_order'] as int? ?? 0,
       grade: json['grade'] as int? ?? GradeMetadata.defaultGradeId,
+      gradeIds: GradeMetadata.parseGradeIds(
+        json['grade_ids'],
+        legacyGrade: json['grade'] as int?,
+      ),
       isPublished: json['is_published'] as bool? ?? false,
       contentBlocks: blocks,
       examIds: examIds,

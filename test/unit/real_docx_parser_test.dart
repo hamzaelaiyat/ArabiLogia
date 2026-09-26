@@ -3,10 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:arabilogia/features/admin/services/docx_exam_parser.dart';
 
 void main() {
-  // These fixtures are real exam documents kept out of git, so this group only
-  // runs on a machine that has them at the repo root.
-  const fixtures = ['exam1.docx', 'example_exam.docx', 'exam2.docx'];
-  final missing = fixtures.where((f) => !File(f).existsSync()).toList();
+  // These fixtures are real exam documents kept out of git, so each test only
+  // runs on a machine that has its own fixture. The skip is deliberately
+  // per test: one absent document must not silently disable the parser
+  // coverage that the other, present documents still provide.
+  String? skipWithout(String fixture) =>
+      File(fixture).existsSync() ? null : 'Missing local fixture: $fixture';
 
   group('DocxExamParser real .docx files', () {
     test('parses exam1.docx with hyphen/paren numbering and inline options', () {
@@ -33,7 +35,7 @@ void main() {
         'كناية عن موصوف.',
         'كناية عن نسبة.',
       ]);
-    });
+    }, skip: skipWithout('exam1.docx'));
 
     test('parses example_exam.docx (passage + multi-format questions)', () {
       final bytes = File('example_exam.docx').readAsBytesSync();
@@ -74,7 +76,7 @@ void main() {
       expect(poemQ.context, isNotNull);
       expect(poemQ.context, contains('قال السموأل:'));
       expect(poemQ.context, contains('سَلُوا قُلوبَنا'));
-    });
+    }, skip: skipWithout('example_exam.docx'));
 
     test(
         'parses exam2.docx with en-dash option separators and poetry prompts',
@@ -151,6 +153,6 @@ void main() {
       expect(contextQ.context, isNotNull);
       expect(contextQ.context, contains('قَدْ كَان تُعْجِبُ بَعْضَهن بَرَاعَتي'));
       expect(contextQ.context, contains('قال الحضرمي:'));
-    });
-  }, skip: missing.isEmpty ? null : 'Missing local fixtures: ${missing.join(', ')}');
+    }, skip: skipWithout('exam2.docx'));
+  });
 }

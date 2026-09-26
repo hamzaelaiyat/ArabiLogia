@@ -1,8 +1,9 @@
 import 'package:drift/drift.dart';
+import 'package:arabilogia/core/models/grade_metadata.dart';
 import '../tables.dart';
 import '../database_io.dart';
 
-part 'exam_dao.g.dart';
+part 'exam_dao_io.g.dart';
 
 @DriftAccessor(tables: [CachedExams])
 class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
@@ -13,6 +14,7 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
     required String title,
     required String subjectId,
     required int grade,
+    required List<int> gradeIds,
     required String data,
   }) => into(cachedExams).insertOnConflictUpdate(
     CachedExamsCompanion(
@@ -20,6 +22,7 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
       title: Value(title),
       subjectId: Value(subjectId),
       grade: Value(grade),
+      gradeIds: Value(GradeMetadata.encodeGradeIdsCsv(gradeIds)),
       data: Value(data),
       downloadedAt: Value(DateTime.now()),
     ),
@@ -28,14 +31,25 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
   Future<CachedExam?> getCachedExam(String id) =>
       (select(cachedExams)..where((t) => t.id.equals(id))).getSingleOrNull();
 
+  /// Returns every cached exam for [subjectId] that is shared with [grade].
+  /// A shared exam is stored once but must surface for all of its grades, so
+  /// the match runs against `grade_ids` rather than the legacy scalar column.
   Future<List<CachedExam>> getCachedExamsBySubject(
     String subjectId,
     int grade,
-  ) =>
-      (select(cachedExams)
-            ..where((t) => t.subjectId.equals(subjectId))
-            ..where((t) => t.grade.equals(grade)))
-          .get();
+  ) async {
+    final rows = await (select(
+      cachedExams,
+    )..where((t) => t.subjectId.equals(subjectId))).get();
+    return rows
+        .where(
+          (row) => GradeMetadata.isVisibleToGrade(
+            GradeMetadata.decodeGradeIdsCsv(row.gradeIds, legacyGrade: row.grade),
+            grade,
+          ),
+        )
+        .toList();
+  }
 
   Future<void> removeCachedExam(String id) =>
       (delete(cachedExams)..where((t) => t.id.equals(id))).go();

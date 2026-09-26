@@ -2,7 +2,7 @@ import 'package:drift/drift.dart';
 import '../tables.dart';
 import '../database_io.dart';
 
-part 'score_dao.g.dart';
+part 'score_dao_io.g.dart';
 
 @DriftAccessor(tables: [ExamScores])
 class ScoreDao extends DatabaseAccessor<AppDatabase> with _$ScoreDaoMixin {

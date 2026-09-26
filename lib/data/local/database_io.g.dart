@@ -47,6 +47,18 @@ class $CachedExamsTable extends CachedExams
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _gradeIdsMeta = const VerificationMeta(
+    'gradeIds',
+  );
+  @override
+  late final GeneratedColumn<String> gradeIds = GeneratedColumn<String>(
+    'grade_ids',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _dataMeta = const VerificationMeta('data');
   @override
   late final GeneratedColumn<String> data = GeneratedColumn<String>(
@@ -73,6 +85,7 @@ class $CachedExamsTable extends CachedExams
     title,
     subjectId,
     grade,
+    gradeIds,
     data,
     downloadedAt,
   ];
@@ -116,6 +129,12 @@ class $CachedExamsTable extends CachedExams
       );
     } else if (isInserting) {
       context.missing(_gradeMeta);
+    }
+    if (data.containsKey('grade_ids')) {
+      context.handle(
+        _gradeIdsMeta,
+        gradeIds.isAcceptableOrUnknown(data['grade_ids']!, _gradeIdsMeta),
+      );
     }
     if (data.containsKey('data')) {
       context.handle(
@@ -161,6 +180,10 @@ class $CachedExamsTable extends CachedExams
         DriftSqlType.int,
         data['${effectivePrefix}grade'],
       )!,
+      gradeIds: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}grade_ids'],
+      )!,
       data: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}data'],
@@ -183,6 +206,11 @@ class CachedExam extends DataClass implements Insertable<CachedExam> {
   final String title;
   final String subjectId;
   final int grade;
+
+  /// Comma-separated grade ids this exam is shared with (e.g. "1,10,12").
+  /// Stored as text so the local cache keeps working offline without needing
+  /// array support; `0` means shared with every grade.
+  final String gradeIds;
   final String data;
   final DateTime downloadedAt;
   const CachedExam({
@@ -190,6 +218,7 @@ class CachedExam extends DataClass implements Insertable<CachedExam> {
     required this.title,
     required this.subjectId,
     required this.grade,
+    required this.gradeIds,
     required this.data,
     required this.downloadedAt,
   });
@@ -200,6 +229,7 @@ class CachedExam extends DataClass implements Insertable<CachedExam> {
     map['title'] = Variable<String>(title);
     map['subject_id'] = Variable<String>(subjectId);
     map['grade'] = Variable<int>(grade);
+    map['grade_ids'] = Variable<String>(gradeIds);
     map['data'] = Variable<String>(data);
     map['downloaded_at'] = Variable<DateTime>(downloadedAt);
     return map;
@@ -211,6 +241,7 @@ class CachedExam extends DataClass implements Insertable<CachedExam> {
       title: Value(title),
       subjectId: Value(subjectId),
       grade: Value(grade),
+      gradeIds: Value(gradeIds),
       data: Value(data),
       downloadedAt: Value(downloadedAt),
     );
@@ -226,6 +257,7 @@ class CachedExam extends DataClass implements Insertable<CachedExam> {
       title: serializer.fromJson<String>(json['title']),
       subjectId: serializer.fromJson<String>(json['subjectId']),
       grade: serializer.fromJson<int>(json['grade']),
+      gradeIds: serializer.fromJson<String>(json['gradeIds']),
       data: serializer.fromJson<String>(json['data']),
       downloadedAt: serializer.fromJson<DateTime>(json['downloadedAt']),
     );
@@ -238,6 +270,7 @@ class CachedExam extends DataClass implements Insertable<CachedExam> {
       'title': serializer.toJson<String>(title),
       'subjectId': serializer.toJson<String>(subjectId),
       'grade': serializer.toJson<int>(grade),
+      'gradeIds': serializer.toJson<String>(gradeIds),
       'data': serializer.toJson<String>(data),
       'downloadedAt': serializer.toJson<DateTime>(downloadedAt),
     };
@@ -248,6 +281,7 @@ class CachedExam extends DataClass implements Insertable<CachedExam> {
     String? title,
     String? subjectId,
     int? grade,
+    String? gradeIds,
     String? data,
     DateTime? downloadedAt,
   }) => CachedExam(
@@ -255,6 +289,7 @@ class CachedExam extends DataClass implements Insertable<CachedExam> {
     title: title ?? this.title,
     subjectId: subjectId ?? this.subjectId,
     grade: grade ?? this.grade,
+    gradeIds: gradeIds ?? this.gradeIds,
     data: data ?? this.data,
     downloadedAt: downloadedAt ?? this.downloadedAt,
   );
@@ -264,6 +299,7 @@ class CachedExam extends DataClass implements Insertable<CachedExam> {
       title: data.title.present ? data.title.value : this.title,
       subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
       grade: data.grade.present ? data.grade.value : this.grade,
+      gradeIds: data.gradeIds.present ? data.gradeIds.value : this.gradeIds,
       data: data.data.present ? data.data.value : this.data,
       downloadedAt: data.downloadedAt.present
           ? data.downloadedAt.value
@@ -278,6 +314,7 @@ class CachedExam extends DataClass implements Insertable<CachedExam> {
           ..write('title: $title, ')
           ..write('subjectId: $subjectId, ')
           ..write('grade: $grade, ')
+          ..write('gradeIds: $gradeIds, ')
           ..write('data: $data, ')
           ..write('downloadedAt: $downloadedAt')
           ..write(')'))
@@ -286,7 +323,7 @@ class CachedExam extends DataClass implements Insertable<CachedExam> {
 
   @override
   int get hashCode =>
-      Object.hash(id, title, subjectId, grade, data, downloadedAt);
+      Object.hash(id, title, subjectId, grade, gradeIds, data, downloadedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -295,6 +332,7 @@ class CachedExam extends DataClass implements Insertable<CachedExam> {
           other.title == this.title &&
           other.subjectId == this.subjectId &&
           other.grade == this.grade &&
+          other.gradeIds == this.gradeIds &&
           other.data == this.data &&
           other.downloadedAt == this.downloadedAt);
 }
@@ -304,6 +342,7 @@ class CachedExamsCompanion extends UpdateCompanion<CachedExam> {
   final Value<String> title;
   final Value<String> subjectId;
   final Value<int> grade;
+  final Value<String> gradeIds;
   final Value<String> data;
   final Value<DateTime> downloadedAt;
   final Value<int> rowid;
@@ -312,6 +351,7 @@ class CachedExamsCompanion extends UpdateCompanion<CachedExam> {
     this.title = const Value.absent(),
     this.subjectId = const Value.absent(),
     this.grade = const Value.absent(),
+    this.gradeIds = const Value.absent(),
     this.data = const Value.absent(),
     this.downloadedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -321,6 +361,7 @@ class CachedExamsCompanion extends UpdateCompanion<CachedExam> {
     required String title,
     required String subjectId,
     required int grade,
+    this.gradeIds = const Value.absent(),
     required String data,
     required DateTime downloadedAt,
     this.rowid = const Value.absent(),
@@ -335,6 +376,7 @@ class CachedExamsCompanion extends UpdateCompanion<CachedExam> {
     Expression<String>? title,
     Expression<String>? subjectId,
     Expression<int>? grade,
+    Expression<String>? gradeIds,
     Expression<String>? data,
     Expression<DateTime>? downloadedAt,
     Expression<int>? rowid,
@@ -344,6 +386,7 @@ class CachedExamsCompanion extends UpdateCompanion<CachedExam> {
       if (title != null) 'title': title,
       if (subjectId != null) 'subject_id': subjectId,
       if (grade != null) 'grade': grade,
+      if (gradeIds != null) 'grade_ids': gradeIds,
       if (data != null) 'data': data,
       if (downloadedAt != null) 'downloaded_at': downloadedAt,
       if (rowid != null) 'rowid': rowid,
@@ -355,6 +398,7 @@ class CachedExamsCompanion extends UpdateCompanion<CachedExam> {
     Value<String>? title,
     Value<String>? subjectId,
     Value<int>? grade,
+    Value<String>? gradeIds,
     Value<String>? data,
     Value<DateTime>? downloadedAt,
     Value<int>? rowid,
@@ -364,6 +408,7 @@ class CachedExamsCompanion extends UpdateCompanion<CachedExam> {
       title: title ?? this.title,
       subjectId: subjectId ?? this.subjectId,
       grade: grade ?? this.grade,
+      gradeIds: gradeIds ?? this.gradeIds,
       data: data ?? this.data,
       downloadedAt: downloadedAt ?? this.downloadedAt,
       rowid: rowid ?? this.rowid,
@@ -385,6 +430,9 @@ class CachedExamsCompanion extends UpdateCompanion<CachedExam> {
     if (grade.present) {
       map['grade'] = Variable<int>(grade.value);
     }
+    if (gradeIds.present) {
+      map['grade_ids'] = Variable<String>(gradeIds.value);
+    }
     if (data.present) {
       map['data'] = Variable<String>(data.value);
     }
@@ -404,6 +452,7 @@ class CachedExamsCompanion extends UpdateCompanion<CachedExam> {
           ..write('title: $title, ')
           ..write('subjectId: $subjectId, ')
           ..write('grade: $grade, ')
+          ..write('gradeIds: $gradeIds, ')
           ..write('data: $data, ')
           ..write('downloadedAt: $downloadedAt, ')
           ..write('rowid: $rowid')
@@ -1180,6 +1229,7 @@ typedef $$CachedExamsTableCreateCompanionBuilder =
       required String title,
       required String subjectId,
       required int grade,
+      Value<String> gradeIds,
       required String data,
       required DateTime downloadedAt,
       Value<int> rowid,
@@ -1190,6 +1240,7 @@ typedef $$CachedExamsTableUpdateCompanionBuilder =
       Value<String> title,
       Value<String> subjectId,
       Value<int> grade,
+      Value<String> gradeIds,
       Value<String> data,
       Value<DateTime> downloadedAt,
       Value<int> rowid,
@@ -1221,6 +1272,11 @@ class $$CachedExamsTableFilterComposer
 
   ColumnFilters<int> get grade => $composableBuilder(
     column: $table.grade,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gradeIds => $composableBuilder(
+    column: $table.gradeIds,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1264,6 +1320,11 @@ class $$CachedExamsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get gradeIds => $composableBuilder(
+    column: $table.gradeIds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get data => $composableBuilder(
     column: $table.data,
     builder: (column) => ColumnOrderings(column),
@@ -1295,6 +1356,9 @@ class $$CachedExamsTableAnnotationComposer
 
   GeneratedColumn<int> get grade =>
       $composableBuilder(column: $table.grade, builder: (column) => column);
+
+  GeneratedColumn<String> get gradeIds =>
+      $composableBuilder(column: $table.gradeIds, builder: (column) => column);
 
   GeneratedColumn<String> get data =>
       $composableBuilder(column: $table.data, builder: (column) => column);
@@ -1340,6 +1404,7 @@ class $$CachedExamsTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<String> subjectId = const Value.absent(),
                 Value<int> grade = const Value.absent(),
+                Value<String> gradeIds = const Value.absent(),
                 Value<String> data = const Value.absent(),
                 Value<DateTime> downloadedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -1348,6 +1413,7 @@ class $$CachedExamsTableTableManager
                 title: title,
                 subjectId: subjectId,
                 grade: grade,
+                gradeIds: gradeIds,
                 data: data,
                 downloadedAt: downloadedAt,
                 rowid: rowid,
@@ -1358,6 +1424,7 @@ class $$CachedExamsTableTableManager
                 required String title,
                 required String subjectId,
                 required int grade,
+                Value<String> gradeIds = const Value.absent(),
                 required String data,
                 required DateTime downloadedAt,
                 Value<int> rowid = const Value.absent(),
@@ -1366,6 +1433,7 @@ class $$CachedExamsTableTableManager
                 title: title,
                 subjectId: subjectId,
                 grade: grade,
+                gradeIds: gradeIds,
                 data: data,
                 downloadedAt: downloadedAt,
                 rowid: rowid,
