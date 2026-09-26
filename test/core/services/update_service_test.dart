@@ -39,7 +39,7 @@ void main() {
   });
 
   group('detects the preview release from an older build', () {
-    test('26.9.25 install is offered 26.9.26', () async {
+    test('26.9.25 install is offered 26.9.26-01', () async {
       UpdateService.currentVersionOverride = () async => '26.9.25';
       UpdateService.httpFetchOverride = (uri) async =>
           http.Response(_release, 200, headers: {'content-type': 'application/json'});
@@ -47,7 +47,8 @@ void main() {
       final report = await UpdateService.checkForUpdatesInBackground(force: true);
 
       expect(report.result, UpdateCheckResult.updateAvailable);
-      expect(report.latestVersion, '26.9.26');
+      // The preview suffix is preserved so it can be compared and displayed.
+      expect(report.latestVersion, '26.9.26-01');
       expect(report.currentVersion, '26.9.25');
       // Never hand a user an asset built for another platform.
       final os = Platform.operatingSystem;
@@ -188,7 +189,7 @@ void main() {
 
       final pending = UpdateService.takePendingUpdate();
       expect(pending, isNotNull);
-      expect(pending!.version, '26.9.26');
+      expect(pending!.version, '26.9.26-01');
       expect(UpdateService.takePendingUpdate(), isNull,
           reason: 'taken once, so it is not pushed twice');
     });

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_text_styles.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 import 'package:arabilogia/core/theme/app_markdown_style.dart';
+import 'package:arabilogia/core/widgets/external_link_dialog.dart';
 import 'package:arabilogia/features/dashboard/lectures/models/lecture.dart';
 
 class TextBlockWidget extends StatelessWidget {
@@ -20,6 +22,43 @@ class TextBlockWidget extends StatelessWidget {
   });
 
   int get _readingMinutes => (block.content.length / 180).ceil().clamp(1, 999);
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _handleLinkTap(BuildContext context, String? href) async {
+    if (href == null || href.trim().isEmpty) return;
+    final url = href.trim();
+
+    if (!isWebLink(url)) {
+      _showMessage(context, 'نوع هذا الرابط غير مدعوم.');
+      return;
+    }
+
+    final confirmed = await showExternalLinkWarningDialog(context, url);
+    if (!confirmed || !context.mounted) return;
+
+    final uri = Uri.parse(url);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+        return;
+      }
+    } catch (_) {
+      // Fall through to the external application attempt below.
+    }
+
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (context.mounted) {
+        _showMessage(context, 'تعذّر فتح الرابط.');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +107,7 @@ class TextBlockWidget extends StatelessWidget {
             MarkdownBody(
               data: block.content,
               styleSheet: AppMarkdownStyle.build(context),
+              onTapLink: (text, href, title) => _handleLinkTap(context, href),
             ),
             const Divider(height: 24),
             Row(

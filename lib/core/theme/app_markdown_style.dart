@@ -20,6 +20,12 @@ class AppMarkdownStyle {
 
     return MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
       p: AppTextStyles.bodyLg.copyWith(color: foreground, height: 1.6),
+      a: AppTextStyles.bodyLg.copyWith(
+        color: AppColors.primary,
+        decoration: TextDecoration.underline,
+        decorationColor: AppColors.primary,
+        decorationThickness: 1.5,
+      ),
       h1: AppTextStyles.headingLg.copyWith(color: foreground),
       h2: AppTextStyles.headingMd.copyWith(color: foreground),
       h3: AppTextStyles.headingSm.copyWith(color: foreground),

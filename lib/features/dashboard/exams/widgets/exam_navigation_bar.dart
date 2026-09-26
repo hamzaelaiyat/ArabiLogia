@@ -34,6 +34,70 @@ class ExamNavigationBar extends StatelessWidget {
     final isLastQuestion = currentQuestionIndex >= totalQuestions - 1;
     final buttonText = isLastQuestion ? 'إنهاء الاختبار' : 'التالي';
 
+    // On phones the palette and flag buttons already take ~96px, and the
+    // default button padding leaves the labels only a few pixels, which wraps
+    // Arabic text one character per line. Show icons only there.
+    final isMobile = AppTokens.isMobile(context);
+    final nextLabel = buttonText;
+    const previousLabel = 'السابق';
+
+    final previousButton = Expanded(
+      child: isMobile
+          ? OutlinedButton(
+              onPressed: onPrevious,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  vertical: AppTokens.spacing12,
+                ),
+              ),
+              child: Tooltip(
+                message: previousLabel,
+                child: Semantics(
+                  label: previousLabel,
+                  child: const Icon(Icons.arrow_back),
+                ),
+              ),
+            )
+          : OutlinedButton(
+              onPressed: onPrevious,
+              child: const Text(previousLabel),
+            ),
+    );
+
+    final nextChild = isSubmitting
+        ? const SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white,
+            ),
+          )
+        : isMobile
+            ? Tooltip(
+                message: nextLabel,
+                child: Semantics(
+                  label: nextLabel,
+                  child: Icon(isLastQuestion ? Icons.check : Icons.arrow_forward),
+                ),
+              )
+            : Text(nextLabel);
+
+    final nextButton = Expanded(
+      flex: isMobile ? 1 : 2,
+      child: ElevatedButton(
+        onPressed: !isSubmitting ? onNext : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: categoryColor,
+          foregroundColor: Colors.white,
+          padding: isMobile
+              ? const EdgeInsets.symmetric(vertical: AppTokens.spacing12)
+              : null,
+        ),
+        child: nextChild,
+      ),
+    );
+
     return Container(
       padding: const EdgeInsets.all(AppTokens.spacing16),
       decoration: BoxDecoration(
@@ -99,34 +163,9 @@ class ExamNavigationBar extends StatelessWidget {
                     ),
                   ),
                 ),
-              if (onPrevious != null)
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onPrevious,
-                    child: const Text('السابق'),
-                  ),
-                ),
+              if (onPrevious != null) previousButton,
               if (onPrevious != null) const SizedBox(width: AppTokens.spacing8),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton(
-                  onPressed: !isSubmitting ? onNext : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: categoryColor,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: isSubmitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(buttonText),
-                ),
-              ),
+              nextButton,
             ],
           ),
         ],
@@ -134,3 +173,4 @@ class ExamNavigationBar extends StatelessWidget {
     );
   }
 }
+

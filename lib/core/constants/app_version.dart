@@ -26,18 +26,18 @@ class AppVersion {
       }
     } catch (e) {
       debugPrint('Failed to read pubspec version, using fallback: $e');
-      _cachedVersion = '26.9.26-02';
+      _cachedVersion = '26.9.26-03';
       _cachedBuildNumber = '1';
     }
 
-    _cachedVersion ??= '26.9.26-02';
+    _cachedVersion ??= '26.9.26-03';
     _cachedBuildNumber ??= '1';
     return _cachedVersion!;
   }
 
   /// Get version synchronously (returns cached or fallback)
   static String get versionSync {
-    return _cachedVersion ?? '26.9.26-02';
+    return _cachedVersion ?? '26.9.26-03';
   }
 
   /// Get build number

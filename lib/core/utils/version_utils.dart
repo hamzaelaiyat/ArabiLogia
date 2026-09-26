@@ -1,30 +1,42 @@
 class VersionUtils {
+  /// Keeps the core version and any numeric preview suffix, e.g.
+  /// `v26.9.26-03` -> `26.9.26-03`. Build metadata (`+5`) and trailing letters
+  /// are dropped. The preview suffix must survive: it is what orders
+  /// `26.9.26-02` below `26.9.26-03`.
   static String extractVersion(String tag) {
-    String version = tag.replaceFirst(RegExp(r'^v'), '').trim();
-    version = version.replaceAll(RegExp(r'[^0-9.].*$'), '');
-    return version;
+    final value = tag.trim().replaceFirst(RegExp(r'^v'), '');
+    final match = RegExp(r'^\d+(?:\.\d+){0,2}(?:-\d+)?').firstMatch(value);
+    return match?.group(0) ?? '';
+  }
+
+  static ({List<int> core, int? suffix}) _parse(String raw) {
+    final value = extractVersion(raw);
+    final parts = value.split('-');
+    final segments = parts.first.split('.');
+    int at(int i) => i < segments.length ? (int.tryParse(segments[i]) ?? 0) : 0;
+    return (
+      core: [at(0), at(1), at(2)],
+      suffix: parts.length > 1 ? int.tryParse(parts[1]) : null,
+    );
   }
 
   static bool isVersionNewer(String newVersion, String currentVersion) {
-    String cleanNew = newVersion.replaceAll(RegExp(r'[^0-9.].*$'), '');
-    String cleanCurrent = currentVersion.replaceAll(RegExp(r'[^0-9.].*$'), '');
+    final next = _parse(newVersion);
+    final current = _parse(currentVersion);
 
-    final newParts = cleanNew
-        .split('.')
-        .map((e) => int.tryParse(e) ?? 0)
-        .toList();
-    final currentParts = cleanCurrent
-        .split('.')
-        .map((e) => int.tryParse(e) ?? 0)
-        .toList();
-
-    for (int i = 0; i < 3; i++) {
-      final newVal = i < newParts.length ? newParts[i] : 0;
-      final currentVal = i < currentParts.length ? currentParts[i] : 0;
-      if (newVal > currentVal) return true;
-      if (newVal < currentVal) return false;
+    for (var i = 0; i < 3; i++) {
+      if (next.core[i] > current.core[i]) return true;
+      if (next.core[i] < current.core[i]) return false;
     }
-    return false;
+
+    // Same core version. A build with no preview suffix is the final release,
+    // so it supersedes every preview of that same core version.
+    final nextSuffix = next.suffix;
+    final currentSuffix = current.suffix;
+    if (nextSuffix == null && currentSuffix == null) return false;
+    if (nextSuffix == null) return true;
+    if (currentSuffix == null) return false;
+    return nextSuffix > currentSuffix;
   }
 
   static String cleanReleaseNotes(String body) {
