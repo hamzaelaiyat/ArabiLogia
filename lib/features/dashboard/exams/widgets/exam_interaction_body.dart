@@ -16,6 +16,7 @@ class ExamInteractionBody extends StatefulWidget {
   final Color categoryColor;
   final double progress;
   final bool isSubmitting;
+  final List<int>? displayToOriginalIndex;
   final void Function(int questionIndex, String optionId) onOptionSelected;
   final VoidCallback onSaveSession;
   final VoidCallback? onPrevious;
@@ -32,6 +33,7 @@ class ExamInteractionBody extends StatefulWidget {
     required this.categoryColor,
     required this.progress,
     required this.isSubmitting,
+    this.displayToOriginalIndex,
     required this.onOptionSelected,
     required this.onSaveSession,
     this.onPrevious,
@@ -105,6 +107,11 @@ class _ExamInteractionBodyState extends State<ExamInteractionBody> {
   Widget build(BuildContext context) {
     final currentQuestion = widget.exam.questions[widget.currentQuestionIndex];
     final total = widget.exam.questions.length;
+    final currentOriginalIndex =
+        (widget.displayToOriginalIndex != null &&
+            widget.displayToOriginalIndex!.length > widget.currentQuestionIndex)
+        ? widget.displayToOriginalIndex![widget.currentQuestionIndex]
+        : widget.currentQuestionIndex;
 
     return Column(
       children: [
@@ -158,7 +165,7 @@ class _ExamInteractionBodyState extends State<ExamInteractionBody> {
                   ...List.generate(currentQuestion.options.length, (i) {
                     final option = currentQuestion.options[i];
                     final isSelected =
-                        widget.selectedAnswers[widget.currentQuestionIndex] ==
+                        widget.selectedAnswers[currentOriginalIndex] ==
                         option.id;
                     return QuestionOptionTile(
                       option: option,
@@ -190,7 +197,7 @@ class _ExamInteractionBodyState extends State<ExamInteractionBody> {
               onNext: widget.onNext,
               isSubmitting: widget.isSubmitting,
               hasSelectedAnswer:
-                  widget.selectedAnswers[widget.currentQuestionIndex] != null,
+                  widget.selectedAnswers[currentOriginalIndex] != null,
               categoryColor: widget.categoryColor,
               isFlagged: widget.isFlagged,
               onToggleFlag: widget.onToggleFlag,

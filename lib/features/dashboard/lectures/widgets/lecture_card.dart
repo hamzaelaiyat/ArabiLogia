@@ -65,7 +65,8 @@ class _LectureCardState extends State<LectureCard> {
         final decoded = raw is String ? jsonDecode(raw) : raw;
         List<dynamic>? list;
         if (decoded is Map) {
-          list = decoded['blocks'] as List<dynamic>?;
+          final rawList = decoded['blocks'];
+          list = rawList is List ? rawList : null;
         } else if (decoded is List) {
           list = decoded;
         }

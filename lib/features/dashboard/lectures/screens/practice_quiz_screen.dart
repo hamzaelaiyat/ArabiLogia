@@ -35,6 +35,8 @@ class PracticeQuizScreen extends StatefulWidget {
 class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
   final ExamRepository _repository = ExamRepository();
   Exam? _exam;
+  Exam? _originalExam;
+  List<int> _displayToOriginalIndex = [];
   bool _isLoading = true;
   int _currentQuestionIndex = 0;
   final Map<int, String?> _selectedAnswers = {};
@@ -74,6 +76,7 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
         currentIndex: _currentQuestionIndex,
         selectedAnswers: _selectedAnswers,
         flaggedQuestions: _flagged,
+        displayToOriginalIndex: _displayToOriginalIndex,
       );
     } catch (e) {
       debugPrint("Silently caught error: $e");
@@ -96,6 +99,7 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
           currentIndex: _currentQuestionIndex,
           selectedAnswers: _selectedAnswers,
           flaggedQuestions: _flagged,
+          displayToOriginalIndex: _displayToOriginalIndex,
           onSelectQuestion: (index) {
             if (mounted) {
               setState(() => _currentQuestionIndex = index);
@@ -104,8 +108,11 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
           },
           onToggleFlag: (index) {
             if (mounted) {
+              final origIdx = _displayToOriginalIndex.length > index
+                  ? _displayToOriginalIndex[index]
+                  : index;
               setState(() {
-                _flagged[index] = !(_flagged[index] ?? false);
+                _flagged[origIdx] = !(_flagged[origIdx] ?? false);
               });
               _updateSidebar();
             }
@@ -141,11 +148,15 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
     if (!mounted) return;
 
     if (exam != null) {
-      final shuffledQuestions = (List<Question>.from(
-        exam.questions,
-      )..shuffle()).map((q) => q.shuffled()).toList();
+      final originalIndices = List<int>.generate(exam.questions.length, (i) => i);
+      final shuffledIndices = List<int>.from(originalIndices)..shuffle();
+      final shuffledQuestions = shuffledIndices
+          .map((origIdx) => exam.questions[origIdx].shuffled())
+          .toList();
 
       setState(() {
+        _originalExam = exam;
+        _displayToOriginalIndex = shuffledIndices;
         _exam = exam.copyWith(questions: shuffledQuestions);
         _isLoading = false;
       });
@@ -169,7 +180,10 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
     int correctCount = 0;
     for (int i = 0; i < _exam!.questions.length; i++) {
       final question = _exam!.questions[i];
-      final selectedId = _selectedAnswers[i];
+      final origIdx = _displayToOriginalIndex.length > i
+          ? _displayToOriginalIndex[i]
+          : i;
+      final selectedId = _selectedAnswers[origIdx];
       if (selectedId == null) continue;
       final correctOption = question.options.cast<Option?>().firstWhere(
         (o) => o?.isCorrect == true,
@@ -213,7 +227,7 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
     context.pushReplacementNamed(
       'practice-result',
       extra: {
-        'exam': _exam,
+        'exam': _originalExam ?? _exam,
         'userAnswers': _selectedAnswers,
         'correctCount': correctCount,
       },
@@ -311,47 +325,57 @@ class _PracticeQuizScreenState extends State<PracticeQuizScreen> {
               ),
             ],
           ),
-          body: ExamInteractionBody(
-            exam: _exam!,
-            currentQuestionIndex: _currentQuestionIndex,
-            selectedAnswers: _selectedAnswers,
-            categoryColor: categoryColor,
-            progress: progress,
-            isSubmitting: _isSubmitting,
-            isFlagged: _flagged[_currentQuestionIndex] ?? false,
-            onToggleFlag: () {
-              setState(() {
-                _flagged[_currentQuestionIndex] =
-                    !(_flagged[_currentQuestionIndex] ?? false);
-              });
-              _updateSidebar();
-            },
-            onOptionSelected: (index, optionId) {
-              setState(() {
-                _selectedAnswers[index] = optionId;
-              });
-              _updateSidebar();
-            },
-            onSaveSession: () {},
-            onPrevious: _currentQuestionIndex > 0
-                ? () {
-                    setState(() {
-                      _currentQuestionIndex--;
-                    });
-                    _updateSidebar();
-                  }
-                : null,
-            onNext: () {
-              if (_currentQuestionIndex < _exam!.questions.length - 1) {
+          body: () {
+            final currentOrigIdx =
+                _displayToOriginalIndex.length > _currentQuestionIndex
+                ? _displayToOriginalIndex[_currentQuestionIndex]
+                : _currentQuestionIndex;
+            return ExamInteractionBody(
+              exam: _exam!,
+              currentQuestionIndex: _currentQuestionIndex,
+              selectedAnswers: _selectedAnswers,
+              categoryColor: categoryColor,
+              progress: progress,
+              isSubmitting: _isSubmitting,
+              displayToOriginalIndex: _displayToOriginalIndex,
+              isFlagged: _flagged[currentOrigIdx] ?? false,
+              onToggleFlag: () {
                 setState(() {
-                  _currentQuestionIndex++;
+                  _flagged[currentOrigIdx] =
+                      !(_flagged[currentOrigIdx] ?? false);
                 });
                 _updateSidebar();
-              } else {
-                if (!_isSubmitting) _submitQuiz();
-              }
-            },
-          ),
+              },
+              onOptionSelected: (displayIdx, optionId) {
+                final origIdx = _displayToOriginalIndex.length > displayIdx
+                    ? _displayToOriginalIndex[displayIdx]
+                    : displayIdx;
+                setState(() {
+                  _selectedAnswers[origIdx] = optionId;
+                });
+                _updateSidebar();
+              },
+              onSaveSession: () {},
+              onPrevious: _currentQuestionIndex > 0
+                  ? () {
+                      setState(() {
+                        _currentQuestionIndex--;
+                      });
+                      _updateSidebar();
+                    }
+                  : null,
+              onNext: () {
+                if (_currentQuestionIndex < _exam!.questions.length - 1) {
+                  setState(() {
+                    _currentQuestionIndex++;
+                  });
+                  _updateSidebar();
+                } else {
+                  if (!_isSubmitting) _submitQuiz();
+                }
+              },
+            );
+          }(),
         ),
       ),
     );

@@ -41,12 +41,12 @@ class CategoryCard extends StatelessWidget {
     if (totalLectures == 0) {
       backlogText = 'لا توجد محاضرات بعد';
     } else if (backlogCount > 0) {
-      backlogText =
-          'مراكم $backlogCount ${backlogCount == 1
-              ? 'محاضرة'
-              : backlogCount == 2
-              ? 'محاضرتين'
-              : 'محاضرات'}';
+      final countText = backlogCount == 1 ? '' : '$backlogCount ';
+      backlogText = 'مراكم $countText${backlogCount == 1
+          ? 'محاضرة'
+          : backlogCount == 2
+          ? 'محاضرتين'
+          : 'محاضرات'}';
     } else {
       backlogText = 'مش مراكم';
     }

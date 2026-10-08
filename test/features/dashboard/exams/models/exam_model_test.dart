@@ -44,6 +44,31 @@ void main() {
       expect(q.options[2].isCorrect, isFalse);
     });
 
+    test('parses and serializes question explanation correctly', () {
+      final json = {
+        'id': 'e1_exp',
+        't': 'Test with explanation',
+        's': 'النحو',
+        'si': 'nahw',
+        'q': [
+          {
+            'id': 'q1',
+            't': 'ما إعراب الفاعل؟',
+            'o': ['مرفوع', 'منصوب'],
+            'a': 0,
+            'e': 'الفاعل دائماً مرفوع في اللغة العربية.',
+          },
+        ],
+      };
+
+      final exam = Exam.fromMinifiedJson(json);
+      final q = exam.questions.first;
+      expect(q.explanation, 'الفاعل دائماً مرفوع في اللغة العربية.');
+
+      final minified = q.toMinifiedJson();
+      expect(minified['e'], 'الفاعل دائماً مرفوع في اللغة العربية.');
+    });
+
     test('handles server payload without an answer key (questions-only)', () {
       final json = {
         'id': 'e2',

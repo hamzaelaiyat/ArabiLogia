@@ -22,18 +22,12 @@ class LeaderboardPodiumWidget extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDesktop = AppTokens.isDesktop(context);
 
-    final rank1 = topThree.firstWhere(
-      (e) => e['rank'] == 1,
-      orElse: () => topThree.first,
-    );
-    final rank2 = topThree.firstWhere(
-      (e) => e['rank'] == 2,
-      orElse: () => (topThree.length > 1 ? topThree[1] : topThree.first),
-    );
-    final rank3 = topThree.firstWhere(
-      (e) => e['rank'] == 3,
-      orElse: () => (topThree.length > 2 ? topThree[2] : topThree.first),
-    );
+    // `topThree` arrives in board order, already capped at 3 by the screen.
+    // Read it positionally: matching on the `rank` column picked whichever
+    // tied user happened to be first and rendered the same person twice.
+    final rank1 = topThree.first;
+    final rank2 = topThree.length > 1 ? topThree[1] : topThree.first;
+    final rank3 = topThree.length > 2 ? topThree[2] : topThree.first;
 
     final p1Height = isDesktop ? 235.0 : 190.0;
     final p1Width = isDesktop ? 125.0 : 95.0;

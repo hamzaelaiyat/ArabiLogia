@@ -149,6 +149,7 @@ class Question {
   final String? passage;
   final List<Option> options;
   final int points;
+  final String? explanation;
 
   const Question({
     required this.id,
@@ -156,6 +157,7 @@ class Question {
     this.passage,
     required this.options,
     this.points = 1,
+    this.explanation,
   });
 
   Question copyWith({
@@ -164,6 +166,7 @@ class Question {
     String? passage,
     List<Option>? options,
     int? points,
+    String? explanation,
   }) {
     return Question(
       id: id ?? this.id,
@@ -171,6 +174,7 @@ class Question {
       passage: passage ?? this.passage,
       options: options ?? this.options,
       points: points ?? this.points,
+      explanation: explanation ?? this.explanation,
     );
   }
 
@@ -204,6 +208,7 @@ class Question {
       'o': options.map((o) => o.text).toList(),
       'a': correctIndex,
       'pts': points,
+      if (explanation != null) 'e': explanation,
     };
   }
 
@@ -216,6 +221,7 @@ class Question {
       text: json['t'] as String,
       passage: json['p'] as String?,
       points: json['pts'] as int? ?? 1,
+      explanation: json['e'] as String?,
       options: List.generate(optionsList.length, (index) {
         return Option(
           id: 'o$index',

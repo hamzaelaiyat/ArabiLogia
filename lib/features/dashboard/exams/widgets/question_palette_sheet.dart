@@ -9,6 +9,7 @@ class QuestionPaletteSheet extends StatelessWidget {
   final Map<int, String?> selectedAnswers;
   final Map<int, bool> flagged;
   final Color categoryColor;
+  final List<int>? displayToOriginalIndex;
   final ValueChanged<int> onQuestionTap;
 
   const QuestionPaletteSheet({
@@ -18,6 +19,7 @@ class QuestionPaletteSheet extends StatelessWidget {
     required this.selectedAnswers,
     required this.flagged,
     required this.categoryColor,
+    this.displayToOriginalIndex,
     required this.onQuestionTap,
   });
 
@@ -99,8 +101,13 @@ class QuestionPaletteSheet extends StatelessWidget {
               ),
               itemCount: totalQuestions,
               itemBuilder: (context, index) {
-                final isAnswered = selectedAnswers[index] != null;
-                final isFlagged = flagged[index] ?? false;
+                final origIdx =
+                    (displayToOriginalIndex != null &&
+                        displayToOriginalIndex!.length > index)
+                    ? displayToOriginalIndex![index]
+                    : index;
+                final isAnswered = selectedAnswers[origIdx] != null;
+                final isFlagged = flagged[origIdx] ?? false;
                 final isCurrent = index == currentIndex;
                 final status = isFlagged
                     ? 'مُعلَّم'

@@ -92,6 +92,22 @@ class _ExamCategoriesGridState extends State<ExamCategoriesGrid> {
     }
   }
 
+  static List<dynamic> _extractBlocks(Map<String, dynamic> lecture) {
+    final raw = lecture['content_blocks'] ?? lecture['blocks'];
+    if (raw == null) return const [];
+    try {
+      final decoded = raw is String ? jsonDecode(raw) : raw;
+      if (decoded is Map) {
+        final inner = decoded['blocks'];
+        return inner is List ? inner : const [];
+      }
+      if (decoded is List) return decoded;
+    } catch (e) {
+      debugPrint('Failed to parse content_blocks: $e');
+    }
+    return const [];
+  }
+
   String? _getLatestThumbnail(List<Map<String, dynamic>>? lectures) {
     if (lectures == null || lectures.isEmpty) return null;
     final latest = lectures.first;
@@ -106,9 +122,8 @@ class _ExamCategoriesGridState extends State<ExamCategoriesGrid> {
     final youtubeUrl = latest['youtube_url'] as String? ?? '';
     var videoId = getVideoId(youtubeUrl);
     if (videoId.isEmpty) {
-      final blocks =
-          latest['content_blocks'] as List? ?? latest['blocks'] as List?;
-      if (blocks != null) {
+      final blocks = _extractBlocks(latest);
+      if (blocks.isNotEmpty) {
         for (final b in blocks) {
           if (b is Map && b['type'] == 'youtube') {
             final vid = getVideoId(b['content']?.toString() ?? '');

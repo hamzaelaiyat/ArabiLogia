@@ -37,9 +37,8 @@ class ExamStatsRow extends StatelessWidget {
     String label,
     IconData icon,
   ) {
-    final color = CategoryMetadata.categories
-        .firstWhere((c) => c.id == subjectId)
-        .color;
+    final color =
+        CategoryMetadata.getById(subjectId)?.color ?? const Color(0xFFEB8A00);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(AppTokens.spacing16),

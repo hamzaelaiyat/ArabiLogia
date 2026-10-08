@@ -121,6 +121,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  Future<void> _handleBackToLogin() async {
+    // Signup can hand back a live session (auto-confirm, or an already
+    // confirmed address). app_router.dart bounces any authenticated visitor
+    // away from /login, so navigating without clearing the session would drop
+    // the user straight into the dashboard instead of the login form.
+    await context.read<AuthProvider>().signOut();
+    if (!mounted) return;
+    context.go(AppRoutes.login);
+  }
+
   Future<void> _handleVerifyEmail(String otp) async {
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.verifyEmail(
@@ -158,7 +168,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               error: authProvider.state.error,
               onVerify: _handleVerifyEmail,
               onResend: _handleResendCode,
-              onBackToLogin: () => context.go(AppRoutes.login),
+              onBackToLogin: _handleBackToLogin,
             )
           : _buildFormCard(context, authProvider),
     );

@@ -16,12 +16,12 @@ A Flutter mobile application for **learning Arabic language**, featuring *gramma
   - القراءة (Reading)
   - النصوص (Text)
 - **Dashboard** - Home, Lectures, Leaderboard, Profile, and Settings sections
-- **Exam System** - Interactive exams with multiple question styles, timer, instant results, and quick preview
-- **Lecture System** - Video lectures with YouTube integration, practice quizzes, and content blocks
+- **Exam System** - Interactive exams with multiple question styles, timer, instant results, answer explanations in review, and quick preview
+- **Lecture System** - Video lectures with YouTube integration, practice quizzes, content blocks, and automatic offline download
 - **Activity History** - Track completed exams and performance over time
 - **Settings** - Theme customization (Light/Dark/System), notifications, privacy, potato mode
 - **Bilingual UI** - Full Arabic interface with RTL support
-- **Mobile Features** - Push notifications, sharing results, in-app updates
+- **Mobile Features** - Push notifications, share results as images, in-app updates with release notes
 
 ## Tech Stack
 
@@ -77,8 +77,13 @@ A Flutter mobile application for **learning Arabic language**, featuring *gramma
 ```bash
 flutter build apk --release --split-per-abi  # Android APKs (arm64-v8a, armeabi-v7a, x86_64)
 flutter build linux --release                 # Linux tar.xz
-flutter build web --release                   # Web (Vercel)
+flutter build web --release --no-web-resources-cdn \
+  --dart-define="SUPABASE_URL=$SUPABASE_URL" \
+  --dart-define="SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY"  # Web (Vercel)
 ```
+
+> Web builds must compile the Supabase values in with `--dart-define` — Vercel strips dotfiles, so `assets/.env` is never served and the app would boot unconfigured.
+> `./deploy.sh` runs the full release pipeline: builds all platforms, deploys the web app to Vercel, and publishes the GitHub release.
 
 ## Project Structure
 
@@ -108,7 +113,11 @@ lib/
 
 ## Version
 
+<<<<<<< Updated upstream
 Current version: **26.10.07**
+=======
+Current version: **26.10.7**
+>>>>>>> Stashed changes
 
 ## License
 

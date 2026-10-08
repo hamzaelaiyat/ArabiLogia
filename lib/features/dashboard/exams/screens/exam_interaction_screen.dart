@@ -53,6 +53,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
   final ValueNotifier<String?> _timerWarning = ValueNotifier<String?>(null);
   // In-memory only; server anchors the speed bonus.
   String? _serverSessionId;
+  List<int> _displayToOriginalIndex = [];
 
   @override
   void initState() {
@@ -147,6 +148,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
         currentIndex: _currentQuestionIndex,
         selectedAnswers: _selectedAnswers,
         flaggedQuestions: _flagged,
+        displayToOriginalIndex: _displayToOriginalIndex,
       );
     } catch (e) {
       debugPrint("Silently caught error: $e");
@@ -169,6 +171,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
           currentIndex: _currentQuestionIndex,
           selectedAnswers: _selectedAnswers,
           flaggedQuestions: _flagged,
+          displayToOriginalIndex: _displayToOriginalIndex,
           timerNotifier: _timerNotifier,
           onSelectQuestion: (index) {
             if (mounted) {
@@ -178,8 +181,11 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
           },
           onToggleFlag: (index) {
             if (mounted) {
+              final origIdx = _displayToOriginalIndex.length > index
+                  ? _displayToOriginalIndex[index]
+                  : index;
               setState(() {
-                _flagged[index] = !(_flagged[index] ?? false);
+                _flagged[origIdx] = !(_flagged[origIdx] ?? false);
               });
               _updateSidebar();
             }
@@ -203,9 +209,11 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
   }
 
   void _toggleFlag() {
+    final origIdx = _displayToOriginalIndex.length > _currentQuestionIndex
+        ? _displayToOriginalIndex[_currentQuestionIndex]
+        : _currentQuestionIndex;
     setState(() {
-      _flagged[_currentQuestionIndex] =
-          !(_flagged[_currentQuestionIndex] ?? false);
+      _flagged[origIdx] = !(_flagged[origIdx] ?? false);
     });
     _updateSidebar();
   }
@@ -219,6 +227,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
         selectedAnswers: _selectedAnswers,
         flagged: _flagged,
         categoryColor: categoryColor,
+        displayToOriginalIndex: _displayToOriginalIndex,
         onQuestionTap: (index) {
           Navigator.of(sheetContext).pop();
           setState(() => _currentQuestionIndex = index);
@@ -255,9 +264,11 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
         ? savedSession
         : null;
 
-    final shuffledQuestions = (List<Question>.from(
-      exam.questions,
-    )..shuffle()).map((q) => q.shuffled()).toList();
+    final originalIndices = List<int>.generate(exam.questions.length, (i) => i);
+    final shuffledIndices = List<int>.from(originalIndices)..shuffle();
+    final shuffledQuestions = shuffledIndices
+        .map((origIdx) => exam.questions[origIdx].shuffled())
+        .toList();
 
     // Start a server session unless we're resuming one we already own.
     if (restoredSession == null) {
@@ -268,6 +279,7 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
     if (!mounted) return;
 
     setState(() {
+      _displayToOriginalIndex = shuffledIndices;
       _isFirstAttempt = !localScores.containsKey(widget.examId);
       _exam = exam.copyWith(questions: shuffledQuestions);
 
@@ -412,42 +424,52 @@ class _ExamInteractionScreenState extends State<ExamInteractionScreen>
                 ),
               ],
             ),
-            body: ExamInteractionBody(
-              exam: _exam!,
-              currentQuestionIndex: _currentQuestionIndex,
-              selectedAnswers: _selectedAnswers,
-              categoryColor: categoryColor,
-              progress: progress,
-              isSubmitting: _isSubmitting,
-              isFlagged: _flagged[_currentQuestionIndex] ?? false,
-              onToggleFlag: _toggleFlag,
-              onOpenPalette: () => _openPalette(categoryColor),
-              onOptionSelected: (index, optionId) {
-                setState(() {
-                  _selectedAnswers[index] = optionId;
-                });
-                _updateSidebar();
-              },
-              onSaveSession: _saveSession,
-              onPrevious: _currentQuestionIndex > 0
-                  ? () {
-                      setState(() {
-                        _currentQuestionIndex--;
-                      });
-                      _updateSidebar();
-                    }
-                  : null,
-              onNext: () {
-                if (_currentQuestionIndex < _exam!.questions.length - 1) {
+            body: () {
+              final currentOrigIdx =
+                  _displayToOriginalIndex.length > _currentQuestionIndex
+                  ? _displayToOriginalIndex[_currentQuestionIndex]
+                  : _currentQuestionIndex;
+              return ExamInteractionBody(
+                exam: _exam!,
+                currentQuestionIndex: _currentQuestionIndex,
+                selectedAnswers: _selectedAnswers,
+                categoryColor: categoryColor,
+                progress: progress,
+                isSubmitting: _isSubmitting,
+                displayToOriginalIndex: _displayToOriginalIndex,
+                isFlagged: _flagged[currentOrigIdx] ?? false,
+                onToggleFlag: _toggleFlag,
+                onOpenPalette: () => _openPalette(categoryColor),
+                onOptionSelected: (displayIdx, optionId) {
+                  final origIdx = _displayToOriginalIndex.length > displayIdx
+                      ? _displayToOriginalIndex[displayIdx]
+                      : displayIdx;
                   setState(() {
-                    _currentQuestionIndex++;
+                    _selectedAnswers[origIdx] = optionId;
                   });
                   _updateSidebar();
-                } else {
-                  if (!_isSubmitting) _submitExam();
-                }
-              },
-            ),
+                },
+                onSaveSession: _saveSession,
+                onPrevious: _currentQuestionIndex > 0
+                    ? () {
+                        setState(() {
+                          _currentQuestionIndex--;
+                        });
+                        _updateSidebar();
+                      }
+                    : null,
+                onNext: () {
+                  if (_currentQuestionIndex < _exam!.questions.length - 1) {
+                    setState(() {
+                      _currentQuestionIndex++;
+                    });
+                    _updateSidebar();
+                  } else {
+                    if (!_isSubmitting) _submitExam();
+                  }
+                },
+              );
+            }(),
           ),
         ),
       ),
