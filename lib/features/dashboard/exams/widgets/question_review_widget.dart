@@ -97,9 +97,14 @@ class QuestionReviewCardWidget extends StatelessWidget {
           const SizedBox(height: 16),
           _AnswerBox(
             label: 'إجابتك:',
-            text: selectedId == null
-                ? 'لم تجب'
-                : question.options.firstWhere((o) => o.id == selectedId).text,
+            text: () {
+              if (selectedId == null) return 'لم تجب';
+              final match = question.options.cast<Option?>().firstWhere(
+                (o) => o?.id == selectedId,
+                orElse: () => null,
+              );
+              return match?.text ?? 'لم تجب';
+            }(),
             isCorrect: false,
           ),
           const SizedBox(height: 8),
@@ -108,6 +113,11 @@ class QuestionReviewCardWidget extends StatelessWidget {
             text: correctOption.text,
             isCorrect: true,
           ),
+          if (question.explanation != null &&
+              question.explanation!.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _ExplanationBox(explanation: question.explanation!),
+          ],
         ],
       ),
     );
@@ -154,6 +164,60 @@ class _AnswerBox extends StatelessWidget {
                 color: isCorrect ? AppColors.success : AppColors.error,
               ),
               children: parseQuestionText(text, isDark: isDark),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExplanationBox extends StatelessWidget {
+  final String explanation;
+
+  const _ExplanationBox({required this.explanation});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: AppTokens.radiusMdAll,
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.lightbulb_outline,
+                size: 16,
+                color: AppColors.primary,
+              ),
+              SizedBox(width: 6),
+              Text(
+                'الشرح والتوضيح:',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                color: AppColors.foreground(context),
+              ),
+              children: parseQuestionText(explanation, isDark: isDark),
             ),
           ),
         ],

@@ -16,22 +16,21 @@ class ExamHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final category = CategoryMetadata.categories.firstWhere(
-      (c) => c.id == subjectId,
-    );
+    final color =
+        CategoryMetadata.getById(subjectId)?.color ?? const Color(0xFFEB8A00);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: category.color.withValues(alpha: 0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: AppTokens.radiusFullAll,
           ),
           child: Text(
             subjectName,
             style: TextStyle(
-              color: category.color,
+              color: color,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),

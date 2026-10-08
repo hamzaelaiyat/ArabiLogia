@@ -21,8 +21,8 @@ RELEASE_NOTES_FILE=""
 VERCEL_SCOPE="${VERCEL_SCOPE:-hamzas-projects-d700a79d}"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"; }
-error() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1" | tee -a "$LOG_FILE" >&2; ((ERRORS++)); }
-warn() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: $1" | tee -a "$LOG_FILE" >&2; ((WARNINGS++)); }
+error() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1" | tee -a "$LOG_FILE" >&2; ERRORS=$((ERRORS + 1)); }
+warn() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: $1" | tee -a "$LOG_FILE" >&2; WARNINGS=$((WARNINGS + 1)); }
 
 init_log() {
     mkdir -p "$(dirname "$LOG_FILE")"
@@ -381,7 +381,7 @@ while [[ "$#" -gt 0 ]]; do
         --version) VERSION="$2"; shift ;;
         --title) RELEASE_TITLE="$2"; shift ;;
         --notes) RELEASE_NOTES_FILE="$2"; shift ;;
-        --no-publish) PUBLISH="no"; shift ;;
+        --no-publish) PUBLISH="no" ;;
     esac
     shift
 done

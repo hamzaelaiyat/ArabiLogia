@@ -74,9 +74,8 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
         remainingSeconds,
       );
 
-      final category = CategoryMetadata.categories.firstWhere(
-        (c) => c.id == widget.subjectId,
-      );
+      final category = CategoryMetadata.getById(widget.subjectId);
+      final categoryColor = category?.color ?? const Color(0xFFEB8A00);
 
       final shouldResume = await showDialog<bool>(
         context: context,
@@ -95,7 +94,7 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: TextButton.styleFrom(
-                  backgroundColor: category.color,
+                  backgroundColor: categoryColor,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
                 child: const Text('متابعة'),
@@ -144,9 +143,8 @@ class _ExamDetailsScreenState extends State<ExamDetailsScreen> {
       );
     }
 
-    final category = CategoryMetadata.categories.firstWhere(
-      (c) => c.id == widget.subjectId,
-    );
+    final category = CategoryMetadata.getById(widget.subjectId) ??
+        CategoryMetadata.categories.first;
 
     return Directionality(
       textDirection: TextDirection.rtl,

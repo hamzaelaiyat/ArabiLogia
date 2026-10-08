@@ -226,7 +226,8 @@ class Lecture {
           decoded = jsonDecode(rawBlocks);
         }
         if (decoded is Map) {
-          final blocksList = decoded['blocks'] as List<dynamic>?;
+          final rawBlocksList = decoded['blocks'];
+          final blocksList = rawBlocksList is List ? rawBlocksList : null;
           if (blocksList != null) {
             blocks = blocksList
                 .map(
@@ -236,7 +237,8 @@ class Lecture {
                 )
                 .toList();
           }
-          final examsList = decoded['exam_ids'] as List<dynamic>?;
+          final rawExamsList = decoded['exam_ids'];
+          final examsList = rawExamsList is List ? rawExamsList : null;
           if (examsList != null) {
             examIds = examsList.map((e) => e.toString()).toList();
           }

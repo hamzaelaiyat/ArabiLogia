@@ -31,10 +31,6 @@ class ExamResultView extends StatelessWidget {
 
   bool get _isPractice => score == null;
 
-  bool get _isPerfect => _isPractice
-      ? exam.questions.isNotEmpty && correctCount == exam.questions.length
-      : score == 100;
-
   List<int> _wrongAnswerIndices() {
     final wrong = <int>[];
     for (int i = 0; i < exam.questions.length; i++) {
@@ -56,33 +52,50 @@ class ExamResultView extends StatelessWidget {
     final wrongAnswerIndices = _wrongAnswerIndices();
     final totalQuestions = exam.questions.length;
 
+    // Derived from the actual review evaluation to guarantee 100% sync
+    // between top summary numbers and bottom wrong answer cards.
+    final effectiveCorrectCount = totalQuestions - wrongAnswerIndices.length;
+    final derivedAccuracy = totalQuestions > 0
+        ? ((effectiveCorrectCount / totalQuestions) * 100).round()
+        : 0;
+    final effectiveAccuracy = accuracy != null && accuracy! > derivedAccuracy
+        ? accuracy!
+        : derivedAccuracy;
+    final effectiveScore = score == null
+        ? null
+        : ((effectiveAccuracy + (speedBonus ?? 0)).clamp(0, 100)).toInt();
+
+    final isPerfect = _isPractice
+        ? totalQuestions > 0 && effectiveCorrectCount == totalQuestions
+        : (effectiveScore ?? 0) >= 100 || (totalQuestions > 0 && effectiveCorrectCount == totalQuestions);
+
     return CelebrationOverlay(
-      celebrate: _isPerfect,
+      celebrate: isPerfect,
       child: SingleChildScrollView(
         padding: padding,
         child: Column(
           children: [
             if (_isPractice)
               _PracticeScoreSummary(
-                correctCount: correctCount,
+                correctCount: effectiveCorrectCount,
                 totalQuestions: totalQuestions,
               )
             else
               ScoreSummaryWidget(
-                score: score!,
-                isPassed: score! >= exam.passPercentage,
+                score: effectiveScore ?? score ?? 0,
+                isPassed: (effectiveScore ?? score ?? 0) >= exam.passPercentage,
               ),
             const SizedBox(height: AppTokens.spacing24),
             if (_isPractice)
               _PracticeStatsRow(
-                correctCount: correctCount,
+                correctCount: effectiveCorrectCount,
                 totalQuestions: totalQuestions,
               )
             else
               StatsRowWidget(
                 totalQuestions: totalQuestions,
-                correctCount: correctCount,
-                accuracy: accuracy ?? 0,
+                correctCount: effectiveCorrectCount,
+                accuracy: effectiveAccuracy,
                 speedBonus: speedBonus ?? 0,
               ),
             const SizedBox(height: AppTokens.spacing32),
@@ -96,7 +109,7 @@ class ExamResultView extends StatelessWidget {
                   selectedId: userAnswers[index],
                 ),
               ),
-            ] else if (_isPerfect)
+            ] else if (isPerfect)
               const _PerfectBanner(),
             const SizedBox(height: AppTokens.spacing32),
             actions,

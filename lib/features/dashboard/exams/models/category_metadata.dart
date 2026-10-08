@@ -168,22 +168,20 @@ class CategoryMetadata {
   static CategoryMetadata? getByName(String? name) {
     if (name == null) return null;
     if (!_isLoaded) loadCategories();
-    try {
-      return _categories.firstWhere((c) => c.name == name);
-    } catch (e) {
-      debugPrint('Category not found by name "$name": $e');
-      return null;
-    }
+    final byName = _categories.indexWhere((c) => c.name == name);
+    if (byName != -1) return _categories[byName];
+    final byId = _categories.indexWhere((c) => c.id == name);
+    if (byId != -1) return _categories[byId];
+    debugPrint('Category not found by name "$name"');
+    return null;
   }
 
   static CategoryMetadata? getById(String id) {
     if (!_isLoaded) loadCategories();
-    try {
-      return _categories.firstWhere((c) => c.id == id);
-    } catch (e) {
-      debugPrint('Category not found by id "$id": $e');
-      return null;
-    }
+    final index = _categories.indexWhere((c) => c.id == id);
+    if (index != -1) return _categories[index];
+    debugPrint('Category not found by id "$id"');
+    return null;
   }
 
   static Future<void> addCategory({

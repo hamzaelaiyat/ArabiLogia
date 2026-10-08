@@ -67,9 +67,8 @@ class ExamInstructionsSection extends StatelessWidget {
   }
 
   Widget _buildInstructionItem(BuildContext context, String text) {
-    final color = CategoryMetadata.categories
-        .firstWhere((c) => c.id == subjectId)
-        .color;
+    final color =
+        CategoryMetadata.getById(subjectId)?.color ?? const Color(0xFFEB8A00);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppTokens.spacing8),
       child: Row(

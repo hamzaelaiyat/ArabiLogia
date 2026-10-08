@@ -34,6 +34,7 @@ class ExamSidebarData {
   final int currentIndex;
   final Map<int, String?> selectedAnswers;
   final Map<int, bool> flaggedQuestions;
+  final List<int>? displayToOriginalIndex;
   final ValueNotifier<int>? timerNotifier;
   final ValueChanged<int> onSelectQuestion;
   final ValueChanged<int> onToggleFlag;
@@ -48,6 +49,7 @@ class ExamSidebarData {
     required this.currentIndex,
     required this.selectedAnswers,
     required this.flaggedQuestions,
+    this.displayToOriginalIndex,
     this.timerNotifier,
     required this.onSelectQuestion,
     required this.onToggleFlag,
@@ -122,6 +124,7 @@ class ContextualSidebarProvider extends ChangeNotifier {
     int? currentIndex,
     Map<int, String?>? selectedAnswers,
     Map<int, bool>? flaggedQuestions,
+    List<int>? displayToOriginalIndex,
   }) {
     if (_examData != null) {
       _examData = ExamSidebarData(
@@ -137,6 +140,8 @@ class ContextualSidebarProvider extends ChangeNotifier {
         flaggedQuestions: Map.from(
           flaggedQuestions ?? _examData!.flaggedQuestions,
         ),
+        displayToOriginalIndex:
+            displayToOriginalIndex ?? _examData!.displayToOriginalIndex,
         timerNotifier: _examData!.timerNotifier,
         onSelectQuestion: _examData!.onSelectQuestion,
         onToggleFlag: _examData!.onToggleFlag,

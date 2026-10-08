@@ -3,6 +3,12 @@ import 'package:arabilogia/core/theme/app_colors.dart';
 import 'package:arabilogia/core/theme/app_tokens.dart';
 
 class LeaderboardRankCard extends StatelessWidget {
+  /// Total vertical space one card occupies, bottom margin included.
+  /// Grid layouts size their rows from this so cards are never clipped.
+  static const double cardExtent = _cardHeight + AppTokens.spacing12;
+
+  static const double _cardHeight = 76;
+
   final Map<String, dynamic> leader;
   final bool isMe;
   final int rank;
@@ -57,7 +63,7 @@ class LeaderboardRankCard extends StatelessWidget {
         button: true,
         child: Container(
           margin: const EdgeInsets.only(bottom: AppTokens.spacing12),
-          height: 76,
+          height: _cardHeight,
           decoration: BoxDecoration(
             color: isMe ? isMeBlue.withValues(alpha: 0.12) : cardBg,
             borderRadius: BorderRadius.circular(24),

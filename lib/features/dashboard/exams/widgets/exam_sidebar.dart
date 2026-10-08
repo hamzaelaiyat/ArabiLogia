@@ -40,9 +40,14 @@ class _ExamSidebarState extends State<ExamSidebar> {
 
     List<int> visibleIndices = List.generate(totalQuestions, (i) => i);
     if (_filterOnlyFlagged) {
-      visibleIndices = visibleIndices
-          .where((i) => data.flaggedQuestions[i] == true)
-          .toList();
+      visibleIndices = visibleIndices.where((i) {
+        final origIdx =
+            (data.displayToOriginalIndex != null &&
+                data.displayToOriginalIndex!.length > i)
+            ? data.displayToOriginalIndex![i]
+            : i;
+        return data.flaggedQuestions[origIdx] == true;
+      }).toList();
     }
 
     return Container(
@@ -238,8 +243,14 @@ class _ExamSidebarState extends State<ExamSidebar> {
                     itemBuilder: (context, idx) {
                       final qIndex = visibleIndices[idx];
                       final isCurrent = qIndex == data.currentIndex;
-                      final isAnswered = data.selectedAnswers[qIndex] != null;
-                      final isFlagged = data.flaggedQuestions[qIndex] == true;
+                      final origIdx =
+                          (data.displayToOriginalIndex != null &&
+                              data.displayToOriginalIndex!.length > qIndex)
+                          ? data.displayToOriginalIndex![qIndex]
+                          : qIndex;
+                      final isAnswered =
+                          data.selectedAnswers[origIdx] != null;
+                      final isFlagged = data.flaggedQuestions[origIdx] == true;
 
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 200),

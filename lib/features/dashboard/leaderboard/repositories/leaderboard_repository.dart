@@ -31,8 +31,13 @@ class LeaderboardRepository {
         query = query.eq('grade', grade);
       }
 
+      // Ties must break deterministically: the screen derives display ranks from
+      // list position, so an unstable order would make the podium disagree with
+      // the rows below it between fetches.
       final response = await query
           .order('total_score', ascending: false)
+          .order('exams_completed', ascending: false)
+          .order('user_id', ascending: true)
           .limit(100);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {

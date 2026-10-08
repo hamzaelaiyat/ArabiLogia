@@ -94,12 +94,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         ? _leaders.take(potato.maxListItems).toList()
         : _leaders;
 
-    final topThree = filteredLeaders
-        .where((e) => (e['rank'] as int? ?? 99) <= 3)
-        .toList();
-    final remainingLeaders = filteredLeaders
-        .where((e) => (e['rank'] as int? ?? 99) > 3)
-        .toList();
+    // Partition by list position, never by the `rank` column: SQL RANK() ties
+    // every zero-score user at rank 1, so filtering on `rank <= 3` swallowed
+    // the whole board into the podium and left nothing to show below it.
+    final partition = partitionLeaderboard(filteredLeaders);
+    final topThree = partition.podium;
+    final remainingLeaders = partition.rest;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -161,6 +161,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           if (topThree.isNotEmpty)
                             LeaderboardPodiumWidget(
                               topThree: topThree,
+                              currentUserId: context
+                                  .read<AuthProvider>()
+                                  .state
+                                  .user
+                                  ?.id,
                               onUserTap: _showUserProfile,
                             ),
 
@@ -181,14 +186,21 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                     gridDelegate:
                                         const SliverGridDelegateWithFixedCrossAxisCount(
                                           crossAxisCount: 2,
-                                          mainAxisExtent: 82,
+                                          // Matches the card's own height +
+                                          // bottom margin so nothing is clipped.
+                                          mainAxisExtent:
+                                              LeaderboardRankCard.cardExtent,
                                           crossAxisSpacing: 16,
-                                          mainAxisSpacing: 8,
+                                          // The card already carries the gap
+                                          // as a bottom margin.
+                                          mainAxisSpacing: 0,
                                         ),
                                     itemCount: remainingLeaders.length,
                                     itemBuilder: (context, index) {
-                                      final leader = remainingLeaders[index];
-                                      return _buildRankCard(leader);
+                                      return _buildRankCard(
+                                        remainingLeaders[index],
+                                        rank: index + 4,
+                                      );
                                     },
                                   );
                                 }
@@ -197,8 +209,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                   physics: const NeverScrollableScrollPhysics(),
                                   itemCount: remainingLeaders.length,
                                   itemBuilder: (context, index) {
-                                    final leader = remainingLeaders[index];
-                                    return _buildRankCard(leader);
+                                    return _buildRankCard(
+                                      remainingLeaders[index],
+                                      rank: index + 4,
+                                    );
                                   },
                                 );
                               },
@@ -213,8 +227,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     );
   }
 
-  Widget _buildRankCard(Map<String, dynamic> leader) {
-    final rank = leader['rank'] as int? ?? 0;
+  Widget _buildRankCard(Map<String, dynamic> leader, {required int rank}) {
     final currentUserId = context.read<AuthProvider>().state.user?.id;
     final isMe = currentUserId != null && leader['user_id'] == currentUserId;
     final gradeName = getGradeName(

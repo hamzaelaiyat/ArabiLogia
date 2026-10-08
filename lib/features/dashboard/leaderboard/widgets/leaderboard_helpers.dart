@@ -21,3 +21,19 @@ String shortenFullName(String name) {
   if (parts.length <= 2) return parts.join(' ');
   return parts.take(2).join(' ');
 }
+
+/// Splits an already-sorted leaderboard into the podium and the rows below it.
+///
+/// Partitioning must be by list position, never by the `rank` column: SQL
+/// `RANK()` gives every tied user the same rank, so a board full of ties
+/// would push all rows into the podium and leave the rank-4+ list empty.
+({List<Map<String, dynamic>> podium, List<Map<String, dynamic>> rest})
+    partitionLeaderboard(
+  List<Map<String, dynamic>> rows, {
+  int podiumSize = 3,
+}) {
+  return (
+    podium: rows.take(podiumSize).toList(),
+    rest: rows.skip(podiumSize).toList(),
+  );
+}
