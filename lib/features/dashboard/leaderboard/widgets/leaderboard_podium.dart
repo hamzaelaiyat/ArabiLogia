@@ -6,11 +6,13 @@ import 'leaderboard_helpers.dart';
 class LeaderboardPodiumWidget extends StatelessWidget {
   final List<Map<String, dynamic>> topThree;
   final ValueChanged<Map<String, dynamic>>? onUserTap;
+  final String? currentUserId;
 
   const LeaderboardPodiumWidget({
     super.key,
     required this.topThree,
     this.onUserTap,
+    this.currentUserId,
   });
 
   @override
@@ -108,6 +110,10 @@ class LeaderboardPodiumWidget extends StatelessWidget {
     final avatarLetters = getAvatar(fullName);
     final score = (data['total_score'] as num?)?.toInt() ?? 0;
 
+    // Highlight the current user's pedestal instead of always highlighting #1.
+    final isMe =
+        currentUserId != null && data['user_id'] == currentUserId;
+
     final bg = isDark ? AppColors.cardDark : const Color(0xFFE5F3FF);
 
     return SizedBox(
@@ -134,13 +140,12 @@ class LeaderboardPodiumWidget extends StatelessWidget {
                 width: width,
                 height: height,
                 decoration: BoxDecoration(
-                  color: bg,
+                  color: isMe
+                      ? AppColors.blue.withValues(alpha: isDark ? 0.18 : 0.12)
+                      : bg,
                   borderRadius: BorderRadius.circular(24),
-                  border: rank == 1
-                      ? Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.4),
-                          width: 2,
-                        )
+                  border: isMe
+                      ? Border.all(color: AppColors.blue, width: 2)
                       : null,
                   boxShadow: [
                     BoxShadow(
@@ -207,14 +212,16 @@ class LeaderboardPodiumWidget extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            shortName,
+            isMe ? 'أنت' : shortName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: rank == 1 ? 14 : 12.5,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : AppColors.textPrimary,
+              fontSize: isMe || rank == 1 ? 14 : 12.5,
+              fontWeight: FontWeight.w800,
+              color: isMe
+                  ? AppColors.blue
+                  : (isDark ? Colors.white : AppColors.textPrimary),
             ),
           ),
         ],

@@ -333,13 +333,15 @@ class _LectureCardState extends State<LectureCard> {
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: InkWell(
         onTap: widget.onTap,
@@ -479,15 +481,15 @@ class _LectureCardState extends State<LectureCard> {
       decoration: BoxDecoration(
         color: mobileBg,
         borderRadius: BorderRadius.circular(36),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(
-              0xFF97CBFF,
-            ).withValues(alpha: isDark ? 0.2 : 0.35),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF97CBFF).withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: InkWell(
         onTap: widget.onTap,

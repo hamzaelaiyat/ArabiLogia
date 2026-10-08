@@ -161,6 +161,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           if (topThree.isNotEmpty)
                             LeaderboardPodiumWidget(
                               topThree: topThree,
+                              currentUserId: context
+                                  .read<AuthProvider>()
+                                  .state
+                                  .user
+                                  ?.id,
                               onUserTap: _showUserProfile,
                             ),
 
