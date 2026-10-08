@@ -114,13 +114,3 @@ android/build/
 Orchis-theme/
 app/
 assets/images/album/
-
-# Private: admin & gate features
-lib/features/admin/
-lib/features/gate/
-supabase/
-
-# Scratch: local fixtures and the throwaway Next.js experiment
-/Picture1.png
-/*.docx
-/experimental/
